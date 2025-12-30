@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# Virtual env
+.venv/
+venv/
+
+# Env and secrets
+.env
+cookie.txt
+login_info.txt
+
+# Logs and local data
+logs/
+*.log
+local_data.db
+backups/
+temp/
+
+# Data and caches
+cache/
+history/
+mr/
+defect/
+
+# IDE artifacts
+.trae/
+
+# OS files
+.Trash-*/
