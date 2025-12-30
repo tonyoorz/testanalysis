@@ -1,0 +1,11 @@
+dash
+pandas
+plotly
+numpy
+
+dash==2.13.0
+dash-core-components==2.0.0
+dash-html-components==2.0.0
+dash-bootstrap-components
+
+dash-bootstrap-components==1.5.0 
