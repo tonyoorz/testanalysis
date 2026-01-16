@@ -1,0 +1,875 @@
+{
+  "total_count": 39,
+  "data": [
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Operating Strategy 48V (eBSG) [01.06.01.01.01]",
+      "creation_time": "2018-11-10T17:01:12Z",
+      "last_modified": "2025-02-13T00:27:03Z",
+      "logical_name": "mydwpgqy04dl7fdd8oeg9kv56",
+      "path": "00000000CHQ90005UI",
+      "id": "6818",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Energetic Operating strategy BEV  [01.06.01.01.02]",
+      "creation_time": "2018-11-10T17:01:13Z",
+      "last_modified": "2025-02-13T00:27:04Z",
+      "logical_name": "gxj0k3vmo97wlcjj57gexrnqw",
+      "path": "00000000CHQ90005UQ",
+      "id": "6826",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Operating strategy PHEV (eBSG) [01.06.01.01.03]",
+      "creation_time": "2018-11-10T17:01:14Z",
+      "last_modified": "2025-02-13T00:27:08Z",
+      "logical_name": "0dnok1z391v82c26gej2grwyq",
+      "path": "00000000CHQ90005UT",
+      "id": "6829",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Energy Operating strategy 12V [01.06.01.01.04]",
+      "creation_time": "2019-03-15T23:08:58Z",
+      "last_modified": "2025-02-12T07:29:10Z",
+      "logical_name": "3q9mowq5r6zjgtmnqw3dokg6l",
+      "path": "00000000CHQ9001A44",
+      "id": "51004",
+      "workspace_id": 2001,
+      "score": 7.65,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Operating Strategy FCEV (eBSG) [01.06.01.01.05]",
+      "creation_time": "2022-02-15T01:08:30Z",
+      "last_modified": "2025-02-12T07:29:10Z",
+      "logical_name": "n67zgk7dqxkmso7q86wdprk51",
+      "path": "00000000CHQ900AY2O",
+      "id": "430124",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "anticipatory hybrid drive  [01.06.01.01.06]",
+      "creation_time": "2022-01-13T00:57:15Z",
+      "last_modified": "2025-02-13T00:27:13Z",
+      "logical_name": "om3jndl86zw15i02dq1x87p60",
+      "path": "00000000CHQ900AU8P",
+      "id": "428017",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "eDrive Zone 1.5 [01.06.01.01.07]",
+      "creation_time": "2022-01-21T01:01:16Z",
+      "last_modified": "2025-02-12T07:29:10Z",
+      "logical_name": "8vwlnj3qvy6jocv5do9zqxyg4",
+      "path": "00000000CHQ900ARMT",
+      "id": "425029",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": false,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "eDrive Zone 2.0 [01.06.01.01.08]",
+      "creation_time": "2022-01-13T00:57:15Z",
+      "last_modified": "2025-02-13T00:27:14Z",
+      "logical_name": "dvzlnpk7gvm70a594lzw42x7p",
+      "path": "00000000CHQ900ASHU",
+      "id": "426016",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "eDRIVE toggle button [01.06.01.02.01]",
+      "creation_time": "2018-11-10T17:01:16Z",
+      "last_modified": "2025-02-12T07:29:12Z",
+      "logical_name": "mydwpg01yo7z1i3yqw27jrv56",
+      "path": "00000000CHQ90005X6",
+      "id": "6840",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": false,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Display Efficiency Trainer [01.06.01.02.02]",
+      "creation_time": "2018-11-10T17:01:17Z",
+      "last_modified": "2025-02-13T00:27:19Z",
+      "logical_name": "j2ndk75nx1znya9mo28dmryem",
+      "path": "00000000CHQ90005X7",
+      "id": "6841",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "display energy flow [01.06.01.02.03]",
+      "creation_time": "2018-11-10T17:01:17Z",
+      "last_modified": "2025-02-13T00:27:20Z",
+      "logical_name": "m2eor5loovdxwbxydzxv9p49l",
+      "path": "00000000CHQ90005XB",
+      "id": "6845",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "driving style analysis [01.06.01.02.04]",
+      "creation_time": "2018-11-10T17:01:18Z",
+      "last_modified": "2025-02-13T00:27:21Z",
+      "logical_name": "3l68rl5vwodlwiv3n4vgyk0jd",
+      "path": "00000000CHQ90005XF",
+      "id": "6849",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "hybrid display diagram (history) [01.06.01.02.05]",
+      "creation_time": "2018-11-10T17:01:19Z",
+      "last_modified": "2025-02-12T07:29:14Z",
+      "logical_name": "m2eor5exym9m4tnwm6od5r49l",
+      "path": "00000000CHQ90005XI",
+      "id": "6852",
+      "workspace_id": 2001,
+      "score": null,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": false,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Range increase by Max Range [01.06.01.02.06]",
+      "creation_time": "2021-07-26T01:07:39Z",
+      "last_modified": "2025-02-13T00:27:26Z",
+      "logical_name": "0q5m6lqj87r77t8wmn7gd9o8n",
+      "path": "00000000CHQ9009R3G",
+      "id": "385066",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Proactive driving assistant (VZA) (route-ahead) [01.06.01.02.07]",
+      "creation_time": "2022-01-28T00:59:14Z",
+      "last_modified": "2025-02-13T00:27:29Z",
+      "logical_name": "9q1z2v0vzyp0zs9pjwgv0n7jl",
+      "path": "00000000CHQ900ASIZ",
+      "id": "426053",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Adapt deceleration to driving situation [01.06.01.02.08]",
+      "creation_time": "2023-05-22T22:13:27Z",
+      "last_modified": "2025-02-13T00:27:49Z",
+      "logical_name": "8xl3j5qyr1lrockd8ze2ej25e",
+      "path": "00000000CHQ900D7TA",
+      "id": "520040",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "281052",
+        "workspace_id": 2001,
+        "full_name": "QQTEE08",
+        "activity_level": 0,
+        "name": "qqtee08"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Efficiency Coach tips display and evaluate [01.06.01.02.09]",
+      "creation_time": "2024-02-14T23:16:28Z",
+      "last_modified": "2025-02-13T00:27:57Z",
+      "logical_name": "5rg2ydk03l89ntdwzojd248dv",
+      "path": "00000000CHQ900E8HQ",
+      "id": "560108",
+      "workspace_id": 2001,
+      "score": null,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "530064",
+        "workspace_id": 2001,
+        "full_name": "qqAidaSynC__BMW_Prod",
+        "activity_level": 0,
+        "name": "qqAidaSynC__BMW_Prod_xeq0jq8qxqr6euk70zxvnjgn9"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Account for Dynamometer mode [01.06.01.03.01]",
+      "creation_time": "2018-11-10T17:01:20Z",
+      "last_modified": "2025-02-13T00:27:57Z",
+      "logical_name": "z0n19pdz64lvim1ye0z7kv54w",
+      "path": "00000000CHQ90005XP",
+      "id": "6859",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Energy coordinator complete vehicle (EKG) [01.06.01.03.02]",
+      "creation_time": "2018-11-10T17:01:21Z",
+      "last_modified": "2025-02-13T00:27:57Z",
+      "logical_name": "d398rzx0yoxezb4nol9n2p4xm",
+      "path": "00000000CHQ90005XU",
+      "id": "6864",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Intelligent generator control (iGR) [01.06.01.03.03]",
+      "creation_time": "2018-11-10T17:01:24Z",
+      "last_modified": "2025-02-13T00:27:59Z",
+      "logical_name": "mlv0rw5zll273tn3jxqwrzd21",
+      "path": "00000000CHQ90005Y6",
+      "id": "6874",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Load switching for NSC-regeneration (12V) [01.06.01.03.04]",
+      "creation_time": "2018-11-10T17:01:25Z",
+      "last_modified": "2025-02-12T07:29:17Z",
+      "logical_name": "m2eor5l3xw0n9b2y68q0xp49l",
+      "path": "00000000CHQ90005YA",
+      "id": "6878",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Energy recovery (12V dual battery AGLR) [01.06.01.03.05]",
+      "creation_time": "2018-11-10T17:01:26Z",
+      "last_modified": "2025-02-13T00:28:00Z",
+      "logical_name": "0n19pd4ee19eebxe78ngypv54",
+      "path": "00000000CHQ90005YF",
+      "id": "6883",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Predictive thermal management (navi-based) [01.06.01.04.01]",
+      "creation_time": "2018-11-10T17:01:47Z",
+      "last_modified": "2025-02-13T00:28:04Z",
+      "logical_name": "6395p20j94zjyioxy1dmyknj7",
+      "path": "00000000CHQ900061F",
+      "id": "6985",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Predictive thermal management (OAP App G08LCI) [01.06.01.04.02]",
+      "creation_time": "2022-03-29T09:03:21Z",
+      "last_modified": "2025-02-12T07:29:18Z",
+      "logical_name": "x036pjmen3yn2h4ng8qgjpymo",
+      "path": "00000000CHQ900BC59",
+      "id": "446395",
+      "workspace_id": 2001,
+      "score": null,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": false,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Predictive thermal management (manual light) [01.06.01.04.03]",
+      "creation_time": "2022-02-15T01:09:16Z",
+      "last_modified": "2025-02-12T07:29:18Z",
+      "logical_name": "gy61krm7gwyphd4n05nn8rx45",
+      "path": "00000000CHQ900AZR1",
+      "id": "432107",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": false,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Predictive thermal management (manual) [01.06.01.04.04]",
+      "creation_time": "2022-02-15T01:09:16Z",
+      "last_modified": "2025-02-13T00:28:10Z",
+      "logical_name": "r5j2ep0vn2dw4cv11on7wqwp3",
+      "path": "00000000CHQ900AX82",
+      "id": "429150",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Predictive thermal management 4.0 (remote) [01.06.01.04.05]",
+      "creation_time": "2022-10-12T22:18:05Z",
+      "last_modified": "2025-02-13T00:28:16Z",
+      "logical_name": "nk4l06rjlwwdxfez8jxrz0qv8",
+      "path": "00000000CHQ900CA6H",
+      "id": "483429",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "281052",
+        "workspace_id": 2001,
+        "full_name": "QQTEE08",
+        "activity_level": 0,
+        "name": "qqtee08"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Predictive Energy Coordinator (Basic) [01.06.01.04.06]",
+      "creation_time": "2023-01-27T23:14:00Z",
+      "last_modified": "2025-02-13T00:28:24Z",
+      "logical_name": "m4y9e22y7700vsg7lzzynejk2",
+      "path": "00000000CHQ900COJA",
+      "id": "500048",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "281052",
+        "workspace_id": 2001,
+        "full_name": "QQTEE08",
+        "activity_level": 0,
+        "name": "qqtee08"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Crash Detection and triggering of crash signal [01.06.02.01.01]",
+      "creation_time": "2018-11-10T17:04:27Z",
+      "last_modified": "2025-02-13T00:28:24Z",
+      "logical_name": "4q76p618gjd2ys1x4jow2k52o",
+      "path": "00000000CHQ90006MB",
+      "id": "7695",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Seat Belt Reminder [01.06.02.01.02]",
+      "creation_time": "2018-11-10T17:04:29Z",
+      "last_modified": "2025-02-13T00:28:25Z",
+      "logical_name": "gxj0k33698m6oi4vm1gqmknqw",
+      "path": "00000000CHQ90006MI",
+      "id": "7702",
+      "workspace_id": 2001,
+      "score": 7.77,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Deactivate passenger airbag manually [01.06.02.01.03]",
+      "creation_time": "2021-03-13T03:24:41Z",
+      "last_modified": "2025-02-12T07:29:21Z",
+      "logical_name": "2ynqvp4ndrdoqcj3d4yqv015z",
+      "path": "00000000CHQ9008QFE",
+      "id": "345012",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Deactivate passenger airbag automaticle [01.06.02.01.05]",
+      "creation_time": "2023-11-08T23:43:14Z",
+      "last_modified": "2025-02-12T07:29:22Z",
+      "logical_name": "l6jv3ek5x8d0ob56x1vy63p1k",
+      "path": "00000000CHQ900DY23",
+      "id": "548015",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "530064",
+        "workspace_id": 2001,
+        "full_name": "qqAidaSynC__BMW_Prod",
+        "activity_level": 0,
+        "name": "qqAidaSynC__BMW_Prod_xeq0jq8qxqr6euk70zxvnjgn9"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Realize PostCrash function [01.06.02.02.01]",
+      "creation_time": "2018-11-10T17:04:29Z",
+      "last_modified": "2025-02-12T07:29:22Z",
+      "logical_name": "mlv0rwvm93movbz4ggeywkzd2",
+      "path": "00000000CHQ90006MK",
+      "id": "7704",
+      "workspace_id": 2001,
+      "score": 7.85,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Provide accident documentation [01.06.02.02.02]",
+      "creation_time": "2018-11-10T17:04:31Z",
+      "last_modified": "2025-02-13T00:28:27Z",
+      "logical_name": "0n19pdxx56e7za7nnv93erv54",
+      "path": "00000000CHQ90006MP",
+      "id": "7709",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Ensure Occupant safety during precrash [01.06.02.03.01]",
+      "creation_time": "2018-11-10T17:04:32Z",
+      "last_modified": "2025-02-12T07:29:22Z",
+      "logical_name": "7gj8pyn017odnao0wmewk19qz",
+      "path": "00000000CHQ90006MU",
+      "id": "7714",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Child Presence Detection  [01.06.02.04.02]",
+      "creation_time": "2022-03-29T09:03:21Z",
+      "last_modified": "2025-02-12T07:29:23Z",
+      "logical_name": "6jq8k7q1556wjsnm5y8wx0dx2",
+      "path": "00000000CHQ900BBDS",
+      "id": "445530",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "author": null,
+      "program": null,
+      "name": "Alcohol Interlock Device  [01.06.02.04.03]",
+      "creation_time": "2022-05-20T22:11:19Z",
+      "last_modified": "2025-02-12T07:29:24Z",
+      "logical_name": "v67j0m5d9w8w5aq5yp59r4ydp",
+      "path": "00000000CHQ900BRPJ",
+      "id": "464425",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "China Child Presence Detection indirect [01.06.02.04.04]",
+      "creation_time": "2023-04-21T22:19:30Z",
+      "last_modified": "2025-02-12T07:29:24Z",
+      "logical_name": "g5me746pm21plu150mlwqozn0",
+      "path": "00000000CHQ900D8OK",
+      "id": "521036",
+      "workspace_id": 2001,
+      "score": 7.88,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "281052",
+        "workspace_id": 2001,
+        "full_name": "QQTEE08",
+        "activity_level": 0,
+        "name": "qqtee08"
+      }
+    },
+    {
+      "type": "product_area",
+      "program": null,
+      "name": "Child Presence Detection Compactclass [01.06.02.04.05]",
+      "creation_time": "2024-01-12T23:26:29Z",
+      "last_modified": "2025-02-12T07:29:24Z",
+      "logical_name": "359wp19m04o1oc5y2lrmnzlox",
+      "path": "00000000CHQ900E3ND",
+      "id": "554519",
+      "workspace_id": 2001,
+      "score": null,
+      "shared": false,
+      "is_in_filter": true,
+      "has_children": true,
+      "parent": {
+        "type": "product_area",
+        "id": "492193",
+        "name": "Total Vehicle [01.06]"
+      },
+      "author": {
+        "type": "workspace_user",
+        "id": "530064",
+        "workspace_id": 2001,
+        "full_name": "qqAidaSynC__BMW_Prod",
+        "activity_level": 0,
+        "name": "qqAidaSynC__BMW_Prod_xeq0jq8qxqr6euk70zxvnjgn9"
+      }
+    }
+  ],
+  "exceeds_total_count": false,
+  "total_error_count": 0
+}
