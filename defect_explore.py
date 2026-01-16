@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 # 早期进程检查，避免reloader进程执行不必要的导入
-IS_RELOADER = os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
+IS_RELOADER = os.environ.get('DEBUG', 'True').lower() == 'true' and os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
 
 # Windows兼容性设置
 if os.name == 'nt':  # Windows系统
@@ -11123,7 +11123,7 @@ if __name__ == '__main__':
     debug = os.environ.get('DEBUG', 'True').lower() == 'true'
     
     # 检查是否是reloader进程
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+    if debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         print("\n🔄 注意：这是reloader进程，跳过启动信息显示...\n")
     else:
         # 显示网络访问信息

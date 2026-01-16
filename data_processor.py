@@ -1,7 +1,8 @@
 import os
 
 # 检查是否为reloader进程，如果是则跳过数据加载操作
-IS_RELOADER = os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
+WERKZEUG_RUN_MAIN = os.environ.get('WERKZEUG_RUN_MAIN')
+IS_RELOADER = WERKZEUG_RUN_MAIN is not None and WERKZEUG_RUN_MAIN != 'true'
 
 if not IS_RELOADER:
     import json
