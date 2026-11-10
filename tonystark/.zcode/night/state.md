@@ -32,7 +32,9 @@
 1. [x] R2 ingest `智能问数Agent全网深度调研-2026-08-03.md` → `60 Knowledge/Concepts/` 生成 6-12 概念页，每页 ≥3 双链 + 出处回链
 2. [x] R3 修 C+D+B：30 Topics 裸名歧义链、Topic Index 文件夹链、QClaw session 伪双链
 3. [x] R4 修 E+孤儿：40 Tools 六页死链降级为文本 + caveat，接入 Topic Index/Source Inventory，消 3 孤儿
-4. [ ] R5 终检 lint（wiki 层 0 断链 0 孤儿）→ 写 QUEUE_EMPTY → night-report.md
+4. [x] R5 终检 lint（wiki 层 0 断链 0 孤儿）→ 写 QUEUE_EMPTY → night-report.md
+
+> **QUEUE_EMPTY** @ 2026-11-11 夜间任务完成。终态：wiki 层（20/30/40/50/60）断链 0、孤儿 0；剩余 6 条断链全在 `10 Sources/` 不可变原文内（引文伪双链，按规则不修改原文）。见 [[.zcode/night/night-report|night-report]]。
 
 ## Round Log
 
