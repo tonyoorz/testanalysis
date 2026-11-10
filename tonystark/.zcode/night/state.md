@@ -31,7 +31,7 @@
 
 1. [x] R2 ingest `智能问数Agent全网深度调研-2026-08-03.md` → `60 Knowledge/Concepts/` 生成 6-12 概念页，每页 ≥3 双链 + 出处回链
 2. [x] R3 修 C+D+B：30 Topics 裸名歧义链、Topic Index 文件夹链、QClaw session 伪双链
-3. [ ] R4 修 E+孤儿：40 Tools 六页死链降级为文本 + caveat，接入 Topic Index/Source Inventory，消 3 孤儿
+3. [x] R4 修 E+孤儿：40 Tools 六页死链降级为文本 + caveat，接入 Topic Index/Source Inventory，消 3 孤儿
 4. [ ] R5 终检 lint（wiki 层 0 断链 0 孤儿）→ 写 QUEUE_EMPTY → night-report.md
 
 ## Round Log
@@ -55,3 +55,9 @@
 - 做了：修 C（5 个 Topic 页里 7 条裸名歧义链 → 补全 `60 Knowledge/Solutions/` 前缀）；修 D（Topic Index 的 3 条文件夹链 → 改写为全量 27 个知识页的真实索引，新调研页获得中心入口）；修 B（QClaw session `[[reply_to_current]]` ×2 → 去双链保留文字）。断链 139→127，30 Topics / Topic Index / 20 Sessions 层清零。
 - 下一个：R4 处理 40 Tools 六页 ~121 条死链（指向从未生成的 session 笔记）+ 3 孤儿页
 - 坑：裸名 `[[前段设计还能更好么]]` 与 `10 Sources` 原文同名导致 Obsidian 也无法唯一解析——凡跨层同名一律用全路径链接；sed 里 `|` 是字面量，模式不用转义但 grep 查 `[[x|y]]` 时 `|` 要小心正则含义。
+
+### R4 @ 2026-11-11
+- 做了：`fix_tools.py` 批量修复 40 Tools 六页——121 条指向不存在 session 笔记的死链降级为纯文本 ID（Claude Code 19 / Codex 8 / Kimi 2 / OpenClaw 2 / QClaw 3 / WorkBuddy 87），每页 Sessions 节加 `[!note]` caveat 说明未建笔记原因并链向 [[10 Sources/Source Inventory]]；Summary 的 Session notes 计数改为实际笔记数（WorkBuddy 87→0、Kimi 2→0）；Trae 页手工补「相关」节接入 Topic Index 与同类工具页。
+- 验证：**lint 断链 127→6（剩余 6 条全在 10 Sources 不可变原文内，属引文伪双链，验收口径排除）、孤儿 3→0**。
+- 下一个：R5 终检 → QUEUE_EMPTY → night-report.md
+- 坑：WorkBuddy 的「87 个 session 笔记」从未存在过——页面 Summary 计数写的是链接数不是笔记数；教训：计数字段必须从文件系统实况生成，不能信页面自述。

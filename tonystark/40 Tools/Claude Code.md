@@ -8,7 +8,7 @@ tags:
 # Claude Code
 
 ## Summary
-- Session notes: `85`
+- Session notes: `68`
 - Caveat: Rich local JSONL transcripts are available and used as primary source material.
 
 ## Example Sources
@@ -99,30 +99,33 @@ tags:
 - `/Users/tonyorz/.claude/projects/-Users-tonyorz/ffc6a8f0-ef74-43a6-bfbf-3b185f8e8f72.jsonl`
 
 ## Sessions
-- [[20 Sessions/Claude Code/05ef2c1b-d8e0-4456-bc0e-f710680abd1e]]
-- [[20 Sessions/Claude Code/0be63429-1644-44d0-9a62-de967378a4f1]]
+> [!note] 未建笔记的来源
+> 下列纯文本 ID（共 19 个）是 [[10 Sources/Source Inventory|Source Inventory]] 中已编目、但未生成 session 笔记的来源：<3 轮低价值对话，编译时按规则剔除。按 AGENTS.md 规则不为其臆造笔记，原始路径见清单。
+
+- `05ef2c1b-d8e0-4456-bc0e-f710680abd1e`
+- `0be63429-1644-44d0-9a62-de967378a4f1`
 - [[20 Sessions/Claude Code/14e26dac-452a-4f1a-8ab6-3c8f6934acae]]
 - [[20 Sessions/Claude Code/20103cfc-2ca2-46b4-bd3e-fd8430afe2b1]]
-- [[20 Sessions/Claude Code/25537084-271c-4a9a-a61b-1b70d1920c3b]]
+- `25537084-271c-4a9a-a61b-1b70d1920c3b`
 - [[20 Sessions/Claude Code/agent-a7ea8c6]]
 - [[20 Sessions/Claude Code/agent-a9df196]]
 - [[20 Sessions/Claude Code/3cd7e547-7baf-4ea9-948d-3c6527b215bc]]
-- [[20 Sessions/Claude Code/3dda2f7f-8a75-4516-b9eb-08f392683d65]]
+- `3dda2f7f-8a75-4516-b9eb-08f392683d65`
 - [[20 Sessions/Claude Code/44e26f69-704b-4e1a-85d0-2918a16668c4]]
 - [[20 Sessions/Claude Code/47158cf5-7b68-44e4-a911-ab24cb12eef9]]
 - [[20 Sessions/Claude Code/5665abbf-13a7-4e5f-be1f-89717789df0e]]
-- [[20 Sessions/Claude Code/601df949-9f48-4a8a-936e-dfc359c21af6]]
-- [[20 Sessions/Claude Code/61b77589-cbca-4397-9e95-e530f4f17d53]]
+- `601df949-9f48-4a8a-936e-dfc359c21af6`
+- `61b77589-cbca-4397-9e95-e530f4f17d53`
 - [[20 Sessions/Claude Code/agent-a130491]]
 - [[20 Sessions/Claude Code/agent-a5ba09d]]
-- [[20 Sessions/Claude Code/6995570e-746a-442a-a4a4-ed8076dceb4f]]
-- [[20 Sessions/Claude Code/79a06e02-b994-4b13-b6b6-1e5a949e6de2]]
-- [[20 Sessions/Claude Code/81d568ea-184f-4fbf-bb88-1b00da84f3a7]]
+- `6995570e-746a-442a-a4a4-ed8076dceb4f`
+- `79a06e02-b994-4b13-b6b6-1e5a949e6de2`
+- `81d568ea-184f-4fbf-bb88-1b00da84f3a7`
 - [[20 Sessions/Claude Code/agent-aab291c]]
-- [[20 Sessions/Claude Code/82263c64-bc25-457a-8cd5-65bdd524b4f3]]
+- `82263c64-bc25-457a-8cd5-65bdd524b4f3`
 - [[20 Sessions/Claude Code/83472911-796a-4aa0-b9e6-9e1f4a699209]]
 - [[20 Sessions/Claude Code/88ca65d3-60b9-4b97-8cff-6fdec7e107cb]]
-- [[20 Sessions/Claude Code/89ad8b4b-653e-47db-afd0-7c52444dcd72]]
+- `89ad8b4b-653e-47db-afd0-7c52444dcd72`
 - [[20 Sessions/Claude Code/agent-a1869addaecc1a2bc]]
 - [[20 Sessions/Claude Code/agent-a56893055e8f48af4]]
 - [[20 Sessions/Claude Code/agent-a5c75f95169f5a3f2]]
@@ -132,23 +135,23 @@ tags:
 - [[20 Sessions/Claude Code/9a17dae7-6f9b-42c7-8571-dceba290dd68]]
 - [[20 Sessions/Claude Code/9ac9c6b1-703d-421c-b413-08e04866bb02]]
 - [[20 Sessions/Claude Code/a8a466dc-d7e7-456e-a3a3-b2521300993f]]
-- [[20 Sessions/Claude Code/ad1202f4-e814-4c87-b032-5048484ee97c]]
+- `ad1202f4-e814-4c87-b032-5048484ee97c`
 - [[20 Sessions/Claude Code/agent-a6f773b]]
 - [[20 Sessions/Claude Code/agent-af5353b]]
-- [[20 Sessions/Claude Code/b12ff298-40dc-4100-9ec0-ec11e37765e8]]
+- `b12ff298-40dc-4100-9ec0-ec11e37765e8`
 - [[20 Sessions/Claude Code/b28722e0-8880-469e-a275-d0c814d8c1e1]]
 - [[20 Sessions/Claude Code/b918e8cc-a752-411c-85a1-8af54ba8132a]]
 - [[20 Sessions/Claude Code/agent-a9872af]]
-- [[20 Sessions/Claude Code/d0c86815-f6a4-44e0-b1fb-a57790a1405d]]
+- `d0c86815-f6a4-44e0-b1fb-a57790a1405d`
 - [[20 Sessions/Claude Code/agent-a0e90ff]]
 - [[20 Sessions/Claude Code/ffc6a8f0-ef74-43a6-bfbf-3b185f8e8f72]]
-- [[20 Sessions/Claude Code/0025abf0-0d74-475e-b292-e3af650cb18b]]
+- `0025abf0-0d74-475e-b292-e3af650cb18b`
 - [[20 Sessions/Claude Code/106f29ab-4e3d-4211-87f3-2a066d619bf1]]
-- [[20 Sessions/Claude Code/240b3373-f326-4c3f-b6cd-e3f8466e7a82]]
+- `240b3373-f326-4c3f-b6cd-e3f8466e7a82`
 - [[20 Sessions/Claude Code/370ac19c-f7a1-481d-b4ea-9ce887018989]]
-- [[20 Sessions/Claude Code/6f331a99-3763-402d-b5b3-47aa073ce959]]
+- `6f331a99-3763-402d-b5b3-47aa073ce959`
 - [[20 Sessions/Claude Code/963d1901-55f4-450b-add4-c14edc234fb5]]
-- [[20 Sessions/Claude Code/fdb7fca8-31b7-4d9a-bc1d-5131136ffe39]]
+- `fdb7fca8-31b7-4d9a-bc1d-5131136ffe39`
 - [[20 Sessions/Claude Code/93cbcc82-92da-4239-9c93-abc900543c40]]
 - [[20 Sessions/Claude Code/a2e21b77-4f75-42ae-bd90-0bbb9bd06618]]
 - [[20 Sessions/Claude Code/agent-a96f5cfba23eb1ca3]]
@@ -180,7 +183,7 @@ tags:
 - [[20 Sessions/Claude Code/agent-a8cf2e305050e22ee]]
 - [[20 Sessions/Claude Code/agent-ac5fd25add93a202c]]
 - [[20 Sessions/Claude Code/ff35778a-908b-4d63-87c6-c20eb439c8d7]]
-- [[20 Sessions/Claude Code/02da9fdd-6838-46ee-9084-31d3074d912d]]
+- `02da9fdd-6838-46ee-9084-31d3074d912d`
 - [[20 Sessions/Claude Code/agent-a490f46c254154665]]
 - [[20 Sessions/Claude Code/agent-ad35ebba150272bf7]]
 - [[20 Sessions/Claude Code/70a7c6be-5d99-406d-ab35-cce5fb552b64]]

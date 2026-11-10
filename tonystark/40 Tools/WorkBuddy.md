@@ -8,7 +8,7 @@ tags:
 # WorkBuddy
 
 ## Summary
-- Session notes: `87`
+- Session notes: `0`
 - Caveat: WorkBuddy currently exposes artifact-history entries more clearly than direct chat transcripts; notes summarize tracked resources and recent snapshots.
 
 ## Example Sources
@@ -101,90 +101,93 @@ tags:
 - `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/f559553/entries.json`
 
 ## Sessions
-- [[20 Sessions/WorkBuddy/-1063e4fd]]
-- [[20 Sessions/WorkBuddy/-1121d17]]
-- [[20 Sessions/WorkBuddy/-15043604]]
-- [[20 Sessions/WorkBuddy/-166ff62]]
-- [[20 Sessions/WorkBuddy/-16751ef5]]
-- [[20 Sessions/WorkBuddy/-17436732]]
-- [[20 Sessions/WorkBuddy/-186a07cf]]
-- [[20 Sessions/WorkBuddy/-202b7c8f]]
-- [[20 Sessions/WorkBuddy/-204fd728]]
-- [[20 Sessions/WorkBuddy/-20a42004]]
-- [[20 Sessions/WorkBuddy/-23ad384d]]
-- [[20 Sessions/WorkBuddy/-241394fd]]
-- [[20 Sessions/WorkBuddy/-26517298]]
-- [[20 Sessions/WorkBuddy/-2bab9278]]
-- [[20 Sessions/WorkBuddy/-2fcc8747]]
-- [[20 Sessions/WorkBuddy/-31707561]]
-- [[20 Sessions/WorkBuddy/-31e3f595]]
-- [[20 Sessions/WorkBuddy/-33dcc76c]]
-- [[20 Sessions/WorkBuddy/-363e51d6]]
-- [[20 Sessions/WorkBuddy/-37921af]]
-- [[20 Sessions/WorkBuddy/-38d0ca57]]
-- [[20 Sessions/WorkBuddy/-3911466d]]
-- [[20 Sessions/WorkBuddy/-3c4bc3f1]]
-- [[20 Sessions/WorkBuddy/-3d8235c]]
-- [[20 Sessions/WorkBuddy/-3f143fa]]
-- [[20 Sessions/WorkBuddy/-3ff922c7]]
-- [[20 Sessions/WorkBuddy/-40ad298]]
-- [[20 Sessions/WorkBuddy/-40b4237a]]
-- [[20 Sessions/WorkBuddy/-47bb4cf8]]
-- [[20 Sessions/WorkBuddy/-4996951d]]
-- [[20 Sessions/WorkBuddy/-4bec497d]]
-- [[20 Sessions/WorkBuddy/-4c65edc2]]
-- [[20 Sessions/WorkBuddy/-52d3e2df]]
-- [[20 Sessions/WorkBuddy/-5328ee83]]
-- [[20 Sessions/WorkBuddy/-61c30c3e]]
-- [[20 Sessions/WorkBuddy/-6789372a]]
-- [[20 Sessions/WorkBuddy/-678d58b4]]
-- [[20 Sessions/WorkBuddy/-6cd4e8ea]]
-- [[20 Sessions/WorkBuddy/-719dcbb9]]
-- [[20 Sessions/WorkBuddy/-7b790b2a]]
-- [[20 Sessions/WorkBuddy/-93d6745]]
-- [[20 Sessions/WorkBuddy/-d5a4c4c]]
-- [[20 Sessions/WorkBuddy/10215396]]
-- [[20 Sessions/WorkBuddy/11a0773d]]
-- [[20 Sessions/WorkBuddy/12143a12]]
-- [[20 Sessions/WorkBuddy/13f19d3f]]
-- [[20 Sessions/WorkBuddy/141632ec]]
-- [[20 Sessions/WorkBuddy/184ee01b]]
-- [[20 Sessions/WorkBuddy/1ad8be29]]
-- [[20 Sessions/WorkBuddy/1b3c3a5d]]
-- [[20 Sessions/WorkBuddy/1db7dd91]]
-- [[20 Sessions/WorkBuddy/20ca9d56]]
-- [[20 Sessions/WorkBuddy/24c87782]]
-- [[20 Sessions/WorkBuddy/2a4f3bf3]]
-- [[20 Sessions/WorkBuddy/2a6fdb09]]
-- [[20 Sessions/WorkBuddy/2e37ff59]]
-- [[20 Sessions/WorkBuddy/309a0dd7]]
-- [[20 Sessions/WorkBuddy/32e2bf76]]
-- [[20 Sessions/WorkBuddy/34cbb8f]]
-- [[20 Sessions/WorkBuddy/36cc0f4c]]
-- [[20 Sessions/WorkBuddy/37e64e66]]
-- [[20 Sessions/WorkBuddy/3c4977cc]]
-- [[20 Sessions/WorkBuddy/422fbe56]]
-- [[20 Sessions/WorkBuddy/42a94495]]
-- [[20 Sessions/WorkBuddy/4408cf9]]
-- [[20 Sessions/WorkBuddy/487ad457]]
-- [[20 Sessions/WorkBuddy/49d4bae2]]
-- [[20 Sessions/WorkBuddy/51977b76]]
-- [[20 Sessions/WorkBuddy/51aee19f]]
-- [[20 Sessions/WorkBuddy/5556c411]]
-- [[20 Sessions/WorkBuddy/55efc781]]
-- [[20 Sessions/WorkBuddy/5602ff8]]
-- [[20 Sessions/WorkBuddy/57dd9b96]]
-- [[20 Sessions/WorkBuddy/5972a711]]
-- [[20 Sessions/WorkBuddy/5c9d4a7a]]
-- [[20 Sessions/WorkBuddy/5fca507d]]
-- [[20 Sessions/WorkBuddy/62172ab]]
-- [[20 Sessions/WorkBuddy/68cbfbe]]
-- [[20 Sessions/WorkBuddy/6b3c2a3d]]
-- [[20 Sessions/WorkBuddy/75529c76]]
-- [[20 Sessions/WorkBuddy/76104830]]
-- [[20 Sessions/WorkBuddy/78033687]]
-- [[20 Sessions/WorkBuddy/c504da]]
-- [[20 Sessions/WorkBuddy/c78202e]]
-- [[20 Sessions/WorkBuddy/cbd300c]]
-- [[20 Sessions/WorkBuddy/e7c5efa]]
-- [[20 Sessions/WorkBuddy/f559553]]
+> [!note] 未建笔记的来源
+> 下列纯文本 ID（共 87 个）是 [[10 Sources/Source Inventory|Source Inventory]] 中已编目、但未生成 session 笔记的来源：仅 artifact 快照历史，非完整对话。按 AGENTS.md 规则不为其臆造笔记，原始路径见清单。
+
+- `-1063e4fd`
+- `-1121d17`
+- `-15043604`
+- `-166ff62`
+- `-16751ef5`
+- `-17436732`
+- `-186a07cf`
+- `-202b7c8f`
+- `-204fd728`
+- `-20a42004`
+- `-23ad384d`
+- `-241394fd`
+- `-26517298`
+- `-2bab9278`
+- `-2fcc8747`
+- `-31707561`
+- `-31e3f595`
+- `-33dcc76c`
+- `-363e51d6`
+- `-37921af`
+- `-38d0ca57`
+- `-3911466d`
+- `-3c4bc3f1`
+- `-3d8235c`
+- `-3f143fa`
+- `-3ff922c7`
+- `-40ad298`
+- `-40b4237a`
+- `-47bb4cf8`
+- `-4996951d`
+- `-4bec497d`
+- `-4c65edc2`
+- `-52d3e2df`
+- `-5328ee83`
+- `-61c30c3e`
+- `-6789372a`
+- `-678d58b4`
+- `-6cd4e8ea`
+- `-719dcbb9`
+- `-7b790b2a`
+- `-93d6745`
+- `-d5a4c4c`
+- `10215396`
+- `11a0773d`
+- `12143a12`
+- `13f19d3f`
+- `141632ec`
+- `184ee01b`
+- `1ad8be29`
+- `1b3c3a5d`
+- `1db7dd91`
+- `20ca9d56`
+- `24c87782`
+- `2a4f3bf3`
+- `2a6fdb09`
+- `2e37ff59`
+- `309a0dd7`
+- `32e2bf76`
+- `34cbb8f`
+- `36cc0f4c`
+- `37e64e66`
+- `3c4977cc`
+- `422fbe56`
+- `42a94495`
+- `4408cf9`
+- `487ad457`
+- `49d4bae2`
+- `51977b76`
+- `51aee19f`
+- `5556c411`
+- `55efc781`
+- `5602ff8`
+- `57dd9b96`
+- `5972a711`
+- `5c9d4a7a`
+- `5fca507d`
+- `62172ab`
+- `68cbfbe`
+- `6b3c2a3d`
+- `75529c76`
+- `76104830`
+- `78033687`
+- `c504da`
+- `c78202e`
+- `cbd300c`
+- `e7c5efa`
+- `f559553`

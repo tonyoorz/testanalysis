@@ -8,7 +8,7 @@ tags:
 # Codex
 
 ## Summary
-- Session notes: `14`
+- Session notes: `6`
 - Caveat: Codex has rich session JSONL plus a lightweight prompt history file; sensitive strings are redacted during ingest.
 
 ## Example Sources
@@ -28,17 +28,20 @@ tags:
 - `/Users/tonyorz/.codex/sessions/2026/02/28/rollout-2026-02-28T14-32-07-019ca2f2-808b-7043-b85d-7fade2c3e920.jsonl`
 
 ## Sessions
-- [[20 Sessions/Codex/019a52ed-7775-7f73-be4b-1844e5483b50]]
-- [[20 Sessions/Codex/019c31de-1237-7db2-aed9-21c4449871a1]]
-- [[20 Sessions/Codex/019c7e88-149f-7c42-b392-53cb1c527c8c]]
-- [[20 Sessions/Codex/019c7e88-dae0-73c2-a25a-3466989f4cc4]]
+> [!note] 未建笔记的来源
+> 下列纯文本 ID（共 8 个）是 [[10 Sources/Source Inventory|Source Inventory]] 中已编目、但未生成 session 笔记的来源：<3 轮低价值对话，编译时按规则剔除。按 AGENTS.md 规则不为其臆造笔记，原始路径见清单。
+
+- `019a52ed-7775-7f73-be4b-1844e5483b50`
+- `019c31de-1237-7db2-aed9-21c4449871a1`
+- `019c7e88-149f-7c42-b392-53cb1c527c8c`
+- `019c7e88-dae0-73c2-a25a-3466989f4cc4`
 - [[20 Sessions/Codex/019c7e89-67a3-71f0-9a0b-00accda8d135]]
-- [[20 Sessions/Codex/019c834d-e236-7ff0-b2ec-63fd81596b1d]]
-- [[20 Sessions/Codex/019c883c-ce9b-7b22-aa7e-01e41bf640a3]]
+- `019c834d-e236-7ff0-b2ec-63fd81596b1d`
+- `019c883c-ce9b-7b22-aa7e-01e41bf640a3`
 - [[20 Sessions/Codex/019c8840-4502-7b41-9878-367d1eb5a3c6]]
 - [[20 Sessions/Codex/019c8899-159e-7063-a25d-91709e8c5ad0]]
-- [[20 Sessions/Codex/019c9f28-dc28-7c93-b511-e45cf45d874e]]
+- `019c9f28-dc28-7c93-b511-e45cf45d874e`
 - [[20 Sessions/Codex/019c9f56-2bf0-7de3-b251-966d9881f35e]]
-- [[20 Sessions/Codex/019ca2da-fccd-7353-9d59-ad7cfaca5f93]]
+- `019ca2da-fccd-7353-9d59-ad7cfaca5f93`
 - [[20 Sessions/Codex/019ca2f2-808b-7043-b85d-7fade2c3e920]]
 - [[20 Sessions/Codex/history]]
