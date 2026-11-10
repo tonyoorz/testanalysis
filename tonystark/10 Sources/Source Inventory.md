@@ -1,0 +1,234 @@
+---
+title: Source Inventory
+tags:
+  - source-inventory
+  - ai-conversations
+---
+
+# Source Inventory
+
+## Claude Code
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/05ef2c1b-d8e0-4456-bc0e-f710680abd1e.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/0be63429-1644-44d0-9a62-de967378a4f1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/14e26dac-452a-4f1a-8ab6-3c8f6934acae.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/20103cfc-2ca2-46b4-bd3e-fd8430afe2b1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/25537084-271c-4a9a-a61b-1b70d1920c3b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3a537155-904a-4c42-a632-b37bfc3ca404/subagents/agent-a7ea8c6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3a537155-904a-4c42-a632-b37bfc3ca404/subagents/agent-a9df196.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3cd7e547-7baf-4ea9-948d-3c6527b215bc.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3dda2f7f-8a75-4516-b9eb-08f392683d65.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/44e26f69-704b-4e1a-85d0-2918a16668c4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/47158cf5-7b68-44e4-a911-ab24cb12eef9.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/5665abbf-13a7-4e5f-be1f-89717789df0e.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/601df949-9f48-4a8a-936e-dfc359c21af6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/61b77589-cbca-4397-9e95-e530f4f17d53.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/63f3f0fa-8171-47bb-92e4-01e64151f6ad/subagents/agent-a130491.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/63f3f0fa-8171-47bb-92e4-01e64151f6ad/subagents/agent-a5ba09d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/6995570e-746a-442a-a4a4-ed8076dceb4f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/79a06e02-b994-4b13-b6b6-1e5a949e6de2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/81d568ea-184f-4fbf-bb88-1b00da84f3a7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/821b1fde-a31a-4e41-a4fd-b6f684c41061/subagents/agent-aab291c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/82263c64-bc25-457a-8cd5-65bdd524b4f3.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/83472911-796a-4aa0-b9e6-9e1f4a699209.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/88ca65d3-60b9-4b97-8cff-6fdec7e107cb.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/89ad8b4b-653e-47db-afd0-7c52444dcd72.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/8ba6c7a2-2927-4fee-967a-b71cf2061987.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a1869addaecc1a2bc.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a56893055e8f48af4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a5c75f95169f5a3f2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a6d10ba5ecd022fdf.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-af88457162d219a1f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/9a17dae7-6f9b-42c7-8571-dceba290dd68.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/9ac9c6b1-703d-421c-b413-08e04866bb02.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/a8a466dc-d7e7-456e-a3a3-b2521300993f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad1202f4-e814-4c87-b032-5048484ee97c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad2a8813-1e78-4edc-911b-d6cca84ac307/subagents/agent-a6f773b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad2a8813-1e78-4edc-911b-d6cca84ac307/subagents/agent-af5353b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b12ff298-40dc-4100-9ec0-ec11e37765e8.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b28722e0-8880-469e-a275-d0c814d8c1e1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b918e8cc-a752-411c-85a1-8af54ba8132a.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ce4390c0-9206-4adf-a2be-7d25af016805/subagents/agent-a9872af.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/d0c86815-f6a4-44e0-b1fb-a57790a1405d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/dd2ab657-26db-4b16-b179-93242d0a8fb3/subagents/agent-a0e90ff.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ffc6a8f0-ef74-43a6-bfbf-3b185f8e8f72.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/0025abf0-0d74-475e-b292-e3af650cb18b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/106f29ab-4e3d-4211-87f3-2a066d619bf1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/240b3373-f326-4c3f-b6cd-e3f8466e7a82.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/370ac19c-f7a1-481d-b4ea-9ce887018989.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/6f331a99-3763-402d-b5b3-47aa073ce959.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/963d1901-55f4-450b-add4-c14edc234fb5.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/fdb7fca8-31b7-4d9a-bc1d-5131136ffe39.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop/93cbcc82-92da-4239-9c93-abc900543c40.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop/a2e21b77-4f75-42ae-bd90-0bbb9bd06618.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-a96f5cfba23eb1ca3.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-ab0e8547b7a139864.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-abf314655c91fe67a.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/7d445736-e3fe-41f0-8291-cb06b6470ad2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-a1f3ff0a96ac9409c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-a4d0c3915a24247b4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-ab0753f0ded057b37.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-abe9179c50e6e1785.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/423c8adc-d463-4e21-8df3-12a4cadf77e7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/642c481b-ad69-44cd-9c91-57823f26e0e2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/a63fb435-4a4b-400b-bcf4-9df541e9cf90/subagents/agent-a6fbcd9.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/c4e8cf25-4557-471f-b129-3742ef5fb636.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276/subagents/agent-ad634d85a83d9a8be.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276/subagents/agent-aebcbc371613df01c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a4a486da24cadc859.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a775919d854ed93e4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a89045d5d9bceb0be.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a9d916145cc58762f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-aa2c1853e681d7abe.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-afdbf388bc403ba6d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a60b81ae2ed1524ea.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a754d8605d28153e6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a8cf2e305050e22ee.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-ac5fd25add93a202c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-openclaw-docker/02da9fdd-6838-46ee-9084-31d3074d912d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64/subagents/agent-a490f46c254154665.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64/subagents/agent-ad35ebba150272bf7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64.jsonl`
+## Kimi
+- `/Users/tonyorz/.kimi/sessions/70af1713dc9266137dffbf53ac43b5af/2af99a29-8037-4432-80c3-75cdb724ff82/wire.jsonl`
+- `/Users/tonyorz/.kimi/user-history/70af1713dc9266137dffbf53ac43b5af.jsonl`
+## OpenClaw
+- `/Users/tonyorz/.openclaw/agents/main/sessions/4efcbd44-2c50-4f79-a1ba-3a4713b94348.jsonl`
+- `/Users/tonyorz/.openclaw/agents/main/sessions/6b7e29ac-0e09-4a36-806b-01f57fe62fe2.jsonl`
+- `/Users/tonyorz/.openclaw/agents/main/sessions/6e9f979c-2181-43e8-8507-1341b6dba50c.jsonl`
+- `/Users/tonyorz/.openclaw/agents/main/sessions/e0642423-ab02-469f-b366-8c2be1cea7da.jsonl`
+## QClaw
+- `/Users/tonyorz/.qclaw/agents/main/sessions/65fb2900-e5fe-45bf-b15f-4735b0008bbc.jsonl`
+- `/Users/tonyorz/.qclaw/agents/main/sessions/9b4d15cc-964f-4c5d-9bf6-eb763b4f9f7e.jsonl`
+- `/Users/tonyorz/.qclaw/agents/main/sessions/ae66c400-0a52-4708-9273-241319c5a463.jsonl`
+- `/Users/tonyorz/.qclaw/agents/main/sessions/cc293a45-5fe1-4748-b355-499bec611d22.jsonl`
+- `/Users/tonyorz/.qclaw/agents/main/sessions/session-1773944567571-63muj5.jsonl`
+## Codex
+- `/Users/tonyorz/.codex/sessions/2025/09/09/rollout-2025-09-09T18-02-07-5048f719-81f3-4fbd-ab6e-b4806b19a3dc.jsonl`
+- `/Users/tonyorz/.codex/sessions/2025/11/05/rollout-2025-11-05T15-31-25-019a52ed-7775-7f73-be4b-1844e5483b50.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/06/rollout-2026-02-06T15-32-43-019c31de-1237-7db2-aed9-21c4449871a1.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/21/rollout-2026-02-21T12-49-33-019c7e88-149f-7c42-b392-53cb1c527c8c.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/21/rollout-2026-02-21T12-50-24-019c7e88-dae0-73c2-a25a-3466989f4cc4.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/21/rollout-2026-02-21T12-51-00-019c7e89-67a3-71f0-9a0b-00accda8d135.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/22/rollout-2026-02-22T11-04-05-019c834d-e236-7ff0-b2ec-63fd81596b1d.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/23/rollout-2026-02-23T10-03-32-019c883c-ce9b-7b22-aa7e-01e41bf640a3.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/23/rollout-2026-02-23T10-07-19-019c8840-4502-7b41-9878-367d1eb5a3c6.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/23/rollout-2026-02-23T11-44-19-019c8899-159e-7063-a25d-91709e8c5ad0.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/27/rollout-2026-02-27T20-53-01-019c9f28-dc28-7c93-b511-e45cf45d874e.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/27/rollout-2026-02-27T21-42-30-019c9f56-2bf0-7de3-b251-966d9881f35e.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/28/rollout-2026-02-28T14-06-26-019ca2da-fccd-7353-9d59-ad7cfaca5f93.jsonl`
+- `/Users/tonyorz/.codex/sessions/2026/02/28/rollout-2026-02-28T14-32-07-019ca2f2-808b-7043-b85d-7fade2c3e920.jsonl`
+- `/Users/tonyorz/.codex/history.jsonl`
+## WorkBuddy
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-1063e4fd/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-1121d17/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-15043604/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-166ff62/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-16751ef5/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-17436732/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-186a07cf/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-202b7c8f/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-204fd728/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-20a42004/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-23ad384d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-241394fd/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-26517298/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-2bab9278/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-2fcc8747/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-31707561/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-31e3f595/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-33dcc76c/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-363e51d6/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-37921af/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-38d0ca57/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-3911466d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-3c4bc3f1/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-3d8235c/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-3f143fa/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-3ff922c7/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-40ad298/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-40b4237a/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-47bb4cf8/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-4996951d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-4bec497d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-4c65edc2/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-52d3e2df/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-5328ee83/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-61c30c3e/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-6789372a/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-678d58b4/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-6cd4e8ea/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-719dcbb9/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-7b790b2a/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-93d6745/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/-d5a4c4c/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/10215396/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/11a0773d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/12143a12/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/13f19d3f/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/141632ec/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/184ee01b/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/1ad8be29/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/1b3c3a5d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/1db7dd91/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/20ca9d56/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/24c87782/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/2a4f3bf3/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/2a6fdb09/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/2e37ff59/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/309a0dd7/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/32e2bf76/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/34cbb8f/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/36cc0f4c/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/37e64e66/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/3c4977cc/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/422fbe56/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/42a94495/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/4408cf9/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/487ad457/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/49d4bae2/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/51977b76/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/51aee19f/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/5556c411/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/55efc781/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/5602ff8/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/57dd9b96/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/5972a711/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/5c9d4a7a/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/5fca507d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/62172ab/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/68cbfbe/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/6b3c2a3d/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/75529c76/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/76104830/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/78033687/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/c504da/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/c78202e/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/cbd300c/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/e7c5efa/entries.json`
+- `/Users/tonyorz/Library/Application Support/WorkBuddy/User/History/f559553/entries.json`
+## Trae
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/ai-agent_0_1772715141992_stderr.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/ai-agent_0_1772715141992_stdout.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/ckg_0_1772715141992_stderr.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/ckg_0_1772715141992_stdout.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/cue-server_0_1772715141992_stderr.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/Modular/cue-server_0_1772715141992_stdout.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/alog.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/dynamicConfig.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/editSessions.log`
+- `/Users/tonyorz/Library/Application Support/Trae/logs/20260305T205221/main.log`
+
+## Notes
+- Claude Code sources are rich `.jsonl` session logs.
+- Kimi sources currently expose command and wire-level logs.
+- OpenClaw and QClaw both store standard JSONL session transcripts.
+- Codex stores full session JSONL plus a lightweight prompt history file.
+- WorkBuddy history currently looks more like artifact snapshots than full chat transcripts.
+- Trae local logs appear to be runtime/editor logs, not full user-assistant transcripts.
+- For missing tools or richer exports, place manual dumps under `10 Sources/raw/`.

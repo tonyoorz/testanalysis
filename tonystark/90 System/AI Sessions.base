@@ -1,0 +1,26 @@
+filters:
+  and:
+    - file.inFolder("20 Sessions")
+properties:
+  tool:
+    displayName: Tool
+  session_id:
+    displayName: Session ID
+  source_path:
+    displayName: Source Path
+  started_at:
+    displayName: Started
+  user_turns:
+    displayName: User Turns
+  assistant_turns:
+    displayName: Assistant Turns
+views:
+  - type: table
+    name: AI Sessions
+    order:
+      - file.name
+      - tool
+      - started_at
+      - user_turns
+      - assistant_turns
+      - source_path

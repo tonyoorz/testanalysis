@@ -1,0 +1,223 @@
+{
+  "main": {
+    "id": "f6d669aac9cfc4d0",
+    "type": "split",
+    "children": [
+      {
+        "id": "59b729300264f07e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2f2f7ad621c06238",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "关系图谱"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "fb83a4fd42fb2363",
+    "type": "split",
+    "children": [
+      {
+        "id": "c925d26a9fd808c5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "114a421da5f8d3b2",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "8f8967e543c735b7",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "a94937634b9d6f74",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "0d72c5b5dcd4e5d7",
+    "type": "split",
+    "children": [
+      {
+        "id": "585e6f13df0ceb6f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "42bacecab4cafe75",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "20 Sessions/Codex/019c7e89-67a3-71f0-9a0b-00accda8d135.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "019c7e89-67a3-71f0-9a0b-00accda8d135 的反向链接列表"
+            }
+          },
+          {
+            "id": "47ef74d6508c9e96",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "20 Sessions/Codex/019c7e89-67a3-71f0-9a0b-00accda8d135.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "019c7e89-67a3-71f0-9a0b-00accda8d135 的出链列表"
+            }
+          },
+          {
+            "id": "75780ccf3917f9c5",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "f28a56642a65fc39",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "1a387983a54a3197",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "20 Sessions/Codex/019c7e89-67a3-71f0-9a0b-00accda8d135.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "019c7e89-67a3-71f0-9a0b-00accda8d135 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "2f2f7ad621c06238",
+  "lastOpenFiles": [
+    "40 Tools/Codex.md",
+    "智能问数Agent全网深度调研-2026-08-03.md",
+    "20 Sessions/Claude Code/642c481b-ad69-44cd-9c91-57823f26e0e2.md",
+    "20 Sessions/Claude Code/agent-a4a486da24cadc859.md",
+    "50 Syntheses/AI-Agent能力盘点与演进.md",
+    "50 Syntheses/数据分析系统完整数据流.md",
+    "50 Syntheses/PreAnalysis技术债务全景与改进路线.md",
+    "scripts/write_syntheses.py",
+    "30 Topics/工程治理与环境维护.md",
+    "30 Topics/前端与数据可视化.md",
+    "30 Topics/Agent工具链与环境配置.md",
+    "30 Topics/数据管道与数据库.md",
+    "30 Topics/Data-Agent-项目架构.md",
+    "scripts/write_topics.py",
+    "60 Knowledge/Decisions/Conversation-info-untrusted-metadata-jso-Conversa.md",
+    "60 Knowledge/Decisions/Conversation-info-untrusted-metadata-jso.md",
+    "60 Knowledge/Concepts/我项目里openclaw现在启动有问题报错怎么解决.md",
+    "60 Knowledge/Decisions/我本地电脑桌面端的claude-介入了glm51-但是一直报错.md",
+    "60 Knowledge/Solutions/前段设计还能更好么.md",
+    "60 Knowledge/Concepts/skill-installerUserstonyorzcodexskillssy.md",
+    "60 Knowledge/Solutions/goal-全网深度分析我的项目里的agent-分析一下我这个智能问数agent如.md",
+    "60 Knowledge/Decisions/研究任务-ontology本体在-data-agent-AI-数据智能中的应用.md",
+    "60 Knowledge/Concepts/我本地的cli上的hermes-agent-的模型可以改成model可以改成mo.md",
+    "60 Knowledge/Solutions/我如何在手机上看到我Claude-code桌面版编程的进度-所有的对话等等都可以.md",
+    "60 Knowledge/Concepts/gitgithubcomtonyoorzData-Agentgit-我本地这个d.md",
+    "60 Knowledge/Solutions/codex-windows桌面版下载.md",
+    "60 Knowledge/Decisions/Successfully-changed-chat-title-to-Casua.md",
+    "60 Knowledge/Decisions/Explore-the-project-at-UserstonyorzData.md",
+    "scripts/compile_all.py",
+    "scripts/compile_knowledge_page.py",
+    "90 System/templates",
+    "60 Knowledge/Solutions",
+    "60 Knowledge/Decisions",
+    "60 Knowledge/Concepts",
+    "60 Knowledge",
+    "10 Sources/raw/conversations/QClaw"
+  ]
+}

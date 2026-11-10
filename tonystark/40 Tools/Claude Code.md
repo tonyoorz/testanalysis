@@ -1,0 +1,186 @@
+---
+title: "Claude Code"
+tags:
+  - ai-tool
+  - conversation-source
+---
+
+# Claude Code
+
+## Summary
+- Session notes: `85`
+- Caveat: Rich local JSONL transcripts are available and used as primary source material.
+
+## Example Sources
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/0025abf0-0d74-475e-b292-e3af650cb18b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/106f29ab-4e3d-4211-87f3-2a066d619bf1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/240b3373-f326-4c3f-b6cd-e3f8466e7a82.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/370ac19c-f7a1-481d-b4ea-9ce887018989.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/6f331a99-3763-402d-b5b3-47aa073ce959.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/963d1901-55f4-450b-add4-c14edc234fb5.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz--qclaw-workspace/fdb7fca8-31b7-4d9a-bc1d-5131136ffe39.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-a96f5cfba23eb1ca3.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-ab0e8547b7a139864.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/0ae4a02d-3efc-40b1-8613-f6f224381393/subagents/agent-abf314655c91fe67a.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop-datahub/7d445736-e3fe-41f0-8291-cb06b6470ad2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop/93cbcc82-92da-4239-9c93-abc900543c40.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-Desktop/a2e21b77-4f75-42ae-bd90-0bbb9bd06618.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-a1f3ff0a96ac9409c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-a4d0c3915a24247b4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-ab0753f0ded057b37.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/0e196531-b170-44df-acc2-3d5eb2d2ae62/subagents/agent-abe9179c50e6e1785.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/423c8adc-d463-4e21-8df3-12a4cadf77e7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/642c481b-ad69-44cd-9c91-57823f26e0e2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/a63fb435-4a4b-400b-bcf4-9df541e9cf90/subagents/agent-a6fbcd9.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/c4e8cf25-4557-471f-b129-3742ef5fb636.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276/subagents/agent-ad634d85a83d9a8be.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276/subagents/agent-aebcbc371613df01c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a4a486da24cadc859.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a775919d854ed93e4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a89045d5d9bceb0be.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-a9d916145cc58762f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-aa2c1853e681d7abe.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/dc242282-72d0-4a1b-afc2-3de61d04b534/subagents/agent-afdbf388bc403ba6d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a60b81ae2ed1524ea.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a754d8605d28153e6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-a8cf2e305050e22ee.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-aianalysis/ff35778a-908b-4d63-87c6-c20eb439c8d7/subagents/agent-ac5fd25add93a202c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-openclaw-docker/02da9fdd-6838-46ee-9084-31d3074d912d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64/subagents/agent-a490f46c254154665.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz-testagent/70a7c6be-5d99-406d-ab35-cce5fb552b64/subagents/agent-ad35ebba150272bf7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/05ef2c1b-d8e0-4456-bc0e-f710680abd1e.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/0be63429-1644-44d0-9a62-de967378a4f1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/14e26dac-452a-4f1a-8ab6-3c8f6934acae.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/20103cfc-2ca2-46b4-bd3e-fd8430afe2b1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/25537084-271c-4a9a-a61b-1b70d1920c3b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3a537155-904a-4c42-a632-b37bfc3ca404/subagents/agent-a7ea8c6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3a537155-904a-4c42-a632-b37bfc3ca404/subagents/agent-a9df196.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3cd7e547-7baf-4ea9-948d-3c6527b215bc.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/3dda2f7f-8a75-4516-b9eb-08f392683d65.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/44e26f69-704b-4e1a-85d0-2918a16668c4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/47158cf5-7b68-44e4-a911-ab24cb12eef9.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/5665abbf-13a7-4e5f-be1f-89717789df0e.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/601df949-9f48-4a8a-936e-dfc359c21af6.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/61b77589-cbca-4397-9e95-e530f4f17d53.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/63f3f0fa-8171-47bb-92e4-01e64151f6ad/subagents/agent-a130491.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/63f3f0fa-8171-47bb-92e4-01e64151f6ad/subagents/agent-a5ba09d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/6995570e-746a-442a-a4a4-ed8076dceb4f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/79a06e02-b994-4b13-b6b6-1e5a949e6de2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/81d568ea-184f-4fbf-bb88-1b00da84f3a7.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/821b1fde-a31a-4e41-a4fd-b6f684c41061/subagents/agent-aab291c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/82263c64-bc25-457a-8cd5-65bdd524b4f3.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/83472911-796a-4aa0-b9e6-9e1f4a699209.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/88ca65d3-60b9-4b97-8cff-6fdec7e107cb.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/89ad8b4b-653e-47db-afd0-7c52444dcd72.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a1869addaecc1a2bc.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a56893055e8f48af4.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a5c75f95169f5a3f2.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-a6d10ba5ecd022fdf.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/931362b7-ad63-4f53-9c18-81218a6e53ac/subagents/agent-af88457162d219a1f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/9a17dae7-6f9b-42c7-8571-dceba290dd68.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/9ac9c6b1-703d-421c-b413-08e04866bb02.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/a8a466dc-d7e7-456e-a3a3-b2521300993f.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad1202f4-e814-4c87-b032-5048484ee97c.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad2a8813-1e78-4edc-911b-d6cca84ac307/subagents/agent-a6f773b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ad2a8813-1e78-4edc-911b-d6cca84ac307/subagents/agent-af5353b.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b12ff298-40dc-4100-9ec0-ec11e37765e8.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b28722e0-8880-469e-a275-d0c814d8c1e1.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/b918e8cc-a752-411c-85a1-8af54ba8132a.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ce4390c0-9206-4adf-a2be-7d25af016805/subagents/agent-a9872af.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/d0c86815-f6a4-44e0-b1fb-a57790a1405d.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/dd2ab657-26db-4b16-b179-93242d0a8fb3/subagents/agent-a0e90ff.jsonl`
+- `/Users/tonyorz/.claude/projects/-Users-tonyorz/ffc6a8f0-ef74-43a6-bfbf-3b185f8e8f72.jsonl`
+
+## Sessions
+- [[20 Sessions/Claude Code/05ef2c1b-d8e0-4456-bc0e-f710680abd1e]]
+- [[20 Sessions/Claude Code/0be63429-1644-44d0-9a62-de967378a4f1]]
+- [[20 Sessions/Claude Code/14e26dac-452a-4f1a-8ab6-3c8f6934acae]]
+- [[20 Sessions/Claude Code/20103cfc-2ca2-46b4-bd3e-fd8430afe2b1]]
+- [[20 Sessions/Claude Code/25537084-271c-4a9a-a61b-1b70d1920c3b]]
+- [[20 Sessions/Claude Code/agent-a7ea8c6]]
+- [[20 Sessions/Claude Code/agent-a9df196]]
+- [[20 Sessions/Claude Code/3cd7e547-7baf-4ea9-948d-3c6527b215bc]]
+- [[20 Sessions/Claude Code/3dda2f7f-8a75-4516-b9eb-08f392683d65]]
+- [[20 Sessions/Claude Code/44e26f69-704b-4e1a-85d0-2918a16668c4]]
+- [[20 Sessions/Claude Code/47158cf5-7b68-44e4-a911-ab24cb12eef9]]
+- [[20 Sessions/Claude Code/5665abbf-13a7-4e5f-be1f-89717789df0e]]
+- [[20 Sessions/Claude Code/601df949-9f48-4a8a-936e-dfc359c21af6]]
+- [[20 Sessions/Claude Code/61b77589-cbca-4397-9e95-e530f4f17d53]]
+- [[20 Sessions/Claude Code/agent-a130491]]
+- [[20 Sessions/Claude Code/agent-a5ba09d]]
+- [[20 Sessions/Claude Code/6995570e-746a-442a-a4a4-ed8076dceb4f]]
+- [[20 Sessions/Claude Code/79a06e02-b994-4b13-b6b6-1e5a949e6de2]]
+- [[20 Sessions/Claude Code/81d568ea-184f-4fbf-bb88-1b00da84f3a7]]
+- [[20 Sessions/Claude Code/agent-aab291c]]
+- [[20 Sessions/Claude Code/82263c64-bc25-457a-8cd5-65bdd524b4f3]]
+- [[20 Sessions/Claude Code/83472911-796a-4aa0-b9e6-9e1f4a699209]]
+- [[20 Sessions/Claude Code/88ca65d3-60b9-4b97-8cff-6fdec7e107cb]]
+- [[20 Sessions/Claude Code/89ad8b4b-653e-47db-afd0-7c52444dcd72]]
+- [[20 Sessions/Claude Code/agent-a1869addaecc1a2bc]]
+- [[20 Sessions/Claude Code/agent-a56893055e8f48af4]]
+- [[20 Sessions/Claude Code/agent-a5c75f95169f5a3f2]]
+- [[20 Sessions/Claude Code/agent-a6d10ba5ecd022fdf]]
+- [[20 Sessions/Claude Code/agent-af88457162d219a1f]]
+- [[20 Sessions/Claude Code/931362b7-ad63-4f53-9c18-81218a6e53ac]]
+- [[20 Sessions/Claude Code/9a17dae7-6f9b-42c7-8571-dceba290dd68]]
+- [[20 Sessions/Claude Code/9ac9c6b1-703d-421c-b413-08e04866bb02]]
+- [[20 Sessions/Claude Code/a8a466dc-d7e7-456e-a3a3-b2521300993f]]
+- [[20 Sessions/Claude Code/ad1202f4-e814-4c87-b032-5048484ee97c]]
+- [[20 Sessions/Claude Code/agent-a6f773b]]
+- [[20 Sessions/Claude Code/agent-af5353b]]
+- [[20 Sessions/Claude Code/b12ff298-40dc-4100-9ec0-ec11e37765e8]]
+- [[20 Sessions/Claude Code/b28722e0-8880-469e-a275-d0c814d8c1e1]]
+- [[20 Sessions/Claude Code/b918e8cc-a752-411c-85a1-8af54ba8132a]]
+- [[20 Sessions/Claude Code/agent-a9872af]]
+- [[20 Sessions/Claude Code/d0c86815-f6a4-44e0-b1fb-a57790a1405d]]
+- [[20 Sessions/Claude Code/agent-a0e90ff]]
+- [[20 Sessions/Claude Code/ffc6a8f0-ef74-43a6-bfbf-3b185f8e8f72]]
+- [[20 Sessions/Claude Code/0025abf0-0d74-475e-b292-e3af650cb18b]]
+- [[20 Sessions/Claude Code/106f29ab-4e3d-4211-87f3-2a066d619bf1]]
+- [[20 Sessions/Claude Code/240b3373-f326-4c3f-b6cd-e3f8466e7a82]]
+- [[20 Sessions/Claude Code/370ac19c-f7a1-481d-b4ea-9ce887018989]]
+- [[20 Sessions/Claude Code/6f331a99-3763-402d-b5b3-47aa073ce959]]
+- [[20 Sessions/Claude Code/963d1901-55f4-450b-add4-c14edc234fb5]]
+- [[20 Sessions/Claude Code/fdb7fca8-31b7-4d9a-bc1d-5131136ffe39]]
+- [[20 Sessions/Claude Code/93cbcc82-92da-4239-9c93-abc900543c40]]
+- [[20 Sessions/Claude Code/a2e21b77-4f75-42ae-bd90-0bbb9bd06618]]
+- [[20 Sessions/Claude Code/agent-a96f5cfba23eb1ca3]]
+- [[20 Sessions/Claude Code/agent-ab0e8547b7a139864]]
+- [[20 Sessions/Claude Code/agent-abf314655c91fe67a]]
+- [[20 Sessions/Claude Code/0ae4a02d-3efc-40b1-8613-f6f224381393]]
+- [[20 Sessions/Claude Code/7d445736-e3fe-41f0-8291-cb06b6470ad2]]
+- [[20 Sessions/Claude Code/agent-a1f3ff0a96ac9409c]]
+- [[20 Sessions/Claude Code/agent-a4d0c3915a24247b4]]
+- [[20 Sessions/Claude Code/agent-ab0753f0ded057b37]]
+- [[20 Sessions/Claude Code/agent-abe9179c50e6e1785]]
+- [[20 Sessions/Claude Code/0e196531-b170-44df-acc2-3d5eb2d2ae62]]
+- [[20 Sessions/Claude Code/423c8adc-d463-4e21-8df3-12a4cadf77e7]]
+- [[20 Sessions/Claude Code/642c481b-ad69-44cd-9c91-57823f26e0e2]]
+- [[20 Sessions/Claude Code/agent-a6fbcd9]]
+- [[20 Sessions/Claude Code/c4e8cf25-4557-471f-b129-3742ef5fb636]]
+- [[20 Sessions/Claude Code/agent-ad634d85a83d9a8be]]
+- [[20 Sessions/Claude Code/agent-aebcbc371613df01c]]
+- [[20 Sessions/Claude Code/d0108cc6-90ca-49b1-b3ee-6cb7cf09a276]]
+- [[20 Sessions/Claude Code/agent-a4a486da24cadc859]]
+- [[20 Sessions/Claude Code/agent-a775919d854ed93e4]]
+- [[20 Sessions/Claude Code/agent-a89045d5d9bceb0be]]
+- [[20 Sessions/Claude Code/agent-a9d916145cc58762f]]
+- [[20 Sessions/Claude Code/agent-aa2c1853e681d7abe]]
+- [[20 Sessions/Claude Code/agent-afdbf388bc403ba6d]]
+- [[20 Sessions/Claude Code/dc242282-72d0-4a1b-afc2-3de61d04b534]]
+- [[20 Sessions/Claude Code/agent-a60b81ae2ed1524ea]]
+- [[20 Sessions/Claude Code/agent-a754d8605d28153e6]]
+- [[20 Sessions/Claude Code/agent-a8cf2e305050e22ee]]
+- [[20 Sessions/Claude Code/agent-ac5fd25add93a202c]]
+- [[20 Sessions/Claude Code/ff35778a-908b-4d63-87c6-c20eb439c8d7]]
+- [[20 Sessions/Claude Code/02da9fdd-6838-46ee-9084-31d3074d912d]]
+- [[20 Sessions/Claude Code/agent-a490f46c254154665]]
+- [[20 Sessions/Claude Code/agent-ad35ebba150272bf7]]
+- [[20 Sessions/Claude Code/70a7c6be-5d99-406d-ab35-cce5fb552b64]]
