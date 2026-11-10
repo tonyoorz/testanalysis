@@ -75,5 +75,5 @@ NL2SQL 的本质是**模板填充而非 LLM 直接生成**：`NL2SQLEngine.query
 - [[研究任务-ontology本体在-data-agent-AI-数据智能中的应用|研究任务：ontology本体在 data agent AI 数据智能中的应用]]
 - [[goal-全网深度分析我的项目里的agent-分析一下我这个智能问数agent如|goal 全网深度分析我的项目里的agent，分析一下我这个智能问数agent如]]
 - [[octane数据下载与入库链路|你现在完整的查看一下我的项目，现在我是否是通过一键octane download把数据从octane]]
-- [[前段设计还能更好么|前段设计还能更好么]]
+- [[60 Knowledge/Solutions/前段设计还能更好么|前段设计还能更好么]]
 

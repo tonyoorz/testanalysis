@@ -93,8 +93,8 @@ tags:
 - [[Successfully-changed-chat-title-to-Casua|Successfully changed chat title to Casua]]
 - [[pgsql迁移与字段匹配|我现在pqsql 和sqlite一样看一下里边数据存储字段是匹配的么。 我想确保我之后迁移到pqsq]]
 - [[我本地电脑桌面端的claude-介入了glm51-但是一直报错|我本地电脑桌面端的claude 介入了glm51 但是一直报错]]
-- [[codex-windows桌面版下载|codex windows桌面版下载]]
+- [[60 Knowledge/Solutions/codex-windows桌面版下载|codex windows桌面版下载]]
 - [[goal-全网深度分析我的项目里的agent-分析一下我这个智能问数agent如|goal 全网深度分析我的项目里的agent，分析一下我这个智能问数agent如]]
-- [[前段设计还能更好么|前段设计还能更好么]]
+- [[60 Knowledge/Solutions/前段设计还能更好么|前段设计还能更好么]]
 - [[我如何在手机上看到我Claude-code桌面版编程的进度-所有的对话等等都可以|我如何在手机上看到我Claude code桌面版编程的进度，所有的对话等等都可以]]
 

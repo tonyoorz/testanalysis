@@ -30,7 +30,7 @@
 ## QUEUE
 
 1. [x] R2 ingest `智能问数Agent全网深度调研-2026-08-03.md` → `60 Knowledge/Concepts/` 生成 6-12 概念页，每页 ≥3 双链 + 出处回链
-2. [ ] R3 修 C+D+B：30 Topics 裸名歧义链、Topic Index 文件夹链、QClaw session 伪双链
+2. [x] R3 修 C+D+B：30 Topics 裸名歧义链、Topic Index 文件夹链、QClaw session 伪双链
 3. [ ] R4 修 E+孤儿：40 Tools 六页死链降级为文本 + caveat，接入 Topic Index/Source Inventory，消 3 孤儿
 4. [ ] R5 终检 lint（wiki 层 0 断链 0 孤儿）→ 写 QUEUE_EMPTY → night-report.md
 
@@ -49,4 +49,9 @@
   断点页用 `> [!contradiction]` 标注「Ontology 接入状态」新旧两源（2026-07-14 Codex 分析 vs 2026-08-03 调研），未删任何旧内容。
 - 验证：lint 复跑 139 断链/3 孤儿与基线一致 → 新页零新增断链、零孤儿（全部页面靠出链互连）。
 - 下一个：R3 修 30 Topics 裸名歧义链（5）+ Topic Index 文件夹链（3）+ QClaw session 伪双链（2）
-- 坑：① 调研文档里的相对链接（`../../server/...`）指向 vault 外的 Data-Agent 代码仓，编译时全部转为文字路径引用，不能当附件；② 源文档自身 0 双链，编译页的「编译自」回链是它获得入链的唯一途径，新页互链形成闭环。
+- 坑：① 调研文档里的相对链接（`../../server/...`）指向 vault 外的 Data-Agent 代码仓，编译时全部转为文字路径引用，不能当附件；② 源文档自身 0 双链，编译页的「编译从」回链是它获得入链的唯一途径，新页互链形成闭环。
+
+### R3 @ 2026-11-11
+- 做了：修 C（5 个 Topic 页里 7 条裸名歧义链 → 补全 `60 Knowledge/Solutions/` 前缀）；修 D（Topic Index 的 3 条文件夹链 → 改写为全量 27 个知识页的真实索引，新调研页获得中心入口）；修 B（QClaw session `[[reply_to_current]]` ×2 → 去双链保留文字）。断链 139→127，30 Topics / Topic Index / 20 Sessions 层清零。
+- 下一个：R4 处理 40 Tools 六页 ~121 条死链（指向从未生成的 session 笔记）+ 3 孤儿页
+- 坑：裸名 `[[前段设计还能更好么]]` 与 `10 Sources` 原文同名导致 Obsidian 也无法唯一解析——凡跨层同名一律用全路径链接；sed 里 `|` 是字面量，模式不用转义但 grep 查 `[[x|y]]` 时 `|` 要小心正则含义。
