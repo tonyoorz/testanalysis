@@ -151,6 +151,9 @@ app.layout = html.Div([
     
     # 图表区域
     html.Div([
+        html.Div([
+            html.Div([dcc.Graph(id='lr-phase-transition-avg-chart')], style={'flex': '1'})
+        ], style={'display': 'flex', 'marginBottom': '20px'}),
         # 第一行（2个图表）
         html.Div([
             html.Div([dcc.Graph(id='lr-trend-chart')], style={'flex': '1', 'marginRight': '10px'}),
@@ -300,6 +303,84 @@ def update_lr_kpi_cards(projects, aidas, severities, phase_categories):
     ]
     
     return html.Div(cards, style={'display': 'flex', 'justifyContent': 'space-between'})
+
+# Phase Transition 平均耗时（分组堆叠）图
+@app.callback(
+    Output('lr-phase-transition-avg-chart', 'figure'),
+    [Input('lr-project-dropdown', 'value'),
+     Input('lr-aida-dropdown', 'value'),
+     Input('lr-severity-dropdown', 'value'),
+     Input('lr-phase-category-dropdown', 'value')]
+)
+def update_lr_phase_transition_avg_chart(projects, aidas, severities, phase_categories):
+    import os
+    csv_path = os.path.join(os.getcwd(), 'phase_statistics_2025.csv')
+    if not os.path.exists(csv_path):
+        fig = apply_chart_style(go.Figure(), "Phase Transition 平均耗时（分组堆叠）", "平均耗时（天）", "分组", 420)
+        fig.add_annotation(text="未找到 phase_statistics_2025.csv，请先运行 longrunner_analysis.py 生成统计数据",
+                           xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+        return fig
+    
+    stats_df = pd.read_csv(csv_path, encoding='utf-8')
+    if stats_df.empty:
+        return apply_chart_style(go.Figure(), "Phase Transition 平均耗时（分组堆叠）", height=420)
+    
+    def transition_group(name: str) -> str:
+        left = name.split('→')[0].strip()
+        prefix = left.split('-')[0].strip()
+        digits = ''.join([c for c in prefix if c.isdigit()]) or prefix
+        if digits in ['02', '07']:
+            return 'Q-Gate'
+        elif digits in ['00', '01', '08']:
+            return 'Integration'
+        elif digits in ['03', '04', '05']:
+            return 'CoC'
+        else:
+            return 'Other'
+    
+    stats_df['Group'] = stats_df['Phase_Transition'].apply(transition_group)
+    stats_df = stats_df[stats_df['Group'].isin(['Q-Gate', 'Integration', 'CoC'])]
+    if stats_df.empty:
+        fig = apply_chart_style(go.Figure(), "Phase Transition 平均耗时（分组堆叠）", "平均耗时（天）", "分组", 420)
+        fig.add_annotation(text="统计数据中不存在匹配的分组（Q-Gate/Integration/CoC）",
+                           xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+        return fig
+    
+    pivot = stats_df.pivot_table(index='Group',
+                                 columns='Phase_Transition',
+                                 values='Avg_Days',
+                                 aggfunc='mean').fillna(0)
+    counts = stats_df.pivot_table(index='Group',
+                                  columns='Phase_Transition',
+                                  values='Count',
+                                  aggfunc='sum').fillna(0)
+    
+    groups_order = ['Q-Gate', 'Integration', 'CoC']
+    pivot = pivot.reindex(groups_order).fillna(0)
+    counts = counts.reindex(groups_order).fillna(0)
+    
+    fig = go.Figure()
+    for transition in pivot.columns:
+        x_vals = pivot[transition].values
+        y_vals = pivot.index.tolist()
+        text_vals = []
+        for g_idx, g in enumerate(y_vals):
+            avg_days = x_vals[g_idx]
+            cnt = counts.loc[g, transition] if transition in counts.columns else 0
+            text_vals.append(f"{avg_days:.1f}天 | {int(cnt)}")
+        fig.add_trace(go.Bar(
+            y=y_vals,
+            x=x_vals,
+            name=transition,
+            orientation='h',
+            text=text_vals,
+            textposition='inside',
+            hovertemplate="<b>%{y}</b><br>%{fullData.name}<br>平均: %{x:.2f}天<br>数量: %{text}<extra></extra>"
+        ))
+    
+    fig = apply_chart_style(fig, "Phase Transition 平均耗时（分组堆叠）", "平均耗时（天）", "分组", 420)
+    fig.update_layout(barmode='stack', legend_orientation='h', legend_yanchor='bottom', legend_y=-0.25)
+    return fig
 
 # 长跑趋势图
 @app.callback(

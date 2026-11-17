@@ -1,0 +1,1257 @@
+matrix_bucket,top_aida,defect_count,matrix_total,share_in_matrix,aida_total,share_in_aida
+1A,Stability,38,279,0.1362,318,0.1195
+1A,"Enable Registration, Login, Mapping [01.04.01.08.01]",35,279,0.1254,105,0.3333
+1A,CarPlay [01.04.01.07.02],24,279,0.086,248,0.0968
+1A,Provide Navigation 2.0 [01.04.03.01.03.06],16,279,0.0573,705,0.0227
+1A,Voice Interface [01.04.02.01.01.02],13,279,0.0466,626,0.0208
+1A,Personalization: User Account Setup [01.04.01.08.10],11,279,0.0394,43,0.2558
+1A,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],9,279,0.0323,133,0.0677
+1A,Android Auto [01.04.01.07.01],7,279,0.0251,22,0.3182
+1A,Base Audio [01.04.04.01.01.04.01],7,279,0.0251,127,0.0551
+1A,Change Audio Volume [01.04.04.01.01.01],7,279,0.0251,74,0.0946
+1A,Use Speech operation [01.04.02.01.01.05],7,279,0.0251,580,0.0121
+1A,Enable User Management [01.04.01.08.03],6,279,0.0215,30,0.2
+1A,Video streaming China [01.04.01.06.05],6,279,0.0215,147,0.0408
+1A,Guiding [01.04.03.01.03.02.03],5,279,0.0179,259,0.0193
+1A,Performance,5,279,0.0179,50,0.1
+1A,Itinerary (Mobile App) [01.04.03.01.01.07.09],4,279,0.0143,411,0.0097
+1A,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],4,279,0.0143,95,0.0421
+1A,Provide Launcher  [01.04.02.03.01.01.09],4,279,0.0143,108,0.037
+1A,Provisioning International Speller [01.04.02.03.01.01.06],4,279,0.0143,69,0.058
+1A,Accident Call (Accident Help) [01.04.02.01.03.03.01],3,279,0.0108,10,0.3
+1A,Manage CoDU in In-Car-Store [01.04.01.05.03.01],3,279,0.0108,137,0.0219
+1A,Play audio via Bluetooth [01.04.01.01.04.02],3,279,0.0108,76,0.0395
+1A,Play audio via USB [01.04.01.01.04.04],3,279,0.0108,23,0.1304
+1A,Provide App Center China [01.04.01.06.09],3,279,0.0108,65,0.0462
+1A,Telephony via customer device [01.04.01.04.01.01],3,279,0.0108,52,0.0577
+1A,Data Privacy menu - Client part [01.05.02.09.03.02],2,279,0.0072,14,0.1429
+1A,Display of User Manual [01.04.02.03.01.01.08.01],2,279,0.0072,24,0.0833
+1A,Display weather [01.04.01.05.01.03],2,279,0.0072,74,0.027
+1A,HUD Settings [01.04.02.03.04.01.02],2,279,0.0072,7,0.2857
+1A,Implement BMW Lens [01.04.02.02.01.04.09],2,279,0.0072,32,0.0625
+1A,PaDi Remote Control via BMT [01.04.04.01.05.12],2,279,0.0072,4,0.5
+1A,Remote Services [01.04.02.02.01.01.01],2,279,0.0072,20,0.1
+1A,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],2,279,0.0072,66,0.0303
+1A,3rd party video streaming enablement [01.04.01.02.04],1,279,0.0036,3,0.3333
+1A,Adjust Audio Volume: mute [01.04.02.01.04.06.14],1,279,0.0036,1,1.0
+1A,Audio Diagnostics [01.04.04.01.02.01],1,279,0.0036,1,1.0
+1A,BS2,1,279,0.0036,12,0.0833
+1A,Basic Vehicle Connectivity [01.04.04.02.02.02],1,279,0.0036,88,0.0114
+1A,Change Audio Sound Settings [01.04.04.01.01.02],1,279,0.0036,35,0.0286
+1A,Connected Music China [01.04.01.06.04],1,279,0.0036,144,0.0069
+1A,Consumer e-SIM Management [01.04.04.02.02.01],1,279,0.0036,3,0.3333
+1A,Deep-Sleep-Mode [01.05.01.03.03.06],1,279,0.0036,1,1.0
+1A,Display Touch Control [01.04.02.03.01.01.04],1,279,0.0036,60,0.0167
+1A,Display of Legal Disclaimer  [01.04.02.03.01.01.02],1,279,0.0036,5,0.2
+1A,Enable Multisession [01.04.01.08.04],1,279,0.0036,1,1.0
+1A,IPA Interactive Elements provided [01.04.02.01.02.01.03],1,279,0.0036,139,0.0072
+1A,IPA Visualization  [01.04.02.01.02.01.01],1,279,0.0036,44,0.0227
+1A,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,279,0.0036,23,0.0435
+1A,Map [01.04.03.01.03.02.01],1,279,0.0036,70,0.0143
+1A,PHUD Services,1,279,0.0036,5,0.2
+1A,POI Functions ASIA [01.04.03.01.02.05],1,279,0.0036,13,0.0769
+1A,PaDi Android Basic System [01.04.04.01.05.01],1,279,0.0036,5,0.2
+1A,PaDi View and Audio Settings [01.04.04.01.05.19],1,279,0.0036,9,0.1111
+1A,Parking Assistant [01.02.02.15.04.03.01],1,279,0.0036,5,0.2
+1A,Personalization: User Account Use [01.04.01.08.11],1,279,0.0036,24,0.0417
+1A,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,279,0.0036,17,0.0588
+1A,Provide Audio Equalizer [01.04.04.01.01.03],1,279,0.0036,1,1.0
+1A,Provide Festival Mode [01.04.02.01.04.08],1,279,0.0036,110,0.0091
+1A,Provide Karaoke Service [01.04.01.06.10],1,279,0.0036,76,0.0132
+1A,Reachable POI (Mobile App) [01.04.03.02.02.02.04],1,279,0.0036,1,1.0
+1A,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,279,0.0036,27,0.037
+1A,Setting system language [01.04.04.01.03.12],1,279,0.0036,16,0.0625
+1A,Telephony via second customer device [01.04.01.04.01.02],1,279,0.0036,5,0.2
+1A,Use Co-Driver Entertainment [01.04.01.09.03],1,279,0.0036,21,0.0476
+1A,[Sys_RSU] 70 Finalizing the RSU activation [01.05.02.08.07.25],1,279,0.0036,1,1.0
+1A,provide eCall [01.04.02.01.03.03.02],1,279,0.0036,28,0.0357
+1B,Base Audio [01.04.04.01.01.04.01],11,60,0.1833,127,0.0866
+1B,Stability,11,60,0.1833,318,0.0346
+1B,CarPlay [01.04.01.07.02],7,60,0.1167,248,0.0282
+1B,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],4,60,0.0667,133,0.0301
+1B,Performance,4,60,0.0667,50,0.08
+1B,Provide Navigation 2.0 [01.04.03.01.03.06],4,60,0.0667,705,0.0057
+1B,Telephony via customer device [01.04.01.04.01.01],3,60,0.05,52,0.0577
+1B,Change Audio Volume [01.04.04.01.01.01],2,60,0.0333,74,0.027
+1B,"Enable Registration, Login, Mapping [01.04.01.08.01]",2,60,0.0333,105,0.019
+1B,Personalization: User Account Setup [01.04.01.08.10],2,60,0.0333,43,0.0465
+1B,Play audio via Bluetooth [01.04.01.01.04.02],2,60,0.0333,76,0.0263
+1B,Use Co-Driver Entertainment [01.04.01.09.03],2,60,0.0333,21,0.0952
+1B,Enable User Management [01.04.01.08.03],1,60,0.0167,30,0.0333
+1B,PHUD Services,1,60,0.0167,5,0.2
+1B,Personalization: User Account Use [01.04.01.08.11],1,60,0.0167,24,0.0417
+1B,Provide Snapshot [01.04.02.02.01.04.04],1,60,0.0167,36,0.0278
+1B,Turn signaling/turn indicator (FRAZ) [01.03.03.01.12.05],1,60,0.0167,1,1.0
+1B,provide eCall [01.04.02.01.03.03.02],1,60,0.0167,28,0.0357
+1C,Stability,71,345,0.2058,318,0.2233
+1C,Provide Navigation 2.0 [01.04.03.01.03.06],37,345,0.1072,705,0.0525
+1C,Base Audio [01.04.04.01.01.04.01],34,345,0.0986,127,0.2677
+1C,"Enable Registration, Login, Mapping [01.04.01.08.01]",19,345,0.0551,105,0.181
+1C,Performance,16,345,0.0464,50,0.32
+1C,Use Speech operation [01.04.02.01.01.05],15,345,0.0435,580,0.0259
+1C,provide HUAWEI HiCar [01.04.01.06.13],14,345,0.0406,262,0.0534
+1C,Voice Interface [01.04.02.01.01.02],12,345,0.0348,626,0.0192
+1C,Change Audio Volume [01.04.04.01.01.01],11,345,0.0319,74,0.1486
+1C,CarPlay [01.04.01.07.02],10,345,0.029,248,0.0403
+1C,Guiding [01.04.03.01.03.02.03],8,345,0.0232,259,0.0309
+1C,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],7,345,0.0203,133,0.0526
+1C,Basic Vehicle Connectivity [01.04.04.02.02.02],6,345,0.0174,88,0.0682
+1C,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],6,345,0.0174,95,0.0632
+1C,Personalization: User Account Use [01.04.01.08.11],6,345,0.0174,24,0.25
+1C,Provide Launcher  [01.04.02.03.01.01.09],6,345,0.0174,108,0.0556
+1C,IPA Interactive Elements provided [01.04.02.01.02.01.03],5,345,0.0145,139,0.036
+1C,Personalization: User Account Setup [01.04.01.08.10],5,345,0.0145,43,0.1163
+1C,Provisioning International Speller [01.04.02.03.01.01.06],4,345,0.0116,69,0.058
+1C,IPA Visualization  [01.04.02.01.02.01.01],3,345,0.0087,44,0.0682
+1C,Implement BMW Lens [01.04.02.02.01.04.09],3,345,0.0087,32,0.0938
+1C,Manage CoDU in In-Car-Store [01.04.01.05.03.01],3,345,0.0087,137,0.0219
+1C,Provide Festival Mode [01.04.02.01.04.08],3,345,0.0087,110,0.0273
+1C,Video streaming China [01.04.01.06.05],3,345,0.0087,147,0.0204
+1C,Display Touch Control [01.04.02.03.01.01.04],2,345,0.0058,60,0.0333
+1C,Functional Bookmark Control [01.04.02.03.01.01.03],2,345,0.0058,53,0.0377
+1C,Itinerary (Mobile App) [01.04.03.01.01.07.09],2,345,0.0058,411,0.0049
+1C,PaDi Android Basic System [01.04.04.01.05.01],2,345,0.0058,5,0.4
+1C,Play audio via Bluetooth [01.04.01.01.04.02],2,345,0.0058,76,0.0263
+1C,Telephony via customer device [01.04.01.04.01.01],2,345,0.0058,52,0.0385
+1C,ZBE Control [01.04.02.03.01.01.05],2,345,0.0058,24,0.0833
+1C,provide eCall [01.04.02.01.03.03.02],2,345,0.0058,28,0.0714
+1C,Accident Call (Accident Help) [01.04.02.01.03.03.01],1,345,0.0029,10,0.1
+1C,Contact Roadside Assistance [01.04.02.01.03.03.03],1,345,0.0029,33,0.0303
+1C,Data Privacy menu - Client part [01.05.02.09.03.02],1,345,0.0029,14,0.0714
+1C,Drive Recorder 21.0 [DriveRec21.0] [01.02.02.05.01],1,345,0.0029,7,0.1429
+1C,Enable User Management [01.04.01.08.03],1,345,0.0029,30,0.0333
+1C,Listen to AM/FM Radio  (Legacy < IDC Android) [01.04.01.01.01.01],1,345,0.0029,1,1.0
+1C,Manage BMW Apps [01.04.01.05.03.03],1,345,0.0029,18,0.0556
+1C,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,345,0.0029,23,0.0435
+1C,Manage and Plan Routes ASIA [01.04.03.01.02.06],1,345,0.0029,22,0.0455
+1C,Map [01.04.03.01.03.02.01],1,345,0.0029,70,0.0143
+1C,PaDi View and Audio Settings [01.04.04.01.05.19],1,345,0.0029,9,0.1111
+1C,Park View 21.0 [ParkVi21.0] [01.02.02.05.02.04],1,345,0.0029,10,0.1
+1C,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,345,0.0029,17,0.0588
+1C,Positioning ASIA [01.04.03.01.02.01.02],1,345,0.0029,6,0.1667
+1C,Provide 3rd party gaming enablement [01.04.01.02.03],1,345,0.0029,67,0.0149
+1C,Provide SHUD Driver Assistance [01.04.02.03.03.04],1,345,0.0029,5,0.2
+1C,QQ Music [01.04.01.06.04.02],1,345,0.0029,32,0.0312
+1C,Rear View [01.02.02.15.04.01.03],1,345,0.0029,1,1.0
+1C,Tencent WeChat [01.04.01.06.02],1,345,0.0029,13,0.0769
+1C,Use App Store China  [01.04.01.06.07],1,345,0.0029,43,0.0233
+1C,Use Rear Seat Entertainment [01.04.01.09.02],1,345,0.0029,22,0.0455
+1C,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],1,345,0.0029,66,0.0152
+1D,CarPlay [01.04.01.07.02],15,108,0.1389,248,0.0605
+1D,Stability,15,108,0.1389,318,0.0472
+1D,Provide Navigation 2.0 [01.04.03.01.03.06],11,108,0.1019,705,0.0156
+1D,Guiding [01.04.03.01.03.02.03],7,108,0.0648,259,0.027
+1D,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],6,108,0.0556,95,0.0632
+1D,Base Audio [01.04.04.01.01.04.01],5,108,0.0463,127,0.0394
+1D,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],5,108,0.0463,133,0.0376
+1D,Park View 21.0 [ParkVi21.0] [01.02.02.05.02.04],5,108,0.0463,10,0.5
+1D,Play audio via Bluetooth [01.04.01.01.04.02],5,108,0.0463,76,0.0658
+1D,Basic Vehicle Connectivity [01.04.04.02.02.02],4,108,0.037,88,0.0455
+1D,Use Speech operation [01.04.02.01.01.05],4,108,0.037,580,0.0069
+1D,provide HUAWEI HiCar [01.04.01.06.13],3,108,0.0278,262,0.0115
+1D,Park View [ParkVi] [01.02.02.09.05.03],2,108,0.0185,2,1.0
+1D,Telephony via customer device [01.04.01.04.01.01],2,108,0.0185,52,0.0385
+1D,Video streaming China [01.04.01.06.05],2,108,0.0185,147,0.0136
+1D,Android Auto [01.04.01.07.01],1,108,0.0093,22,0.0455
+1D,Change Audio Volume [01.04.04.01.01.01],1,108,0.0093,74,0.0135
+1D,Consolidate and display Journey Data [01.01.02.06],1,108,0.0093,1,1.0
+1D,Display Touch Control [01.04.02.03.01.01.04],1,108,0.0093,60,0.0167
+1D,HMI Parking Camera display and operation [01.02.02.05.02.01.02],1,108,0.0093,1,1.0
+1D,HUD Services,1,108,0.0093,3,0.3333
+1D,Itinerary (Mobile App) [01.04.03.01.01.07.09],1,108,0.0093,411,0.0024
+1D,Manage Privacy Settings [01.04.01.08.12],1,108,0.0093,15,0.0667
+1D,Manage and Plan Routes ASIA [01.04.03.01.02.06],1,108,0.0093,22,0.0455
+1D,Park View [01.02.02.15.04.01.02],1,108,0.0093,2,0.5
+1D,Parking Assist View with PDC providing [01.02.02.15.04.01.02.17],1,108,0.0093,1,1.0
+1D,Parking Assistant [01.02.02.15.04.03.01],1,108,0.0093,5,0.2
+1D,Performance,1,108,0.0093,50,0.02
+1D,Provide Festival Mode [01.04.02.01.04.08],1,108,0.0093,110,0.0091
+1D,Provide Karaoke Service [01.04.01.06.10],1,108,0.0093,76,0.0132
+1D,Provide WiFi Client for external communication and tethering [01.04.04.02.05.04],1,108,0.0093,1,1.0
+1D,display assisted view [01.02.02.15.02.19],1,108,0.0093,4,0.25
+1E,Stability,141,303,0.4653,318,0.4434
+1E,Guiding [01.04.03.01.03.02.03],25,303,0.0825,259,0.0965
+1E,Provide Navigation 2.0 [01.04.03.01.03.06],15,303,0.0495,705,0.0213
+1E,Base Audio [01.04.04.01.01.04.01],13,303,0.0429,127,0.1024
+1E,Guiding ASIA [01.04.03.01.02.08],12,303,0.0396,100,0.12
+1E,CarPlay [01.04.01.07.02],9,303,0.0297,248,0.0363
+1E,Voice Interface [01.04.02.01.01.02],8,303,0.0264,626,0.0128
+1E,Use Speech operation [01.04.02.01.01.05],7,303,0.0231,580,0.0121
+1E,Connected Music China [01.04.01.06.04],5,303,0.0165,144,0.0347
+1E,Performance,5,303,0.0165,50,0.1
+1E,Personalization: User Account Setup [01.04.01.08.10],5,303,0.0165,43,0.1163
+1E,"Enable Registration, Login, Mapping [01.04.01.08.01]",4,303,0.0132,105,0.0381
+1E,Personalization: User Account Use [01.04.01.08.11],4,303,0.0132,24,0.1667
+1E,Basic Vehicle Connectivity [01.04.04.02.02.02],3,303,0.0099,88,0.0341
+1E,Display Touch Control [01.04.02.03.01.01.04],3,303,0.0099,60,0.05
+1E,Provisioning International Speller [01.04.02.03.01.01.06],3,303,0.0099,69,0.0435
+1E,Change Audio Volume [01.04.04.01.01.01],2,303,0.0066,74,0.027
+1E,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],2,303,0.0066,133,0.015
+1E,Manage and Plan Routes ASIA [01.04.03.01.02.06],2,303,0.0066,22,0.0909
+1E,Park View 21.0 [ParkVi21.0] [01.02.02.05.02.04],2,303,0.0066,10,0.2
+1E,Play audio via Bluetooth [01.04.01.01.04.02],2,303,0.0066,76,0.0263
+1E,Provide Karaoke Service [01.04.01.06.10],2,303,0.0066,76,0.0263
+1E,Provide Launcher  [01.04.02.03.01.01.09],2,303,0.0066,108,0.0185
+1E,Video streaming China [01.04.01.06.05],2,303,0.0066,147,0.0136
+1E,provide HUAWEI HiCar [01.04.01.06.13],2,303,0.0066,262,0.0076
+1E,Call Customer service [01.04.02.01.03.03.06],1,303,0.0033,6,0.1667
+1E,Contact Roadside Assistance [01.04.02.01.03.03.03],1,303,0.0033,33,0.0303
+1E,Date and Time Settings [01.04.04.01.03.07],1,303,0.0033,16,0.0625
+1E,Display weather [01.04.01.05.01.03],1,303,0.0033,74,0.0135
+1E,Festival Mode [01.04.02.01.02.01.04],1,303,0.0033,27,0.037
+1E,IC-HMI_digital display of current speed [01.04.04.01.03.10.25],1,303,0.0033,1,1.0
+1E,IPA Interactive Elements provided [01.04.02.01.02.01.03],1,303,0.0033,139,0.0072
+1E,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],1,303,0.0033,95,0.0105
+1E,Manage BMW Apps [01.04.01.05.03.03],1,303,0.0033,18,0.0556
+1E,Manage CoDU in In-Car-Store [01.04.01.05.03.01],1,303,0.0033,137,0.0073
+1E,Map [01.04.03.01.03.02.01],1,303,0.0033,70,0.0143
+1E,PHUD Services,1,303,0.0033,5,0.2
+1E,Parking Assistant [01.02.02.15.04.03.01],1,303,0.0033,5,0.2
+1E,Parking [01.03.01.02.06.03],1,303,0.0033,1,1.0
+1E,Provide CDE Launcher [01.04.01.09.03.01],1,303,0.0033,26,0.0385
+1E,Provide Festival Mode [01.04.02.01.04.08],1,303,0.0033,110,0.0091
+1E,Provide SHUD Driver Assistance [01.04.02.03.03.04],1,303,0.0033,5,0.2
+1E,QQ Music [01.04.01.06.04.02],1,303,0.0033,32,0.0312
+1E,Route planning and management [01.04.03.01.03.02.02],1,303,0.0033,17,0.0588
+1E,Smart Access / Digital Key (Plus) [01.03.03.03.04],1,303,0.0033,29,0.0345
+1E,Telephony via customer device [01.04.01.04.01.01],1,303,0.0033,52,0.0192
+1E,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],1,303,0.0033,41,0.0244
+1E,eRoute [01.04.03.01.07],1,303,0.0033,19,0.0526
+2A,Itinerary (Mobile App) [01.04.03.01.01.07.09],193,1165,0.1657,411,0.4696
+2A,Use Speech operation [01.04.02.01.01.05],114,1165,0.0979,580,0.1966
+2A,Provide Navigation 2.0 [01.04.03.01.03.06],71,1165,0.0609,705,0.1007
+2A,Manage CoDU in In-Car-Store [01.04.01.05.03.01],63,1165,0.0541,137,0.4599
+2A,Voice Interface [01.04.02.01.01.02],38,1165,0.0326,626,0.0607
+2A,CarPlay [01.04.01.07.02],28,1165,0.024,248,0.1129
+2A,Guiding [01.04.03.01.03.02.03],25,1165,0.0215,259,0.0965
+2A,Provide Festival Mode [01.04.02.01.04.08],25,1165,0.0215,110,0.2273
+2A,provide HUAWEI HiCar [01.04.01.06.13],25,1165,0.0215,262,0.0954
+2A,Video streaming China [01.04.01.06.05],20,1165,0.0172,147,0.1361
+2A,IPA Interactive Elements provided [01.04.02.01.02.01.03],19,1165,0.0163,139,0.1367
+2A,Provide Snapshot [01.04.02.02.01.04.04],16,1165,0.0137,36,0.4444
+2A,"Enable Registration, Login, Mapping [01.04.01.08.01]",15,1165,0.0129,105,0.1429
+2A,Connected Music China [01.04.01.06.04],14,1165,0.012,144,0.0972
+2A,Smart Access / Digital Key (Plus) [01.03.03.03.04],14,1165,0.012,29,0.4828
+2A,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],13,1165,0.0112,95,0.1368
+2A,Charge CE Device Wireless [01.04.01.03.01.03],11,1165,0.0094,32,0.3438
+2A,Functional Bookmark Control [01.04.02.03.01.01.03],11,1165,0.0094,53,0.2075
+2A,Map [01.04.03.01.03.02.01],11,1165,0.0094,70,0.1571
+2A,Provide 3rd party gaming enablement [01.04.01.02.03],11,1165,0.0094,67,0.1642
+2A,Provide App Center China [01.04.01.06.09],11,1165,0.0094,65,0.1692
+2A,Provide Launcher  [01.04.02.03.01.01.09],11,1165,0.0094,108,0.1019
+2A,Base Audio [01.04.04.01.01.04.01],10,1165,0.0086,127,0.0787
+2A,Display of User Manual [01.04.02.03.01.01.08.01],10,1165,0.0086,24,0.4167
+2A,Display weather [01.04.01.05.01.03],10,1165,0.0086,74,0.1351
+2A,Change Audio Volume [01.04.04.01.01.01],9,1165,0.0077,74,0.1216
+2A,Festival Mode [01.04.02.01.02.01.04],9,1165,0.0077,27,0.3333
+2A,Personalization: User Account Setup [01.04.01.08.10],9,1165,0.0077,43,0.2093
+2A,Provide IPA interactive Elements China [01.04.02.01.02.01.03.01],9,1165,0.0077,14,0.6429
+2A,Provisioning International Speller [01.04.02.03.01.01.06],9,1165,0.0077,69,0.1304
+2A,provide eCall [01.04.02.01.03.03.02],9,1165,0.0077,28,0.3214
+2A,Guiding ASIA [01.04.03.01.02.08],8,1165,0.0069,100,0.08
+2A,Provide Karaoke Service [01.04.01.06.10],8,1165,0.0069,76,0.1053
+2A,Change Audio Sound Settings [01.04.04.01.01.02],7,1165,0.006,35,0.2
+2A,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],7,1165,0.006,41,0.1707
+2A,Use App Store China  [01.04.01.06.07],7,1165,0.006,43,0.1628
+2A,eRoute [01.04.03.01.07],7,1165,0.006,19,0.3684
+2A,Advanced destination input & POI functions [01.04.03.01.03.03.02],6,1165,0.0052,20,0.3
+2A,Contact Roadside Assistance [01.04.02.01.03.03.03],6,1165,0.0052,33,0.1818
+2A,Data Privacy menu - Master part [01.05.02.09.03.01],6,1165,0.0052,21,0.2857
+2A,Display Touch Control [01.04.02.03.01.01.04],6,1165,0.0052,60,0.1
+2A,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],6,1165,0.0052,133,0.0451
+2A,Telephony via customer device [01.04.01.04.01.01],6,1165,0.0052,52,0.1154
+2A,Augmented Reality Video CID [01.04.02.03.03.01],5,1165,0.0043,27,0.1852
+2A,Data Privacy menu - Client part [01.05.02.09.03.02],5,1165,0.0043,14,0.3571
+2A,Display Settings (CID) [01.04.02.03.01.01.07.01],5,1165,0.0043,48,0.1042
+2A,Enable User Management [01.04.01.08.03],5,1165,0.0043,30,0.1667
+2A,Implement BMW Lens [01.04.02.02.01.04.09],5,1165,0.0043,32,0.1562
+2A,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],5,1165,0.0043,23,0.2174
+2A,Open My Highlights App from the Update Center [01.05.02.12.02.15],5,1165,0.0043,8,0.625
+2A,Play audio via Bluetooth [01.04.01.01.04.02],5,1165,0.0043,76,0.0658
+2A,Play audio via USB [01.04.01.01.04.04],5,1165,0.0043,23,0.2174
+2A,Remote 360 21.0 [Remote36021.0] [01.02.02.05.03],5,1165,0.0043,6,0.8333
+2A,SWO Vehicle [01.04.02.01.02.01.06.01],5,1165,0.0043,14,0.3571
+2A,Basic Vehicle Connectivity [01.04.04.02.02.02],4,1165,0.0034,88,0.0455
+2A,Display map ASIA [01.04.03.01.02.04],4,1165,0.0034,15,0.2667
+2A,Manage BMW Apps [01.04.01.05.03.03],4,1165,0.0034,18,0.2222
+2A,Manage SMS Messages [01.04.01.04.02.01.04.02],4,1165,0.0034,13,0.3077
+2A,Manage and Plan Routes ASIA [01.04.03.01.02.06],4,1165,0.0034,22,0.1818
+2A,Performance,4,1165,0.0034,50,0.08
+2A,Provide Remote in Car View [01.04.02.02.01.04.05],4,1165,0.0034,5,0.8
+2A,Provide SHUD Navigation [01.04.02.03.03.03],4,1165,0.0034,17,0.2353
+2A,Remote Services [01.04.02.02.01.01.01],4,1165,0.0034,20,0.2
+2A,Stability,4,1165,0.0034,318,0.0126
+2A,Use Third Party App Store [01.04.01.05.03.02],4,1165,0.0034,17,0.2353
+2A,ZBE Control [01.04.02.03.01.01.05],4,1165,0.0034,24,0.1667
+2A,Call Customer service [01.04.02.01.03.03.06],3,1165,0.0026,6,0.5
+2A,Drive Recorder 21.0 [DriveRec21.0] [01.02.02.05.01],3,1165,0.0026,7,0.4286
+2A,Drive Recorder V3 [01.02.02.15.04.02.02],3,1165,0.0026,6,0.5
+2A,IPA Routines provided [01.04.02.01.02.01.06],3,1165,0.0026,12,0.25
+2A,IPA Visualization  [01.04.02.01.02.01.01],3,1165,0.0026,44,0.0682
+2A,My Modes [01.04.02.01.04.03],3,1165,0.0026,18,0.1667
+2A,PaDi View and Audio Settings [01.04.04.01.05.19],3,1165,0.0026,9,0.3333
+2A,Personalization: User Account Use [01.04.01.08.11],3,1165,0.0026,24,0.125
+2A,Remote teleservice diagnosis [01.04.02.02.01.01.02],3,1165,0.0026,11,0.2727
+2A,Traffic Info ASIA [01.04.03.01.02.07],3,1165,0.0026,9,0.3333
+2A,Use PaDi China App Store [01.04.04.01.05.20],3,1165,0.0026,6,0.5
+2A,Video Streaming ROW [01.04.01.02.02.05],3,1165,0.0026,3,1.0
+2A,Accident Call (Accident Help) [01.04.02.01.03.03.01],2,1165,0.0017,10,0.2
+2A,Ambient lighting [01.03.01.03.01],2,1165,0.0017,2,1.0
+2A,Date and Time Settings [01.04.04.01.03.07],2,1165,0.0017,16,0.125
+2A,Departure time and timer (BEV/PHEV) [01.01.08.16.08],2,1165,0.0017,2,1.0
+2A,Digital Keyring [01.04.01.06.06],2,1165,0.0017,3,0.6667
+2A,Display of Legal Disclaimer  [01.04.02.03.01.01.02],2,1165,0.0017,5,0.4
+2A,Gesture Control [01.04.02.01.01.01.01],2,1165,0.0017,2,1.0
+2A,HMI Exterior light Main light functions display and operation [01.04.04.01.04.02.01.10],2,1165,0.0017,2,1.0
+2A,Handsfree Telephony in the rear seats [01.04.01.04.01.04],2,1165,0.0017,5,0.4
+2A,Implement basic platform of Vehicle-to-Everything (V2X) Communication [01.04.04.02.05.01],2,1165,0.0017,3,0.6667
+2A,Manage Privacy Settings [01.04.01.08.12],2,1165,0.0017,15,0.1333
+2A,Navigation Destination Input ASIA [01.04.03.01.02.03],2,1165,0.0017,5,0.4
+2A,Privacy States [01.04.02.01.02.01.08],2,1165,0.0017,8,0.25
+2A,Provide CDE Launcher [01.04.01.09.03.01],2,1165,0.0017,26,0.0769
+2A,Provide My Modes  [01.04.02.01.04.06],2,1165,0.0017,10,0.2
+2A,Provide RSE Launcher [01.04.01.09.02.01],2,1165,0.0017,13,0.1538
+2A,Receive notification in BMW Messages [01.04.02.02.01.01.03],2,1165,0.0017,27,0.0741
+2A,Report automatical service demand via teleservice [01.04.02.01.03.03.04.01],2,1165,0.0017,3,0.6667
+2A,Route planning and management [01.04.03.01.03.02.02],2,1165,0.0017,17,0.1176
+2A,Setting system language [01.04.04.01.03.12],2,1165,0.0017,16,0.125
+2A,Unit Display Settings [01.04.04.01.03.09],2,1165,0.0017,3,0.6667
+2A,display assisted view [01.02.02.15.02.19],2,1165,0.0017,4,0.5
+2A,3rd party audio streaming enablement [01.04.01.01.06],1,1165,0.0009,4,0.25
+2A,3rd party video streaming enablement [01.04.01.02.04],1,1165,0.0009,3,0.3333
+2A,Android Auto [01.04.01.07.01],1,1165,0.0009,22,0.0455
+2A,Avoid Driver Distraction from FPD [01.04.01.09.01],1,1165,0.0009,1,1.0
+2A,BS2,1,1165,0.0009,12,0.0833
+2A,BT Child Seat App connection [01.06.02.04.04.04],1,1165,0.0009,2,0.5
+2A,Charging display and operate [01.01.08.16],1,1165,0.0009,2,0.5
+2A,Child Presence Detection  [01.06.02.04.02],1,1165,0.0009,1,1.0
+2A,Child safety lock (seat functions) [01.03.02.02.08.02],1,1165,0.0009,1,1.0
+2A,Consolidate and display powermeter and power reserve [01.01.02.04],1,1165,0.0009,1,1.0
+2A,Consumer e-SIM Management [01.04.04.02.02.01],1,1165,0.0009,3,0.3333
+2A,Destination Input [01.04.03.01.03.02.05],1,1165,0.0009,2,0.5
+2A,Display & operation in the rear of entertainment sources (BMT) [01.04.01.03.02.02],1,1165,0.0009,6,0.1667
+2A,Display Check-Control-Message and telltales [01.04.04.01.03.03],1,1165,0.0009,3,0.3333
+2A,Display Contacts [01.04.01.04.01.05.02.01],1,1165,0.0009,2,0.5
+2A,Display and operation of PaDi BMW widgets [01.04.04.01.05.10],1,1165,0.0009,2,0.5
+2A,Drive-off assistant [01.02.03.04.01],1,1165,0.0009,1,1.0
+2A,Driver Attention Monitoring System implementation [01.04.02.02.01.04.06.03],1,1165,0.0009,1,1.0
+2A,Easy Charge [01.04.03.02.02.03],1,1165,0.0009,2,0.5
+2A,Experience Modes [01.04.02.01.04.01],1,1165,0.0009,1,1.0
+2A,In-Car Cognition (ICC) [01.04.01.08.11.03],1,1165,0.0009,2,0.5
+2A,Indoor Parking China [01.04.03.01.05.01],1,1165,0.0009,7,0.1429
+2A,Kombi Display Settings [01.04.04.01.03.08],1,1165,0.0009,6,0.1667
+2A,Location Based Charging Settings [01.04.03.02.03.04],1,1165,0.0009,1,1.0
+2A,MSA-operation strategy [01.01.04.04.01.07],1,1165,0.0009,1,1.0
+2A,Operation of steering wheel buttons [01.01.02.12.08],1,1165,0.0009,1,1.0
+2A,POI Functions ASIA [01.04.03.01.02.05],1,1165,0.0009,13,0.0769
+2A,PaDi - Pre-installed China VoD app (iQiyi) [01.04.04.01.05.06],1,1165,0.0009,4,0.25
+2A,Panoramadisplay Kinematik [01.03.05.03.05],1,1165,0.0009,2,0.5
+2A,Park Distance Control V2.5 [01.02.02.15.04.01.04],1,1165,0.0009,2,0.5
+2A,Parking Assistant [01.02.02.15.04.03.01],1,1165,0.0009,5,0.2
+2A,Parking Finder China [01.04.03.01.05.02],1,1165,0.0009,6,0.1667
+2A,Play audio via Entertainment Server [01.04.01.01.04.03],1,1165,0.0009,2,0.5
+2A,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,1165,0.0009,17,0.0588
+2A,Positioning ASIA [01.04.03.01.02.01.02],1,1165,0.0009,6,0.1667
+2A,Provide 3rd Party Gaming App [01.04.01.02.03.05],1,1165,0.0009,8,0.125
+2A,Provide Child Seat App [01.04.01.06.12],1,1165,0.0009,3,0.3333
+2A,Provide Light follows Sound [01.04.01.01.05],1,1165,0.0009,2,0.5
+2A,Provide Showroom mode [01.05.02.01.14],1,1165,0.0009,3,0.3333
+2A,Provide Storage and synchronization of data [01.04.01.08.06],1,1165,0.0009,2,0.5
+2A,Provide update content [01.04.01.08.13],1,1165,0.0009,2,0.5
+2A,Provide voice control Entertainment [01.04.01.06.04.08],1,1165,0.0009,1,1.0
+2A,QQ Music [01.04.01.06.04.02],1,1165,0.0009,32,0.0312
+2A,Remote Theft Recorder 21.0 [RTRec21.0] [01.02.02.05.04],1,1165,0.0009,2,0.5
+2A,Report service issues via Teleservice [01.04.02.01.03.03.04],1,1165,0.0009,1,1.0
+2A,Send POIs and information to vehicle Google send to car [01.04.02.02.01.01.03.03],1,1165,0.0009,1,1.0
+2A,Show Release Notes [01.04.02.02.01.01.07.01],1,1165,0.0009,3,0.3333
+2A,Show drive notifications [01.01.02.02.05],1,1165,0.0009,1,1.0
+2A,Social Login [01.04.01.08.11.05],1,1165,0.0009,1,1.0
+2A,Speedlock Deaktivation for ADAS L3 [01.04.01.09.01.06],1,1165,0.0009,1,1.0
+2A,Tencent MPP - Multimedia [01.04.01.06.01.02],1,1165,0.0009,1,1.0
+2A,Tencent WeChat [01.04.01.06.02],1,1165,0.0009,13,0.0769
+2A,Tire pressure control (RDC) [01.02.03.03.02],1,1165,0.0009,1,1.0
+2A,Use Rear Seat Entertainment [01.04.01.09.02],1,1165,0.0009,22,0.0455
+2A,VAR Guiding CID [01.04.02.03.03.01.07],1,1165,0.0009,3,0.3333
+2A,Vehicle State Management implementation [01.05.01.06.01],1,1165,0.0009,1,1.0
+2A,[CoDU] Provide general functionality [01.04.02.04.01],1,1165,0.0009,2,0.5
+2A,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],1,1165,0.0009,66,0.0152
+2A,provide HiCar communication [01.04.01.06.13.07],1,1165,0.0009,2,0.5
+2B,CarPlay [01.04.01.07.02],7,54,0.1296,248,0.0282
+2B,Use Speech operation [01.04.02.01.01.05],5,54,0.0926,580,0.0086
+2B,Provide Navigation 2.0 [01.04.03.01.03.06],4,54,0.0741,705,0.0057
+2B,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],3,54,0.0556,95,0.0316
+2B,Stability,3,54,0.0556,318,0.0094
+2B,Augmented Reality Video CID [01.04.02.03.03.01],2,54,0.037,27,0.0741
+2B,Base Audio [01.04.04.01.01.04.01],2,54,0.037,127,0.0157
+2B,Contact Roadside Assistance [01.04.02.01.03.03.03],2,54,0.037,33,0.0606
+2B,Itinerary (Mobile App) [01.04.03.01.01.07.09],2,54,0.037,411,0.0049
+2B,Manage CoDU in In-Car-Store [01.04.01.05.03.01],2,54,0.037,137,0.0146
+2B,Performance,2,54,0.037,50,0.04
+2B,Basic Vehicle Connectivity [01.04.04.02.02.02],1,54,0.0185,88,0.0114
+2B,Charge CE Device Wireless [01.04.01.03.01.03],1,54,0.0185,32,0.0312
+2B,Enable User Management [01.04.01.08.03],1,54,0.0185,30,0.0333
+2B,Festival Mode [01.04.02.01.02.01.04],1,54,0.0185,27,0.037
+2B,Guiding [01.04.03.01.03.02.03],1,54,0.0185,259,0.0039
+2B,HUD Settings [01.04.02.03.04.01.02],1,54,0.0185,7,0.1429
+2B,Manage BMW Apps [01.04.01.05.03.03],1,54,0.0185,18,0.0556
+2B,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],1,54,0.0185,133,0.0075
+2B,Manage SMS Messages [01.04.01.04.02.01.04.02],1,54,0.0185,13,0.0769
+2B,PaDi View and Audio Settings [01.04.04.01.05.19],1,54,0.0185,9,0.1111
+2B,Parking Assistant [01.02.02.15.04.03.01],1,54,0.0185,5,0.2
+2B,Personalization: User Account Use [01.04.01.08.11],1,54,0.0185,24,0.0417
+2B,Provide SHUD Driver Assistance [01.04.02.03.03.04],1,54,0.0185,5,0.2
+2B,QQ Music [01.04.01.06.04.02],1,54,0.0185,32,0.0312
+2B,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,54,0.0185,27,0.037
+2B,Use Third Party App Store [01.04.01.05.03.02],1,54,0.0185,17,0.0588
+2B,Video streaming China [01.04.01.06.05],1,54,0.0185,147,0.0068
+2B,Voice Interface [01.04.02.01.01.02],1,54,0.0185,626,0.0016
+2B,provide HUAWEI HiCar [01.04.01.06.13],1,54,0.0185,262,0.0038
+2B,provide eCall [01.04.02.01.03.03.02],1,54,0.0185,28,0.0357
+2C,Use Speech operation [01.04.02.01.01.05],109,745,0.1463,580,0.1879
+2C,Provide Navigation 2.0 [01.04.03.01.03.06],89,745,0.1195,705,0.1262
+2C,Voice Interface [01.04.02.01.01.02],55,745,0.0738,626,0.0879
+2C,provide HUAWEI HiCar [01.04.01.06.13],42,745,0.0564,262,0.1603
+2C,Guiding [01.04.03.01.03.02.03],36,745,0.0483,259,0.139
+2C,Itinerary (Mobile App) [01.04.03.01.01.07.09],35,745,0.047,411,0.0852
+2C,Manage CoDU in In-Car-Store [01.04.01.05.03.01],19,745,0.0255,137,0.1387
+2C,CarPlay [01.04.01.07.02],18,745,0.0242,248,0.0726
+2C,Basic Vehicle Connectivity [01.04.04.02.02.02],17,745,0.0228,88,0.1932
+2C,Video streaming China [01.04.01.06.05],17,745,0.0228,147,0.1156
+2C,Connected Music China [01.04.01.06.04],16,745,0.0215,144,0.1111
+2C,Guiding ASIA [01.04.03.01.02.08],15,745,0.0201,100,0.15
+2C,Provide Karaoke Service [01.04.01.06.10],11,745,0.0148,76,0.1447
+2C,IPA Visualization  [01.04.02.01.02.01.01],10,745,0.0134,44,0.2273
+2C,Provide Launcher  [01.04.02.03.01.01.09],10,745,0.0134,108,0.0926
+2C,Provide Festival Mode [01.04.02.01.04.08],9,745,0.0121,110,0.0818
+2C,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],9,745,0.0121,41,0.2195
+2C,Base Audio [01.04.04.01.01.04.01],8,745,0.0107,127,0.063
+2C,Provisioning International Speller [01.04.02.03.01.01.06],8,745,0.0107,69,0.1159
+2C,Stability,8,745,0.0107,318,0.0252
+2C,Change Audio Volume [01.04.04.01.01.01],7,745,0.0094,74,0.0946
+2C,Display Touch Control [01.04.02.03.01.01.04],7,745,0.0094,60,0.1167
+2C,"Enable Registration, Login, Mapping [01.04.01.08.01]",7,745,0.0094,105,0.0667
+2C,Functional Bookmark Control [01.04.02.03.01.01.03],7,745,0.0094,53,0.1321
+2C,IPA Interactive Elements provided [01.04.02.01.02.01.03],7,745,0.0094,139,0.0504
+2C,QQ Music [01.04.01.06.04.02],7,745,0.0094,32,0.2188
+2C,ZBE Control [01.04.02.03.01.01.05],7,745,0.0094,24,0.2917
+2C,Display weather [01.04.01.05.01.03],6,745,0.0081,74,0.0811
+2C,Implement BMW Lens [01.04.02.02.01.04.09],6,745,0.0081,32,0.1875
+2C,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],6,745,0.0081,133,0.0451
+2C,Performance,6,745,0.0081,50,0.12
+2C,Remote Services [01.04.02.02.01.01.01],6,745,0.0081,20,0.3
+2C,Augmented Reality Video CID [01.04.02.03.03.01],5,745,0.0067,27,0.1852
+2C,Personalization: User Account Setup [01.04.01.08.10],5,745,0.0067,43,0.1163
+2C,Provide App Center China [01.04.01.06.09],5,745,0.0067,65,0.0769
+2C,Route planning and management [01.04.03.01.03.02.02],5,745,0.0067,17,0.2941
+2C,Telephony via customer device [01.04.01.04.01.01],5,745,0.0067,52,0.0962
+2C,Manage and Plan Routes ASIA [01.04.03.01.02.06],4,745,0.0054,22,0.1818
+2C,Map [01.04.03.01.03.02.01],4,745,0.0054,70,0.0571
+2C,Provide 3rd party gaming enablement [01.04.01.02.03],4,745,0.0054,67,0.0597
+2C,Tencent WeChat [01.04.01.06.02],4,745,0.0054,13,0.3077
+2C,Date and Time Settings [01.04.04.01.03.07],3,745,0.004,16,0.1875
+2C,Enable User Management [01.04.01.08.03],3,745,0.004,30,0.1
+2C,Parking Finder China [01.04.03.01.05.02],3,745,0.004,6,0.5
+2C,Personal Assistant - Widget [01.04.02.01.02.01.02],3,745,0.004,11,0.2727
+2C,Provide Snapshot [01.04.02.02.01.04.04],3,745,0.004,36,0.0833
+2C,Receive notification in BMW Messages [01.04.02.02.01.01.03],3,745,0.004,27,0.1111
+2C,provide eCall [01.04.02.01.03.03.02],3,745,0.004,28,0.1071
+2C,Charge CE Device Wireless [01.04.01.03.01.03],2,745,0.0027,32,0.0625
+2C,Contact Roadside Assistance [01.04.02.01.03.03.03],2,745,0.0027,33,0.0606
+2C,Data Privacy menu - Client part [01.05.02.09.03.02],2,745,0.0027,14,0.1429
+2C,Data Privacy menu - Master part [01.05.02.09.03.01],2,745,0.0027,21,0.0952
+2C,Display Settings (CID) [01.04.02.03.01.01.07.01],2,745,0.0027,48,0.0417
+2C,HUD Services,2,745,0.0027,3,0.6667
+2C,Indoor Parking China [01.04.03.01.05.01],2,745,0.0027,7,0.2857
+2C,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],2,745,0.0027,95,0.0211
+2C,Personalization: User Account Use [01.04.01.08.11],2,745,0.0027,24,0.0833
+2C,Play audio via Bluetooth [01.04.01.01.04.02],2,745,0.0027,76,0.0263
+2C,Play audio via Online Services (Connected Music) [01.04.01.01.02],2,745,0.0027,17,0.1176
+2C,Privacy States [01.04.02.01.02.01.08],2,745,0.0027,8,0.25
+2C,Provide SHUD Navigation [01.04.02.03.03.03],2,745,0.0027,17,0.1176
+2C,SWO Vehicle [01.04.02.01.02.01.06.01],2,745,0.0027,14,0.1429
+2C,Setting system language [01.04.04.01.03.12],2,745,0.0027,16,0.125
+2C,VAR Guiding CID [01.04.02.03.03.01.07],2,745,0.0027,3,0.6667
+2C,eRoute [01.04.03.01.07],2,745,0.0027,19,0.1053
+2C,3rd party video streaming enablement [01.04.01.02.04],1,745,0.0013,3,0.3333
+2C,Advanced destination input & POI functions [01.04.03.01.03.03.02],1,745,0.0013,20,0.05
+2C,Answer Incoming Call [01.04.01.04.01.01.02],1,745,0.0013,1,1.0
+2C,Consumer e-SIM Management [01.04.04.02.02.01],1,745,0.0013,3,0.3333
+2C,Control seat heating [01.03.04.02.13.40],1,745,0.0013,1,1.0
+2C,DELETED_MR_LSC [WAVE] [01.07.04.04.04.01],1,745,0.0013,1,1.0
+2C,Display of Legal Disclaimer  [01.04.02.03.01.01.02],1,745,0.0013,5,0.2
+2C,HMI Display Settings for HUD/IC/PHUD display and operation [01.04.02.03.04.01.02.01.01],1,745,0.0013,1,1.0
+2C,HMI MyCar menu display [01.04.04.01.04.02.01.44],1,745,0.0013,3,0.3333
+2C,Manage BMW Apps [01.04.01.05.03.03],1,745,0.0013,18,0.0556
+2C,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,745,0.0013,23,0.0435
+2C,Manage Privacy Settings [01.04.01.08.12],1,745,0.0013,15,0.0667
+2C,Manage SMS Messages [01.04.01.04.02.01.04.02],1,745,0.0013,13,0.0769
+2C,My Modes [01.04.02.01.04.03],1,745,0.0013,18,0.0556
+2C,POI Functions ASIA [01.04.03.01.02.05],1,745,0.0013,13,0.0769
+2C,PaDi Android Basic System [01.04.04.01.05.01],1,745,0.0013,5,0.2
+2C,Provide Advanced Gauges [01.04.02.06.01.01],1,745,0.0013,2,0.5
+2C,Provide CDE Launcher [01.04.01.09.03.01],1,745,0.0013,26,0.0385
+2C,Provide Remote in Car View [01.04.02.02.01.04.05],1,745,0.0013,5,0.2
+2C,Provide connected company context [01.04.02.03.02.03],1,745,0.0013,5,0.2
+2C,Remote teleservice diagnosis [01.04.02.02.01.01.02],1,745,0.0013,11,0.0909
+2C,Report automatical service demand via teleservice [01.04.02.01.03.03.04.01],1,745,0.0013,3,0.3333
+2C,Send remote services to the vehicle [01.01.08.13.07],1,745,0.0013,1,1.0
+2C,Traffic Info ASIA [01.04.03.01.02.07],1,745,0.0013,9,0.1111
+2C,Traffic [01.04.03.01.03.02.04],1,745,0.0013,6,0.1667
+2C,Use App Store China  [01.04.01.06.07],1,745,0.0013,43,0.0233
+2C,Use Rear Seat Entertainment [01.04.01.09.02],1,745,0.0013,22,0.0455
+2C,Use Third Party App Store [01.04.01.05.03.02],1,745,0.0013,17,0.0588
+2C,WeChat Messaging [01.04.01.06.02.03],1,745,0.0013,1,1.0
+2D,Provide Navigation 2.0 [01.04.03.01.03.06],25,161,0.1553,705,0.0355
+2D,provide HUAWEI HiCar [01.04.01.06.13],19,161,0.118,262,0.0725
+2D,Connected Music China [01.04.01.06.04],14,161,0.087,144,0.0972
+2D,CarPlay [01.04.01.07.02],10,161,0.0621,248,0.0403
+2D,Use Speech operation [01.04.02.01.01.05],7,161,0.0435,580,0.0121
+2D,Voice Interface [01.04.02.01.01.02],7,161,0.0435,626,0.0112
+2D,Guiding [01.04.03.01.03.02.03],6,161,0.0373,259,0.0232
+2D,Basic Vehicle Connectivity [01.04.04.02.02.02],4,161,0.0248,88,0.0455
+2D,Itinerary (Mobile App) [01.04.03.01.01.07.09],4,161,0.0248,411,0.0097
+2D,Map [01.04.03.01.03.02.01],4,161,0.0248,70,0.0571
+2D,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],4,161,0.0248,41,0.0976
+2D,Guiding ASIA [01.04.03.01.02.08],3,161,0.0186,100,0.03
+2D,Provide Karaoke Service [01.04.01.06.10],3,161,0.0186,76,0.0395
+2D,Video streaming China [01.04.01.06.05],3,161,0.0186,147,0.0204
+2D,Festival Mode [01.04.02.01.02.01.04],2,161,0.0124,27,0.0741
+2D,Provide CDE Launcher [01.04.01.09.03.01],2,161,0.0124,26,0.0769
+2D,Provide Festival Mode [01.04.02.01.04.08],2,161,0.0124,110,0.0182
+2D,Remote Services [01.04.02.02.01.01.01],2,161,0.0124,20,0.1
+2D,Use App Store China  [01.04.01.06.07],2,161,0.0124,43,0.0465
+2D,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],2,161,0.0124,66,0.0303
+2D,eRoute [01.04.03.01.07],2,161,0.0124,19,0.1053
+2D,3rd party audio streaming enablement [01.04.01.01.06],1,161,0.0062,4,0.25
+2D,Accident Call (Accident Help) [01.04.02.01.03.03.01],1,161,0.0062,10,0.1
+2D,Advanced destination input & POI functions [01.04.03.01.03.03.02],1,161,0.0062,20,0.05
+2D,Charging display and operate [01.01.08.16],1,161,0.0062,2,0.5
+2D,Contact Roadside Assistance [01.04.02.01.03.03.03],1,161,0.0062,33,0.0303
+2D,Digital Keyring [01.04.01.06.06],1,161,0.0062,3,0.3333
+2D,Display Settings (CID) [01.04.02.03.01.01.07.01],1,161,0.0062,48,0.0208
+2D,Display map ASIA [01.04.03.01.02.04],1,161,0.0062,15,0.0667
+2D,Display weather [01.04.01.05.01.03],1,161,0.0062,74,0.0135
+2D,HMI Factory reset operation [01.04.04.01.04.02.01.96],1,161,0.0062,1,1.0
+2D,Handsfree Telephony in the rear seats [01.04.01.04.01.04],1,161,0.0062,5,0.2
+2D,IPA Routines provided [01.04.02.01.02.01.06],1,161,0.0062,12,0.0833
+2D,Manage BMW Apps [01.04.01.05.03.03],1,161,0.0062,18,0.0556
+2D,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],1,161,0.0062,133,0.0075
+2D,Manage and Plan Routes ASIA [01.04.03.01.02.06],1,161,0.0062,22,0.0455
+2D,Motivated Login [01.04.01.08.11.04],1,161,0.0062,1,1.0
+2D,PaDi Remote Control via BMT [01.04.04.01.05.12],1,161,0.0062,4,0.25
+2D,Parking Assistant 21.0 Mid [PA21.0_Mi] [01.02.02.05.08],1,161,0.0062,1,1.0
+2D,Play audio via Bluetooth [01.04.01.01.04.02],1,161,0.0062,76,0.0132
+2D,Provide 3rd party gaming enablement [01.04.01.02.03],1,161,0.0062,67,0.0149
+2D,Provide App Center China [01.04.01.06.09],1,161,0.0062,65,0.0154
+2D,Provide SHUD Navigation [01.04.02.03.03.03],1,161,0.0062,17,0.0588
+2D,Provide Snapshot [01.04.02.02.01.04.04],1,161,0.0062,36,0.0278
+2D,Providing IC widgets [01.04.04.01.04.01.02.02],1,161,0.0062,1,1.0
+2D,QQ Music [01.04.01.06.04.02],1,161,0.0062,32,0.0312
+2D,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,161,0.0062,27,0.037
+2D,Route planning and management [01.04.03.01.03.02.02],1,161,0.0062,17,0.0588
+2D,Speech control via CE-Device [01.04.01.03.02.01],1,161,0.0062,2,0.5
+2D,Stability,1,161,0.0062,318,0.0031
+2D,Telephony via customer device [01.04.01.04.01.01],1,161,0.0062,52,0.0192
+2D,Traffic [01.04.03.01.03.02.04],1,161,0.0062,6,0.1667
+2D,Use Co-Driver Entertainment [01.04.01.09.03],1,161,0.0062,21,0.0476
+2D,display assisted view [01.02.02.15.02.19],1,161,0.0062,4,0.25
+2D,provide ADAS_AssistPlus on IC_Display [01.02.02.15.02.01.33],1,161,0.0062,1,1.0
+2E,Provide Navigation 2.0 [01.04.03.01.03.06],58,304,0.1908,705,0.0823
+2E,Guiding [01.04.03.01.03.02.03],34,304,0.1118,259,0.1313
+2E,Guiding ASIA [01.04.03.01.02.08],25,304,0.0822,100,0.25
+2E,Basic Vehicle Connectivity [01.04.04.02.02.02],10,304,0.0329,88,0.1136
+2E,CarPlay [01.04.01.07.02],10,304,0.0329,248,0.0403
+2E,Voice Interface [01.04.02.01.01.02],10,304,0.0329,626,0.016
+2E,Use Speech operation [01.04.02.01.01.05],8,304,0.0263,580,0.0138
+2E,Video streaming China [01.04.01.06.05],8,304,0.0263,147,0.0544
+2E,Itinerary (Mobile App) [01.04.03.01.01.07.09],7,304,0.023,411,0.017
+2E,QQ Music [01.04.01.06.04.02],7,304,0.023,32,0.2188
+2E,IPA Interactive Elements provided [01.04.02.01.02.01.03],6,304,0.0197,139,0.0432
+2E,Provide Festival Mode [01.04.02.01.04.08],5,304,0.0164,110,0.0455
+2E,Connected Music China [01.04.01.06.04],4,304,0.0132,144,0.0278
+2E,IPA Visualization  [01.04.02.01.02.01.01],4,304,0.0132,44,0.0909
+2E,Play audio via Bluetooth [01.04.01.01.04.02],4,304,0.0132,76,0.0526
+2E,Provide Launcher  [01.04.02.03.01.01.09],4,304,0.0132,108,0.037
+2E,provide HUAWEI HiCar [01.04.01.06.13],4,304,0.0132,262,0.0153
+2E,Contact Roadside Assistance [01.04.02.01.03.03.03],3,304,0.0099,33,0.0909
+2E,"Enable Registration, Login, Mapping [01.04.01.08.01]",3,304,0.0099,105,0.0286
+2E,Manage CoDU in In-Car-Store [01.04.01.05.03.01],3,304,0.0099,137,0.0219
+2E,Personalization: User Account Use [01.04.01.08.11],3,304,0.0099,24,0.125
+2E,Provide CDE Launcher [01.04.01.09.03.01],3,304,0.0099,26,0.1154
+2E,Provide Karaoke Service [01.04.01.06.10],3,304,0.0099,76,0.0395
+2E,Route planning and management [01.04.03.01.03.02.02],3,304,0.0099,17,0.1765
+2E,Stability,3,304,0.0099,318,0.0094
+2E,Tencent WeChat [01.04.01.06.02],3,304,0.0099,13,0.2308
+2E,eRoute [01.04.03.01.07],3,304,0.0099,19,0.1579
+2E,Accident Call (Accident Help) [01.04.02.01.03.03.01],2,304,0.0066,10,0.2
+2E,Change Audio Volume [01.04.04.01.01.01],2,304,0.0066,74,0.027
+2E,Display Settings (CID) [01.04.02.03.01.01.07.01],2,304,0.0066,48,0.0417
+2E,Display map ASIA [01.04.03.01.02.04],2,304,0.0066,15,0.1333
+2E,Display of User Manual [01.04.02.03.01.01.08.01],2,304,0.0066,24,0.0833
+2E,Display weather [01.04.01.05.01.03],2,304,0.0066,74,0.027
+2E,Indoor Parking China [01.04.03.01.05.01],2,304,0.0066,7,0.2857
+2E,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],2,304,0.0066,133,0.015
+2E,Manage and Plan Routes ASIA [01.04.03.01.02.06],2,304,0.0066,22,0.0909
+2E,Play audio via Online Services (Connected Music) [01.04.01.01.02],2,304,0.0066,17,0.1176
+2E,Provide App Center China [01.04.01.06.09],2,304,0.0066,65,0.0308
+2E,Provide NetEase Cloud Music [01.04.01.06.04.03],2,304,0.0066,3,0.6667
+2E,Remote Services [01.04.02.02.01.01.01],2,304,0.0066,20,0.1
+2E,Smart Access / Digital Key (Plus) [01.03.03.03.04],2,304,0.0066,29,0.069
+2E,Traffic [01.04.03.01.03.02.04],2,304,0.0066,6,0.3333
+2E,Augmented Reality Video CID [01.04.02.03.03.01],1,304,0.0033,27,0.037
+2E,Base Audio [01.04.04.01.01.04.01],1,304,0.0033,127,0.0079
+2E,Date and Time Settings [01.04.04.01.03.07],1,304,0.0033,16,0.0625
+2E,Display Check-Control-Message and telltales [01.04.04.01.03.03],1,304,0.0033,3,0.3333
+2E,Display Real Time Clock [01.04.04.01.03.04],1,304,0.0033,1,1.0
+2E,Display Touch Control [01.04.02.03.01.01.04],1,304,0.0033,60,0.0167
+2E,Drive Recorder V3 [01.02.02.15.04.02.02],1,304,0.0033,6,0.1667
+2E,Electrical Charging flap opening / closing / (locking) [01.01.08.12.01.01],1,304,0.0033,1,1.0
+2E,Enable User Management [01.04.01.08.03],1,304,0.0033,30,0.0333
+2E,Festival Mode [01.04.02.01.02.01.04],1,304,0.0033,27,0.037
+2E,HMI MyModes Moments display and operation [01.04.02.01.04.06.20],1,304,0.0033,6,0.1667
+2E,HUD Settings [01.04.02.03.04.01.02],1,304,0.0033,7,0.1429
+2E,Kombi Display Settings [01.04.04.01.03.08],1,304,0.0033,6,0.1667
+2E,Manage SMS Messages [01.04.01.04.02.01.04.02],1,304,0.0033,13,0.0769
+2E,Map [01.04.03.01.03.02.01],1,304,0.0033,70,0.0143
+2E,Navigation Destination Input ASIA [01.04.03.01.02.03],1,304,0.0033,5,0.2
+2E,POI Functions ASIA [01.04.03.01.02.05],1,304,0.0033,13,0.0769
+2E,Park View [01.02.02.15.04.01.02],1,304,0.0033,2,0.5
+2E,Positioning ASIA [01.04.03.01.02.01.02],1,304,0.0033,6,0.1667
+2E,Provide 3rd Party Gaming App [01.04.01.02.03.05],1,304,0.0033,8,0.125
+2E,Provide 3rd party gaming enablement [01.04.01.02.03],1,304,0.0033,67,0.0149
+2E,Provide SHUD Driver Assistance [01.04.02.03.03.04],1,304,0.0033,5,0.2
+2E,Provide SHUD Navigation [01.04.02.03.03.03],1,304,0.0033,17,0.0588
+2E,Provide eRoute [01.04.03.01.03.06.13],1,304,0.0033,1,1.0
+2E,Provisioning International Speller [01.04.02.03.01.01.06],1,304,0.0033,69,0.0145
+2E,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,304,0.0033,27,0.037
+2E,Setting system language [01.04.04.01.03.12],1,304,0.0033,16,0.0625
+2E,Slip-Through,1,304,0.0033,2,0.5
+2E,Telephony via customer device [01.04.01.04.01.01],1,304,0.0033,52,0.0192
+2E,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],1,304,0.0033,41,0.0244
+2E,Use App Store China  [01.04.01.06.07],1,304,0.0033,43,0.0233
+2E,Use PaDi China App Store [01.04.04.01.05.20],1,304,0.0033,6,0.1667
+2E,Use Rear Seat Entertainment [01.04.01.09.02],1,304,0.0033,22,0.0455
+2E,Use Third Party App Store [01.04.01.05.03.02],1,304,0.0033,17,0.0588
+2E,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],1,304,0.0033,66,0.0152
+2E,provide eCall [01.04.02.01.03.03.02],1,304,0.0033,28,0.0357
+3A,Voice Interface [01.04.02.01.01.02],274,1971,0.139,626,0.4377
+3A,Use Speech operation [01.04.02.01.01.05],172,1971,0.0873,580,0.2966
+3A,Provide Navigation 2.0 [01.04.03.01.03.06],164,1971,0.0832,705,0.2326
+3A,Itinerary (Mobile App) [01.04.03.01.01.07.09],132,1971,0.067,411,0.3212
+3A,provide HUAWEI HiCar [01.04.01.06.13],73,1971,0.037,262,0.2786
+3A,CarPlay [01.04.01.07.02],60,1971,0.0304,248,0.2419
+3A,IPA Interactive Elements provided [01.04.02.01.02.01.03],54,1971,0.0274,139,0.3885
+3A,Video streaming China [01.04.01.06.05],43,1971,0.0218,147,0.2925
+3A,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],40,1971,0.0203,95,0.4211
+3A,Provide Festival Mode [01.04.02.01.04.08],39,1971,0.0198,110,0.3545
+3A,Guiding [01.04.03.01.03.02.03],37,1971,0.0188,259,0.1429
+3A,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],36,1971,0.0183,133,0.2707
+3A,Map [01.04.03.01.03.02.01],35,1971,0.0178,70,0.5
+3A,Provide Launcher  [01.04.02.03.01.01.09],35,1971,0.0178,108,0.3241
+3A,Connected Music China [01.04.01.06.04],34,1971,0.0173,144,0.2361
+3A,Manage CoDU in In-Car-Store [01.04.01.05.03.01],31,1971,0.0157,137,0.2263
+3A,Provide 3rd party gaming enablement [01.04.01.02.03],26,1971,0.0132,67,0.3881
+3A,Display weather [01.04.01.05.01.03],24,1971,0.0122,74,0.3243
+3A,Play audio via Bluetooth [01.04.01.01.04.02],24,1971,0.0122,76,0.3158
+3A,Provide Karaoke Service [01.04.01.06.10],24,1971,0.0122,76,0.3158
+3A,Provisioning International Speller [01.04.02.03.01.01.06],24,1971,0.0122,69,0.3478
+3A,Functional Bookmark Control [01.04.02.03.01.01.03],23,1971,0.0117,53,0.434
+3A,Use App Store China  [01.04.01.06.07],22,1971,0.0112,43,0.5116
+3A,Display Settings (CID) [01.04.02.03.01.01.07.01],20,1971,0.0101,48,0.4167
+3A,Change Audio Sound Settings [01.04.04.01.01.02],19,1971,0.0096,35,0.5429
+3A,Guiding ASIA [01.04.03.01.02.08],19,1971,0.0096,100,0.19
+3A,Display Touch Control [01.04.02.03.01.01.04],17,1971,0.0086,60,0.2833
+3A,Receive notification in BMW Messages [01.04.02.02.01.01.03],16,1971,0.0081,27,0.5926
+3A,Telephony via customer device [01.04.01.04.01.01],16,1971,0.0081,52,0.3077
+3A,Provide App Center China [01.04.01.06.09],15,1971,0.0076,65,0.2308
+3A,Change Audio Volume [01.04.04.01.01.01],14,1971,0.0071,74,0.1892
+3A,"Enable Registration, Login, Mapping [01.04.01.08.01]",13,1971,0.0066,105,0.1238
+3A,Android Auto [01.04.01.07.01],12,1971,0.0061,22,0.5455
+3A,Charge CE Device Wireless [01.04.01.03.01.03],12,1971,0.0061,32,0.375
+3A,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],12,1971,0.0061,41,0.2927
+3A,Data Privacy menu - Master part [01.05.02.09.03.01],11,1971,0.0056,21,0.5238
+3A,IPA Visualization  [01.04.02.01.02.01.01],11,1971,0.0056,44,0.25
+3A,Play audio via USB [01.04.01.01.04.04],11,1971,0.0056,23,0.4783
+3A,Use Rear Seat Entertainment [01.04.01.09.02],11,1971,0.0056,22,0.5
+3A,Festival Mode [01.04.02.01.02.01.04],10,1971,0.0051,27,0.3704
+3A,Provide CDE Launcher [01.04.01.09.03.01],10,1971,0.0051,26,0.3846
+3A,Use Co-Driver Entertainment [01.04.01.09.03],10,1971,0.0051,21,0.4762
+3A,Base Audio [01.04.04.01.01.04.01],9,1971,0.0046,127,0.0709
+3A,Basic Vehicle Connectivity [01.04.04.02.02.02],8,1971,0.0041,88,0.0909
+3A,Enable User Management [01.04.01.08.03],8,1971,0.0041,30,0.2667
+3A,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],8,1971,0.0041,23,0.3478
+3A,Manage Privacy Settings [01.04.01.08.12],8,1971,0.0041,15,0.5333
+3A,Smart Access / Digital Key (Plus) [01.03.03.03.04],8,1971,0.0041,29,0.2759
+3A,Advanced destination input & POI functions [01.04.03.01.03.03.02],7,1971,0.0036,20,0.35
+3A,Display of User Manual [01.04.02.03.01.01.08.01],7,1971,0.0036,24,0.2917
+3A,Provide RSE Launcher [01.04.01.09.02.01],7,1971,0.0036,13,0.5385
+3A,ZBE Control [01.04.02.03.01.01.05],7,1971,0.0036,24,0.2917
+3A,Enable Configuration and Onboarding [01.04.01.08.05],6,1971,0.003,7,0.8571
+3A,Play audio via Online Services (Connected Music) [01.04.01.01.02],6,1971,0.003,17,0.3529
+3A,Augmented Reality Video CID [01.04.02.03.03.01],5,1971,0.0025,27,0.1852
+3A,Contact Roadside Assistance [01.04.02.01.03.03.03],5,1971,0.0025,33,0.1515
+3A,IPA Routines provided [01.04.02.01.02.01.06],5,1971,0.0025,12,0.4167
+3A,Manage BMW Apps [01.04.01.05.03.03],5,1971,0.0025,18,0.2778
+3A,My Modes [01.04.02.01.04.03],5,1971,0.0025,18,0.2778
+3A,POI Functions ASIA [01.04.03.01.02.05],5,1971,0.0025,13,0.3846
+3A,Use Third Party App Store [01.04.01.05.03.02],5,1971,0.0025,17,0.2941
+3A,provide eCall [01.04.02.01.03.03.02],5,1971,0.0025,28,0.1786
+3A,Date and Time Settings [01.04.04.01.03.07],4,1971,0.002,16,0.25
+3A,Radio Additional Information [01.04.01.01.01.05],4,1971,0.002,5,0.8
+3A,Remote teleservice diagnosis [01.04.02.02.01.01.02],4,1971,0.002,11,0.3636
+3A,Setting system language [01.04.04.01.03.12],4,1971,0.002,16,0.25
+3A,Telephony via second customer device [01.04.01.04.01.02],4,1971,0.002,5,0.8
+3A,Drive Recorder 21.0 [DriveRec21.0] [01.02.02.05.01],3,1971,0.0015,7,0.4286
+3A,HMI MyModes Moments display and operation [01.04.02.01.04.06.20],3,1971,0.0015,6,0.5
+3A,Manage and Plan Routes ASIA [01.04.03.01.02.06],3,1971,0.0015,22,0.1364
+3A,PaDi View and Audio Settings [01.04.04.01.05.19],3,1971,0.0015,9,0.3333
+3A,Performance,3,1971,0.0015,50,0.06
+3A,Personalization: User Account Setup [01.04.01.08.10],3,1971,0.0015,43,0.0698
+3A,Privacy States [01.04.02.01.02.01.08],3,1971,0.0015,8,0.375
+3A,Provide SHUD Navigation [01.04.02.03.03.03],3,1971,0.0015,17,0.1765
+3A,QQ Music [01.04.01.06.04.02],3,1971,0.0015,32,0.0938
+3A,eRoute [01.04.03.01.07],3,1971,0.0015,19,0.1579
+3A,Call Customer service [01.04.02.01.03.03.06],2,1971,0.001,6,0.3333
+3A,Contacting Service Partner [01.04.02.01.03.03.07],2,1971,0.001,2,1.0
+3A,Display & operation in the rear of entertainment sources (BMT) [01.04.01.03.02.02],2,1971,0.001,6,0.3333
+3A,IC-HMI_Gear_and_shift_indication [01.01.02.13.02.01],2,1971,0.001,2,1.0
+3A,Location-based Services [01.04.03.01.03.04.02],2,1971,0.001,3,0.6667
+3A,Manage SMS Messages [01.04.01.04.02.01.04.02],2,1971,0.001,13,0.1538
+3A,Navigation Destination Input ASIA [01.04.03.01.02.03],2,1971,0.001,5,0.4
+3A,Open My Highlights App from the Update Center [01.05.02.12.02.15],2,1971,0.001,8,0.25
+3A,PaDi - Pre-installed China VoD app (iQiyi) [01.04.04.01.05.06],2,1971,0.001,4,0.5
+3A,Parking Finder China [01.04.03.01.05.02],2,1971,0.001,6,0.3333
+3A,Personal Assistant - Widget [01.04.02.01.02.01.02],2,1971,0.001,11,0.1818
+3A,Provide 3rd Party Gaming App [01.04.01.02.03.05],2,1971,0.001,8,0.25
+3A,Provide Child Seat App [01.04.01.06.12],2,1971,0.001,3,0.6667
+3A,Provide Showroom mode [01.05.02.01.14],2,1971,0.001,3,0.6667
+3A,Provide Snapshot [01.04.02.02.01.04.04],2,1971,0.001,36,0.0556
+3A,Provide and display weather information [01.04.01.05.01.03.03],2,1971,0.001,2,1.0
+3A,SWO Vehicle [01.04.02.01.02.01.06.01],2,1971,0.001,14,0.1429
+3A,Stability,2,1971,0.001,318,0.0063
+3A,Tencent WeChat [01.04.01.06.02],2,1971,0.001,13,0.1538
+3A,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],2,1971,0.001,66,0.0303
+3A,3rd party audio streaming enablement [01.04.01.01.06],1,1971,0.0005,4,0.25
+3A,Accident Call (Accident Help) [01.04.02.01.03.03.01],1,1971,0.0005,10,0.1
+3A,Active Cruise Control 21.0 Mid  [ACC21.0_Mi] {FRR+ADCamMid} [01.02.02.02.01],1,1971,0.0005,1,1.0
+3A,Alexa In-Car [01.04.02.01.03.01],1,1971,0.0005,1,1.0
+3A,Anti-Theft Alarm System [01.04.02.02.01.03],1,1971,0.0005,1,1.0
+3A,Backend function implementation [01.05.02.08.03.07],1,1971,0.0005,1,1.0
+3A,Battery Preconditioning Strategy [01.01.04.04.12],1,1971,0.0005,2,0.5
+3A,Consolidate and display range predictions and fill levels [01.01.02.03],1,1971,0.0005,1,1.0
+3A,Consolidate and display the state of health of the high-voltage battery [01.01.02.07],1,1971,0.0005,1,1.0
+3A,Data Privacy menu - Client part [01.05.02.09.03.02],1,1971,0.0005,14,0.0714
+3A,Display Contacts [01.04.01.04.01.05.02.01],1,1971,0.0005,2,0.5
+3A,Display LiveCar [01.04.04.01.04.01.04.03],1,1971,0.0005,2,0.5
+3A,Display map ASIA [01.04.03.01.02.04],1,1971,0.0005,15,0.0667
+3A,Display of Legal Disclaimer  [01.04.02.03.01.01.02],1,1971,0.0005,5,0.2
+3A,Dynamic Log and Trace (DLT) [01.04.04.04.01.01],1,1971,0.0005,1,1.0
+3A,Easy Charge [01.04.03.02.02.03],1,1971,0.0005,2,0.5
+3A,Electronic Toll Collection (ETC) China -  Activation and deactivation via Bluetooth [01.04.02.03.02.01.02.01],1,1971,0.0005,1,1.0
+3A,Guiding 2.0 [01.04.02.01.03.03.07.07],1,1971,0.0005,4,0.25
+3A,HMI Charging Charging full screen display [01.04.04.01.04.02.01.89],1,1971,0.0005,1,1.0
+3A,HMI Charging Depature plan and schedule display and operation [01.04.04.01.04.02.01.93],1,1971,0.0005,1,1.0
+3A,HMI Driving Speed assistents display and operation [01.04.04.01.04.02.01.18],1,1971,0.0005,2,0.5
+3A,HMI MyCar menu display [01.04.04.01.04.02.01.44],1,1971,0.0005,3,0.3333
+3A,HMI Niveau Level display [01.04.04.01.04.02.01.32],1,1971,0.0005,1,1.0
+3A,HMI Seat Massage display and operation [01.03.02.02.04.01.07],1,1971,0.0005,1,1.0
+3A,Handsfree Telephony in the rear seats [01.04.01.04.01.04],1,1971,0.0005,5,0.2
+3A,Hazard Preview China [01.04.03.01.02.09.01],1,1971,0.0005,1,1.0
+3A,Implement BMW Lens [01.04.02.02.01.04.09],1,1971,0.0005,32,0.0312
+3A,Implement basic platform of Vehicle-to-Everything (V2X) Communication [01.04.04.02.05.01],1,1971,0.0005,3,0.3333
+3A,In-Car Cognition (ICC) [01.04.01.08.11.03],1,1971,0.0005,2,0.5
+3A,Intelligent Reminder  [01.04.02.01.02.02.01],1,1971,0.0005,1,1.0
+3A,Internet Access via Hotspot [01.04.04.02.01.01],1,1971,0.0005,1,1.0
+3A,Kombi Display Settings [01.04.04.01.03.08],1,1971,0.0005,6,0.1667
+3A,Manage Karaoke Media and Microphone Data [01.04.01.06.10.02],1,1971,0.0005,1,1.0
+3A,Open/close roof shading [01.03.05.03.06],1,1971,0.0005,1,1.0
+3A,PaDi Android Basic System [01.04.04.01.05.01],1,1971,0.0005,5,0.2
+3A,Park View 21.0 [ParkVi21.0] [01.02.02.05.02.04],1,1971,0.0005,10,0.1
+3A,Perform route calculation  [01.04.03.01.03.06.04],1,1971,0.0005,1,1.0
+3A,Positioning ASIA [01.04.03.01.02.01.02],1,1971,0.0005,6,0.1667
+3A,Provide Advanced Gauges [01.04.02.06.01.01],1,1971,0.0005,2,0.5
+3A,Provide Assisted View [01.02.02.15.02.19.01],1,1971,0.0005,2,0.5
+3A,Provide Light follows Sound [01.04.01.01.05],1,1971,0.0005,2,0.5
+3A,Provide Map 2.0 [01.04.03.01.03.06.01],1,1971,0.0005,1,1.0
+3A,Provide My Modes  [01.04.02.01.04.06],1,1971,0.0005,10,0.1
+3A,Provide connected company context [01.04.02.03.02.03],1,1971,0.0005,5,0.2
+3A,Provide goodbye screen  [01.04.02.01.04.05.30],1,1971,0.0005,1,1.0
+3A,Provide update content [01.04.01.08.13],1,1971,0.0005,2,0.5
+3A,Provide voice control indoor light [01.03.01.02.01.06],1,1971,0.0005,1,1.0
+3A,Remote Services [01.04.02.02.01.01.01],1,1971,0.0005,20,0.05
+3A,Remote Theft Recorder 21.0 [RTRec21.0] [01.02.02.05.04],1,1971,0.0005,2,0.5
+3A,Request synchronous customer confirmation [01.04.02.01.03.03.03.11],1,1971,0.0005,3,0.3333
+3A,Route planning and management [01.04.03.01.03.02.02],1,1971,0.0005,17,0.0588
+3A,Select Roadside assistance [01.04.02.01.03.03.03.05],1,1971,0.0005,1,1.0
+3A,Show Release Notes [01.04.02.02.01.01.07.01],1,1971,0.0005,3,0.3333
+3A,Sound Design Exterior [01.04.04.01.02.03],1,1971,0.0005,1,1.0
+3A,Speed Limit Assist 21.0 [SLA21.0] [01.02.02.03.17],1,1971,0.0005,1,1.0
+3A,Speed Limit Info 21.0 Basis [SLI21.0_Ba] [01.02.02.03.13],1,1971,0.0005,1,1.0
+3A,Traffic [01.04.03.01.03.02.04],1,1971,0.0005,6,0.1667
+3A,Use PaDi China App Store [01.04.04.01.05.20],1,1971,0.0005,6,0.1667
+3A,Vehicle Programming implementation [01.05.02.01.05],1,1971,0.0005,1,1.0
+3A,Welcome & Goodbye [01.04.02.01.04.05],1,1971,0.0005,4,0.25
+3A,[<SP25] View driving data [01.04.02.03.01.01.01],1,1971,0.0005,1,1.0
+3A,[CoDU] Provide general functionality [01.04.02.04.01],1,1971,0.0005,2,0.5
+3A,[Sys_RSU] 10 triggering of remote software upgrade [01.04.03.04.01],1,1971,0.0005,1,1.0
+3A,[Sys_RSU] 40 Download of RSU [01.05.02.08.05],1,1971,0.0005,1,1.0
+3A,provide HiCar communication [01.04.01.06.13.07],1,1971,0.0005,2,0.5
+3A,provide HiCar navigation [01.04.01.06.13.09],1,1971,0.0005,1,1.0
+3A,provide PHUD settings [01.04.02.03.04.02.01],1,1971,0.0005,6,0.1667
+3B,Provide Navigation 2.0 [01.04.03.01.03.06],19,80,0.2375,705,0.027
+3B,Use Speech operation [01.04.02.01.01.05],7,80,0.0875,580,0.0121
+3B,CarPlay [01.04.01.07.02],6,80,0.075,248,0.0242
+3B,Play audio via Bluetooth [01.04.01.01.04.02],6,80,0.075,76,0.0789
+3B,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],5,80,0.0625,133,0.0376
+3B,Change Audio Volume [01.04.04.01.01.01],4,80,0.05,74,0.0541
+3B,Provide App Center China [01.04.01.06.09],3,80,0.0375,65,0.0462
+3B,Base Audio [01.04.04.01.01.04.01],2,80,0.025,127,0.0157
+3B,Connected Music China [01.04.01.06.04],2,80,0.025,144,0.0139
+3B,Manage CoDU in In-Car-Store [01.04.01.05.03.01],2,80,0.025,137,0.0146
+3B,Provide Festival Mode [01.04.02.01.04.08],2,80,0.025,110,0.0182
+3B,Advanced destination input & POI functions [01.04.03.01.03.03.02],1,80,0.0125,20,0.05
+3B,Change Audio Sound Settings [01.04.04.01.01.02],1,80,0.0125,35,0.0286
+3B,Charge CE Device Wireless [01.04.01.03.01.03],1,80,0.0125,32,0.0312
+3B,Contact Roadside Assistance [01.04.02.01.03.03.03],1,80,0.0125,33,0.0303
+3B,Display and operation of PaDi BMW widgets [01.04.04.01.05.10],1,80,0.0125,2,0.5
+3B,Guiding [01.04.03.01.03.02.03],1,80,0.0125,259,0.0039
+3B,IPA Interactive Elements provided [01.04.02.01.02.01.03],1,80,0.0125,139,0.0072
+3B,Manage BMW Apps [01.04.01.05.03.03],1,80,0.0125,18,0.0556
+3B,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,80,0.0125,23,0.0435
+3B,PaDi Remote Control via BMT [01.04.04.01.05.12],1,80,0.0125,4,0.25
+3B,Play audio via USB [01.04.01.01.04.04],1,80,0.0125,23,0.0435
+3B,Provide 3rd Party Video App [01.04.01.02.04.03],1,80,0.0125,1,1.0
+3B,Provide 3rd party gaming enablement [01.04.01.02.03],1,80,0.0125,67,0.0149
+3B,Provide Karaoke Service [01.04.01.06.10],1,80,0.0125,76,0.0132
+3B,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,80,0.0125,27,0.037
+3B,Remote Theft Recorder [01.02.02.15.04.02.01],1,80,0.0125,1,1.0
+3B,Remote teleservice diagnosis [01.04.02.02.01.01.02],1,80,0.0125,11,0.0909
+3B,Telephony via customer device [01.04.01.04.01.01],1,80,0.0125,52,0.0192
+3B,Use App Store China  [01.04.01.06.07],1,80,0.0125,43,0.0233
+3B,Use Co-Driver Entertainment [01.04.01.09.03],1,80,0.0125,21,0.0476
+3B,Video streaming China [01.04.01.06.05],1,80,0.0125,147,0.0068
+3B,provide HUAWEI HiCar [01.04.01.06.13],1,80,0.0125,262,0.0038
+3C,Provide Navigation 2.0 [01.04.03.01.03.06],96,714,0.1345,705,0.1362
+3C,Voice Interface [01.04.02.01.01.02],96,714,0.1345,626,0.1534
+3C,Use Speech operation [01.04.02.01.01.05],89,714,0.1246,580,0.1534
+3C,provide HUAWEI HiCar [01.04.01.06.13],45,714,0.063,262,0.1718
+3C,Guiding [01.04.03.01.03.02.03],42,714,0.0588,259,0.1622
+3C,Connected Music China [01.04.01.06.04],27,714,0.0378,144,0.1875
+3C,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],15,714,0.021,133,0.1128
+3C,Provide Launcher  [01.04.02.03.01.01.09],15,714,0.021,108,0.1389
+3C,Video streaming China [01.04.01.06.05],12,714,0.0168,147,0.0816
+3C,CarPlay [01.04.01.07.02],11,714,0.0154,248,0.0444
+3C,IPA Interactive Elements provided [01.04.02.01.02.01.03],11,714,0.0154,139,0.0791
+3C,Itinerary (Mobile App) [01.04.03.01.01.07.09],11,714,0.0154,411,0.0268
+3C,Provide Karaoke Service [01.04.01.06.10],11,714,0.0154,76,0.1447
+3C,Provide App Center China [01.04.01.06.09],10,714,0.014,65,0.1538
+3C,Display weather [01.04.01.05.01.03],9,714,0.0126,74,0.1216
+3C,Change Audio Volume [01.04.04.01.01.01],8,714,0.0112,74,0.1081
+3C,Functional Bookmark Control [01.04.02.03.01.01.03],8,714,0.0112,53,0.1509
+3C,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],8,714,0.0112,95,0.0842
+3C,Base Audio [01.04.04.01.01.04.01],7,714,0.0098,127,0.0551
+3C,Play audio via Bluetooth [01.04.01.01.04.02],7,714,0.0098,76,0.0921
+3C,Provide Festival Mode [01.04.02.01.04.08],7,714,0.0098,110,0.0636
+3C,Guiding ASIA [01.04.03.01.02.08],6,714,0.0084,100,0.06
+3C,IPA Visualization  [01.04.02.01.02.01.01],6,714,0.0084,44,0.1364
+3C,Map [01.04.03.01.03.02.01],6,714,0.0084,70,0.0857
+3C,Provide 3rd party gaming enablement [01.04.01.02.03],6,714,0.0084,67,0.0896
+3C,Contact Roadside Assistance [01.04.02.01.03.03.03],5,714,0.007,33,0.1515
+3C,Display Settings (CID) [01.04.02.03.01.01.07.01],5,714,0.007,48,0.1042
+3C,Display map ASIA [01.04.03.01.02.04],5,714,0.007,15,0.3333
+3C,Provisioning International Speller [01.04.02.03.01.01.06],5,714,0.007,69,0.0725
+3C,QQ Music [01.04.01.06.04.02],5,714,0.007,32,0.1562
+3C,Use Rear Seat Entertainment [01.04.01.09.02],5,714,0.007,22,0.2273
+3C,Basic Vehicle Connectivity [01.04.04.02.02.02],4,714,0.0056,88,0.0455
+3C,Display Touch Control [01.04.02.03.01.01.04],4,714,0.0056,60,0.0667
+3C,Implement BMW Lens [01.04.02.02.01.04.09],4,714,0.0056,32,0.125
+3C,Provide SHUD Navigation [01.04.02.03.03.03],4,714,0.0056,17,0.2353
+3C,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],4,714,0.0056,41,0.0976
+3C,Use App Store China  [01.04.01.06.07],4,714,0.0056,43,0.093
+3C,Use Co-Driver Entertainment [01.04.01.09.03],4,714,0.0056,21,0.1905
+3C,Manage Privacy Settings [01.04.01.08.12],3,714,0.0042,15,0.2
+3C,Provide IPA interactive Elements China [01.04.02.01.02.01.03.01],3,714,0.0042,14,0.2143
+3C,Telephony via customer device [01.04.01.04.01.01],3,714,0.0042,52,0.0577
+3C,Use Third Party App Store [01.04.01.05.03.02],3,714,0.0042,17,0.1765
+3C,Advanced destination input & POI functions [01.04.03.01.03.03.02],2,714,0.0028,20,0.1
+3C,Augmented Reality Video CID [01.04.02.03.03.01],2,714,0.0028,27,0.0741
+3C,Charge CE Device Wireless [01.04.01.03.01.03],2,714,0.0028,32,0.0625
+3C,Data Privacy menu - Client part [01.05.02.09.03.02],2,714,0.0028,14,0.1429
+3C,Display of User Manual [01.04.02.03.01.01.08.01],2,714,0.0028,24,0.0833
+3C,Indoor Parking China [01.04.03.01.05.01],2,714,0.0028,7,0.2857
+3C,Manage BMW Apps [01.04.01.05.03.03],2,714,0.0028,18,0.1111
+3C,Manage CoDU in In-Car-Store [01.04.01.05.03.01],2,714,0.0028,137,0.0146
+3C,POI Functions ASIA [01.04.03.01.02.05],2,714,0.0028,13,0.1538
+3C,Performance,2,714,0.0028,50,0.04
+3C,Personal Assistant - Widget [01.04.02.01.02.01.02],2,714,0.0028,11,0.1818
+3C,Personalization: User Account Setup [01.04.01.08.10],2,714,0.0028,43,0.0465
+3C,Provide 3rd Party Gaming App [01.04.01.02.03.05],2,714,0.0028,8,0.25
+3C,Provide speech voice control in the rear [01.04.02.01.01.04.21],2,714,0.0028,2,1.0
+3C,Remote teleservice diagnosis [01.04.02.02.01.01.02],2,714,0.0028,11,0.1818
+3C,Route planning and management [01.04.03.01.03.02.02],2,714,0.0028,17,0.1176
+3C,Stability,2,714,0.0028,318,0.0063
+3C,Traffic Info ASIA [01.04.03.01.02.07],2,714,0.0028,9,0.2222
+3C,provide eCall [01.04.02.01.03.03.02],2,714,0.0028,28,0.0714
+3C,3rd party audio streaming enablement [01.04.01.01.06],1,714,0.0014,4,0.25
+3C,ASIA Alternative route [01.04.03.01.02.06.01],1,714,0.0014,1,1.0
+3C,ASIA Guiding instrument cluster and HUD [01.04.03.01.02.08.01],1,714,0.0014,1,1.0
+3C,Calculate range [01.01.02.03.01.01],1,714,0.0014,1,1.0
+3C,Change Audio Sound Settings [01.04.04.01.01.02],1,714,0.0014,35,0.0286
+3C,Consolidate and view sports view [01.01.02.09],1,714,0.0014,1,1.0
+3C,Destination Input [01.04.03.01.03.02.05],1,714,0.0014,2,0.5
+3C,Display Check-Control-Message and telltales [01.04.04.01.03.03],1,714,0.0014,3,0.3333
+3C,"Enable Registration, Login, Mapping [01.04.01.08.01]",1,714,0.0014,105,0.0095
+3C,Enable User Management [01.04.01.08.03],1,714,0.0014,30,0.0333
+3C,Handsfree Telephony in the rear seats [01.04.01.04.01.04],1,714,0.0014,5,0.2
+3C,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,714,0.0014,23,0.0435
+3C,Manage and Plan Routes ASIA [01.04.03.01.02.06],1,714,0.0014,22,0.0455
+3C,Navigation throughout the Instrument Cluster [01.04.03.01.03.03.01],1,714,0.0014,1,1.0
+3C,PHUD Services,1,714,0.0014,5,0.2
+3C,PaDi China CE area bring-up (Android default launcher) NEU [01.04.04.01.05.04],1,714,0.0014,1,1.0
+3C,Play audio via Entertainment Server [01.04.01.01.04.03],1,714,0.0014,2,0.5
+3C,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,714,0.0014,17,0.0588
+3C,Play audio via USB [01.04.01.01.04.04],1,714,0.0014,23,0.0435
+3C,Privacy States [01.04.02.01.02.01.08],1,714,0.0014,8,0.125
+3C,Provide CDE Launcher [01.04.01.09.03.01],1,714,0.0014,26,0.0385
+3C,Provide My Modes  [01.04.02.01.04.06],1,714,0.0014,10,0.1
+3C,Provide NetEase Cloud Music [01.04.01.06.04.03],1,714,0.0014,3,0.3333
+3C,Provide RSE Launcher [01.04.01.09.02.01],1,714,0.0014,13,0.0769
+3C,Provide Release Notes [01.04.02.02.01.01.07],1,714,0.0014,1,1.0
+3C,Provide Snapshot [01.04.02.02.01.04.04],1,714,0.0014,36,0.0278
+3C,Provide connected company context [01.04.02.03.02.03],1,714,0.0014,5,0.2
+3C,Show Release Notes [01.04.02.02.01.01.07.01],1,714,0.0014,3,0.3333
+3C,Situation-based seat comfort function based on cushion protection function action (pneumatic adjustment) [01.03.02.02.04.12],1,714,0.0014,1,1.0
+3C,Smart Access / Digital Key (Plus) [01.03.03.03.04],1,714,0.0014,29,0.0345
+3C,Steady-state climatic comfort [01.03.04.02.01],1,714,0.0014,2,0.5
+3C,Tencent WeChat [01.04.01.06.02],1,714,0.0014,13,0.0769
+3C,Traffic [01.04.03.01.03.02.04],1,714,0.0014,6,0.1667
+3C,ZBE Control [01.04.02.03.01.01.05],1,714,0.0014,24,0.0417
+3C,[Sys_RSU] 05 PE_HU-HMI_settings Remote Software Update [01.05.02.08.03.01],1,714,0.0014,1,1.0
+3C,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],1,714,0.0014,66,0.0152
+3C,eRoute [01.04.03.01.07],1,714,0.0014,19,0.0526
+3D,provide HUAWEI HiCar [01.04.01.06.13],20,136,0.1471,262,0.0763
+3D,Provide Navigation 2.0 [01.04.03.01.03.06],17,136,0.125,705,0.0241
+3D,CarPlay [01.04.01.07.02],11,136,0.0809,248,0.0444
+3D,Connected Music China [01.04.01.06.04],10,136,0.0735,144,0.0694
+3D,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],10,136,0.0735,133,0.0752
+3D,Use Speech operation [01.04.02.01.01.05],7,136,0.0515,580,0.0121
+3D,Display weather [01.04.01.05.01.03],5,136,0.0368,74,0.0676
+3D,Play audio via Bluetooth [01.04.01.01.04.02],5,136,0.0368,76,0.0658
+3D,Voice Interface [01.04.02.01.01.02],5,136,0.0368,626,0.008
+3D,Provide App Center China [01.04.01.06.09],3,136,0.0221,65,0.0462
+3D,Guiding [01.04.03.01.03.02.03],2,136,0.0147,259,0.0077
+3D,IPA Interactive Elements provided [01.04.02.01.02.01.03],2,136,0.0147,139,0.0144
+3D,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],2,136,0.0147,95,0.0211
+3D,Map [01.04.03.01.03.02.01],2,136,0.0147,70,0.0286
+3D,Provide Launcher  [01.04.02.03.01.01.09],2,136,0.0147,108,0.0185
+3D,QQ Music [01.04.01.06.04.02],2,136,0.0147,32,0.0625
+3D,Traffic Info ASIA [01.04.03.01.02.07],2,136,0.0147,9,0.2222
+3D,Video streaming China [01.04.01.06.05],2,136,0.0147,147,0.0136
+3D,Augmented Reality Video CID [01.04.02.03.03.01],1,136,0.0074,27,0.037
+3D,Base Audio [01.04.04.01.01.04.01],1,136,0.0074,127,0.0079
+3D,Basic Vehicle Connectivity [01.04.04.02.02.02],1,136,0.0074,88,0.0114
+3D,Change Audio Volume [01.04.04.01.01.01],1,136,0.0074,74,0.0135
+3D,Charge CE Device Wireless [01.04.01.03.01.03],1,136,0.0074,32,0.0312
+3D,Guiding ASIA [01.04.03.01.02.08],1,136,0.0074,100,0.01
+3D,HMI MyModes Moments display and operation [01.04.02.01.04.06.20],1,136,0.0074,6,0.1667
+3D,Implement BMW Lens [01.04.02.02.01.04.09],1,136,0.0074,32,0.0312
+3D,Itinerary (Mobile App) [01.04.03.01.01.07.09],1,136,0.0074,411,0.0024
+3D,Kombi Display Settings [01.04.04.01.03.08],1,136,0.0074,6,0.1667
+3D,Learning Navigation [01.04.03.01.01.07.05],1,136,0.0074,1,1.0
+3D,Listen to AM/FM Radio [01.04.01.01.01.01.01],1,136,0.0074,1,1.0
+3D,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,136,0.0074,23,0.0435
+3D,Manage SMS Messages [01.04.01.04.02.01.04.02],1,136,0.0074,13,0.0769
+3D,POI Functions ASIA [01.04.03.01.02.05],1,136,0.0074,13,0.0769
+3D,Park Distance Control V2.5 [01.02.02.15.04.01.04],1,136,0.0074,2,0.5
+3D,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,136,0.0074,17,0.0588
+3D,Provide 3rd party gaming enablement [01.04.01.02.03],1,136,0.0074,67,0.0149
+3D,Provide Assisted View [01.02.02.15.02.20.01],1,136,0.0074,1,1.0
+3D,Provide Check-Control Interface  [01.01.02.02.01.07],1,136,0.0074,1,1.0
+3D,Provide Karaoke Service [01.04.01.06.10],1,136,0.0074,76,0.0132
+3D,Provide RSE Launcher [01.04.01.09.02.01],1,136,0.0074,13,0.0769
+3D,Provide Snapshot [01.04.02.02.01.04.04],1,136,0.0074,36,0.0278
+3D,Route planning and management [01.04.03.01.03.02.02],1,136,0.0074,17,0.0588
+3D,Use Third Party App Store [01.04.01.05.03.02],1,136,0.0074,17,0.0588
+3D,WeChat VoiP Call [01.04.01.06.02.02],1,136,0.0074,1,1.0
+3D,seat adjustment 1.SR control [01.03.02.02.07.01.03],1,136,0.0074,1,1.0
+3E,Provide Navigation 2.0 [01.04.03.01.03.06],31,164,0.189,705,0.044
+3E,CarPlay [01.04.01.07.02],12,164,0.0732,248,0.0484
+3E,Voice Interface [01.04.02.01.01.02],11,164,0.0671,626,0.0176
+3E,Guiding [01.04.03.01.03.02.03],9,164,0.0549,259,0.0347
+3E,Use Speech operation [01.04.02.01.01.05],9,164,0.0549,580,0.0155
+3E,Provide Launcher  [01.04.02.03.01.01.09],8,164,0.0488,108,0.0741
+3E,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],7,164,0.0427,95,0.0737
+3E,Connected Music China [01.04.01.06.04],6,164,0.0366,144,0.0417
+3E,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],6,164,0.0366,133,0.0451
+3E,Guiding ASIA [01.04.03.01.02.08],4,164,0.0244,100,0.04
+3E,Play audio via Bluetooth [01.04.01.01.04.02],4,164,0.0244,76,0.0526
+3E,Video streaming China [01.04.01.06.05],4,164,0.0244,147,0.0272
+3E,Base Audio [01.04.04.01.01.04.01],3,164,0.0183,127,0.0236
+3E,Basic Vehicle Connectivity [01.04.04.02.02.02],3,164,0.0183,88,0.0341
+3E,IPA Interactive Elements provided [01.04.02.01.02.01.03],3,164,0.0183,139,0.0216
+3E,Provide 3rd party gaming enablement [01.04.01.02.03],3,164,0.0183,67,0.0448
+3E,Display map ASIA [01.04.03.01.02.04],2,164,0.0122,15,0.1333
+3E,Display weather [01.04.01.05.01.03],2,164,0.0122,74,0.027
+3E,Manage and Plan Routes ASIA [01.04.03.01.02.06],2,164,0.0122,22,0.0909
+3E,Provide App Center China [01.04.01.06.09],2,164,0.0122,65,0.0308
+3E,Provide CDE Launcher [01.04.01.09.03.01],2,164,0.0122,26,0.0769
+3E,QQ Music [01.04.01.06.04.02],2,164,0.0122,32,0.0625
+3E,ASIA Guiding Voice output [01.04.03.01.02.08.02],1,164,0.0061,1,1.0
+3E,Android Auto [01.04.01.07.01],1,164,0.0061,22,0.0455
+3E,Augmented Reality Video CID [01.04.02.03.03.01],1,164,0.0061,27,0.037
+3E,Change Audio Sound Settings [01.04.04.01.01.02],1,164,0.0061,35,0.0286
+3E,Change Audio Volume [01.04.04.01.01.01],1,164,0.0061,74,0.0135
+3E,Condition Based Services - Display implementation [01.05.02.01.11.02],1,164,0.0061,1,1.0
+3E,Data Privacy menu - Master part [01.05.02.09.03.01],1,164,0.0061,21,0.0476
+3E,Display Settings (CID) [01.04.02.03.01.01.07.01],1,164,0.0061,48,0.0208
+3E,HMI Exterior light Main light functions display and operation [01.03.03.01.03.04.01],1,164,0.0061,1,1.0
+3E,IPA Routines provided [01.04.02.01.02.01.06],1,164,0.0061,12,0.0833
+3E,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],1,164,0.0061,23,0.0435
+3E,My Modes [01.04.02.01.04.03],1,164,0.0061,18,0.0556
+3E,Personalization: User Account Setup [01.04.01.08.10],1,164,0.0061,43,0.0233
+3E,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,164,0.0061,17,0.0588
+3E,Positioning ASIA [01.04.03.01.02.01.02],1,164,0.0061,6,0.1667
+3E,Provide Karaoke Service [01.04.01.06.10],1,164,0.0061,76,0.0132
+3E,Provide NetEase Cloud Music [01.04.01.06.06.04],1,164,0.0061,1,1.0
+3E,Provide SHUD Navigation [01.04.02.03.03.03],1,164,0.0061,17,0.0588
+3E,Provide Snapshot [01.04.02.02.01.04.04],1,164,0.0061,36,0.0278
+3E,Provisioning International Speller [01.04.02.03.01.01.06],1,164,0.0061,69,0.0145
+3E,SWO Vehicle [01.04.02.01.02.01.06.01],1,164,0.0061,14,0.0714
+3E,Setting system language [01.04.04.01.03.12],1,164,0.0061,16,0.0625
+3E,Stability,1,164,0.0061,318,0.0031
+3E,Telephony via customer device [01.04.01.04.01.01],1,164,0.0061,52,0.0192
+3E,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],1,164,0.0061,41,0.0244
+3E,Tencent WeChat [01.04.01.06.02],1,164,0.0061,13,0.0769
+3E,Traffic Info ASIA [01.04.03.01.02.07],1,164,0.0061,9,0.1111
+3E,Use Co-Driver Entertainment [01.04.01.09.03],1,164,0.0061,21,0.0476
+3E,Use PaDi China App Store [01.04.04.01.05.20],1,164,0.0061,6,0.1667
+4A,Voice Interface [01.04.02.01.01.02],58,327,0.1774,626,0.0927
+4A,Provide Navigation 2.0 [01.04.03.01.03.06],31,327,0.0948,705,0.044
+4A,IPA Interactive Elements provided [01.04.02.01.02.01.03],22,327,0.0673,139,0.1583
+4A,Video streaming China [01.04.01.06.05],16,327,0.0489,147,0.1088
+4A,Display Settings (CID) [01.04.02.03.01.01.07.01],12,327,0.0367,48,0.25
+4A,Provide 3rd party gaming enablement [01.04.01.02.03],11,327,0.0336,67,0.1642
+4A,provide HUAWEI HiCar [01.04.01.06.13],10,327,0.0306,262,0.0382
+4A,Provide Festival Mode [01.04.02.01.04.08],8,327,0.0245,110,0.0727
+4A,Provide Karaoke Service [01.04.01.06.10],8,327,0.0245,76,0.1053
+4A,Connected Music China [01.04.01.06.04],7,327,0.0214,144,0.0486
+4A,Display Touch Control [01.04.02.03.01.01.04],7,327,0.0214,60,0.1167
+4A,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],7,327,0.0214,133,0.0526
+4A,Provide App Center China [01.04.01.06.09],7,327,0.0214,65,0.1077
+4A,Use Speech operation [01.04.02.01.01.05],6,327,0.0183,580,0.0103
+4A,"Enable Registration, Login, Mapping [01.04.01.08.01]",5,327,0.0153,105,0.0476
+4A,Itinerary (Mobile App) [01.04.03.01.01.07.09],5,327,0.0153,411,0.0122
+4A,Provide Launcher  [01.04.02.03.01.01.09],5,327,0.0153,108,0.0463
+4A,Guiding [01.04.03.01.03.02.03],4,327,0.0122,259,0.0154
+4A,Telephony via customer device [01.04.01.04.01.01],4,327,0.0122,52,0.0769
+4A,Use App Store China  [01.04.01.06.07],4,327,0.0122,43,0.093
+4A,CarPlay [01.04.01.07.02],3,327,0.0092,248,0.0121
+4A,Guiding ASIA [01.04.03.01.02.08],3,327,0.0092,100,0.03
+4A,Listen to Radio (FM/AM/DAB/HD) [01.04.01.01.01.04],3,327,0.0092,95,0.0316
+4A,Manage CE Devices (WIFI AP) [01.04.01.03.01.02.02],3,327,0.0092,23,0.1304
+4A,Manage SMS Messages [01.04.01.04.02.01.04.02],3,327,0.0092,13,0.2308
+4A,Map [01.04.03.01.03.02.01],3,327,0.0092,70,0.0429
+4A,Play audio via Bluetooth [01.04.01.01.04.02],3,327,0.0092,76,0.0395
+4A,Provide My Modes  [01.04.02.01.04.06],3,327,0.0092,10,0.3
+4A,Provisioning International Speller [01.04.02.03.01.01.06],3,327,0.0092,69,0.0435
+4A,provide PHUD settings [01.04.02.03.04.02.01],3,327,0.0092,6,0.5
+4A,Advanced destination input & POI functions [01.04.03.01.03.03.02],2,327,0.0061,20,0.1
+4A,Contact Roadside Assistance [01.04.02.01.03.03.03],2,327,0.0061,33,0.0606
+4A,Date and Time Settings [01.04.04.01.03.07],2,327,0.0061,16,0.125
+4A,Display weather [01.04.01.05.01.03],2,327,0.0061,74,0.027
+4A,Enable User Management [01.04.01.08.03],2,327,0.0061,30,0.0667
+4A,Festival Mode [01.04.02.01.02.01.04],2,327,0.0061,27,0.0741
+4A,Kombi Display Settings [01.04.04.01.03.08],2,327,0.0061,6,0.3333
+4A,Manage CoDU in In-Car-Store [01.04.01.05.03.01],2,327,0.0061,137,0.0146
+4A,Personal Assistant - Widget [01.04.02.01.02.01.02],2,327,0.0061,11,0.1818
+4A,Provide CDE Launcher [01.04.01.09.03.01],2,327,0.0061,26,0.0769
+4A,SWO Vehicle [01.04.02.01.02.01.06.01],2,327,0.0061,14,0.1429
+4A,Setting system language [01.04.04.01.03.12],2,327,0.0061,16,0.125
+4A,ZBE Control [01.04.02.03.01.01.05],2,327,0.0061,24,0.0833
+4A,Change Audio Sound Settings [01.04.04.01.01.02],1,327,0.0031,35,0.0286
+4A,Change Audio Volume [01.04.04.01.01.01],1,327,0.0031,74,0.0135
+4A,Configuration Driver Assistance [01.02.01.02.07.03.02],1,327,0.0031,2,0.5
+4A,Display of User Manual [01.04.02.03.01.01.08.01],1,327,0.0031,24,0.0417
+4A,Driver Attention Monitoring System providing [01.04.02.02.01.04.06],1,327,0.0031,1,1.0
+4A,Enable Configuration and Onboarding [01.04.01.08.05],1,327,0.0031,7,0.1429
+4A,Functional Bookmark Control [01.04.02.03.01.01.03],1,327,0.0031,53,0.0189
+4A,HMI Driving Speed assistents display and operation [01.04.04.01.04.02.01.18],1,327,0.0031,2,0.5
+4A,HMI MyCar menu display [01.04.04.01.04.02.01.44],1,327,0.0031,3,0.3333
+4A,IPA Proposals provided [01.04.02.01.02.01.07],1,327,0.0031,2,0.5
+4A,IPA Routines provided [01.04.02.01.02.01.06],1,327,0.0031,12,0.0833
+4A,Implement BMW Lens [01.04.02.02.01.04.09],1,327,0.0031,32,0.0312
+4A,My Modes [01.04.02.01.04.03],1,327,0.0031,18,0.0556
+4A,POI Functions ASIA [01.04.03.01.02.05],1,327,0.0031,13,0.0769
+4A,PaDi - Pre-installed China VoD app (iQiyi) [01.04.04.01.05.06],1,327,0.0031,4,0.25
+4A,Play audio via Online Services (Connected Music) [01.04.01.01.02],1,327,0.0031,17,0.0588
+4A,Play audio via USB [01.04.01.01.04.04],1,327,0.0031,23,0.0435
+4A,Provide Assisted View [01.02.02.15.02.19.01],1,327,0.0031,2,0.5
+4A,Provide IPA interactive Elements China [01.04.02.01.02.01.03.01],1,327,0.0031,14,0.0714
+4A,Provide RSE Launcher [01.04.01.09.02.01],1,327,0.0031,13,0.0769
+4A,Provide Snapshot [01.04.02.02.01.04.04],1,327,0.0031,36,0.0278
+4A,Provide Storage and synchronization of data [01.04.01.08.06],1,327,0.0031,2,0.5
+4A,QQ Music [01.04.01.06.04.02],1,327,0.0031,32,0.0312
+4A,Radio Additional Information [01.04.01.01.01.05],1,327,0.0031,5,0.2
+4A,Receive notification in BMW Messages [01.04.02.02.01.01.03],1,327,0.0031,27,0.037
+4A,Route planning and management [01.04.03.01.03.02.02],1,327,0.0031,17,0.0588
+4A,Show Call List [01.04.01.04.01.05.01.01],1,327,0.0031,1,1.0
+4A,Smart Access / Digital Key (Plus) [01.03.03.03.04],1,327,0.0031,29,0.0345
+4A,Steering and Lane Control Assistant 3 [LSA3] [01.02.02.12.02.02],1,327,0.0031,1,1.0
+4A,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],1,327,0.0031,41,0.0244
+4A,Unit Display Settings [01.04.04.01.03.09],1,327,0.0031,3,0.3333
+4A,Use Co-Driver Entertainment [01.04.01.09.03],1,327,0.0031,21,0.0476
+4A,Use Rear Seat Entertainment [01.04.01.09.02],1,327,0.0031,22,0.0455
+4A,Welcome & Goodbye [01.04.02.01.04.05],1,327,0.0031,4,0.25
+4B,Provide CDE Launcher [01.04.01.09.03.01],2,14,0.1429,26,0.0769
+4B,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],2,14,0.1429,66,0.0303
+4B,Augmented Reality Video CID [01.04.02.03.03.01],1,14,0.0714,27,0.037
+4B,IPA Interactive Elements provided [01.04.02.01.02.01.03],1,14,0.0714,139,0.0072
+4B,IPA Visualization  [01.04.02.01.02.01.01],1,14,0.0714,44,0.0227
+4B,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],1,14,0.0714,133,0.0075
+4B,Manage CE Devices (WiFi Direct) (legacy) [01.04.01.03.01.02.04],1,14,0.0714,1,1.0
+4B,Performance,1,14,0.0714,50,0.02
+4B,Provide 3rd party gaming enablement [01.04.01.02.03],1,14,0.0714,67,0.0149
+4B,Provide My Modes  [01.04.02.01.04.06],1,14,0.0714,10,0.1
+4B,Provide Speech Dialog Improvement​ China [01.04.02.01.01.04.31],1,14,0.0714,1,1.0
+4B,provide HUAWEI HiCar [01.04.01.06.13],1,14,0.0714,262,0.0038
+4C,Voice Interface [01.04.02.01.01.02],12,29,0.4138,626,0.0192
+4C,Connected Music China [01.04.01.06.04],3,29,0.1034,144,0.0208
+4C,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],2,29,0.069,133,0.015
+4C,Provide Navigation 2.0 [01.04.03.01.03.06],2,29,0.069,705,0.0028
+4C,provide HUAWEI HiCar [01.04.01.06.13],2,29,0.069,262,0.0076
+4C,Basic Vehicle Connectivity [01.04.04.02.02.02],1,29,0.0345,88,0.0114
+4C,CarPlay [01.04.01.07.02],1,29,0.0345,248,0.004
+4C,Display weather [01.04.01.05.01.03],1,29,0.0345,74,0.0135
+4C,Guiding [01.04.03.01.03.02.03],1,29,0.0345,259,0.0039
+4C,IPA Visualization  [01.04.02.01.02.01.01],1,29,0.0345,44,0.0227
+4C,Provide Festival Mode [01.04.02.01.04.08],1,29,0.0345,110,0.0091
+4C,Provide Karaoke Service [01.04.01.06.10],1,29,0.0345,76,0.0132
+4C,Stability,1,29,0.0345,318,0.0031
+4D,Basic Vehicle Connectivity [01.04.04.02.02.02],1,6,0.1667,88,0.0114
+4D,Data Privacy menu - Master part [01.05.02.09.03.01],1,6,0.1667,21,0.0476
+4D,Provide Launcher  [01.04.02.03.01.01.09],1,6,0.1667,108,0.0093
+4D,Provide SHUD Driver Assistance [01.04.02.03.03.04],1,6,0.1667,5,0.2
+4D,Telephony via customer device [01.04.01.04.01.01],1,6,0.1667,52,0.0192
+4D,Video streaming China [01.04.01.06.05],1,6,0.1667,147,0.0068
+4E,Basic Vehicle Connectivity [01.04.04.02.02.02],2,11,0.1818,88,0.0227
+4E,Provide Navigation 2.0 [01.04.03.01.03.06],2,11,0.1818,705,0.0028
+4E,provide eCall [01.04.02.01.03.03.02],2,11,0.1818,28,0.0714
+4E,CarPlay [01.04.01.07.02],1,11,0.0909,248,0.004
+4E,Enable User Management [01.04.01.08.03],1,11,0.0909,30,0.0333
+4E,Manage CoDU in In-Car-Store [01.04.01.05.03.01],1,11,0.0909,137,0.0073
+4E,Stability,1,11,0.0909,318,0.0031
+4E,provide PHUD settings [01.04.02.03.04.02.01],1,11,0.0909,6,0.1667
+UNKNOWN,[Sys_RSU] 30 Initialization & inquiry [01.05.02.08.04],54,436,0.1239,66,0.8182
+UNKNOWN,Voice Interface [01.04.02.01.01.02],26,436,0.0596,626,0.0415
+UNKNOWN,Basic Vehicle Connectivity [01.04.04.02.02.02],18,436,0.0413,88,0.2045
+UNKNOWN,Guiding [01.04.03.01.03.02.03],16,436,0.0367,259,0.0618
+UNKNOWN,Stability,16,436,0.0367,318,0.0503
+UNKNOWN,Base Audio [01.04.04.01.01.04.01],14,436,0.0321,127,0.1102
+UNKNOWN,Itinerary (Mobile App) [01.04.03.01.01.07.09],14,436,0.0321,411,0.0341
+UNKNOWN,Use Speech operation [01.04.02.01.01.05],14,436,0.0321,580,0.0241
+UNKNOWN,Provide Navigation 2.0 [01.04.03.01.03.06],13,436,0.0298,705,0.0184
+UNKNOWN,Display Touch Control [01.04.02.03.01.01.04],11,436,0.0252,60,0.1833
+UNKNOWN,BS2,10,436,0.0229,12,0.8333
+UNKNOWN,Display weather [01.04.01.05.01.03],9,436,0.0206,74,0.1216
+UNKNOWN,Implement BMW Lens [01.04.02.02.01.04.09],9,436,0.0206,32,0.2812
+UNKNOWN,Provide Snapshot [01.04.02.02.01.04.04],9,436,0.0206,36,0.25
+UNKNOWN,UNKNOWN,9,436,0.0206,9,1.0
+UNKNOWN,Manage CE Devices (Bluetooth) [01.04.01.03.01.02.01],8,436,0.0183,133,0.0602
+UNKNOWN,My Modes [01.04.02.01.04.03],7,436,0.0161,18,0.3889
+UNKNOWN,Provisioning International Speller [01.04.02.03.01.01.06],7,436,0.0161,69,0.1014
+UNKNOWN,IPA Interactive Elements provided [01.04.02.01.02.01.03],6,436,0.0138,139,0.0432
+UNKNOWN,Provide Festival Mode [01.04.02.01.04.08],6,436,0.0138,110,0.0545
+UNKNOWN,Video streaming China [01.04.01.06.05],6,436,0.0138,147,0.0408
+UNKNOWN,CarPlay [01.04.01.07.02],5,436,0.0115,248,0.0202
+UNKNOWN,Manage CoDU in In-Car-Store [01.04.01.05.03.01],5,436,0.0115,137,0.0365
+UNKNOWN,Provide Launcher  [01.04.02.03.01.01.09],5,436,0.0115,108,0.0463
+UNKNOWN,Augmented Reality Video CID [01.04.02.03.03.01],4,436,0.0092,27,0.1481
+UNKNOWN,Change Audio Sound Settings [01.04.04.01.01.02],4,436,0.0092,35,0.1143
+UNKNOWN,Change Audio Volume [01.04.04.01.01.01],4,436,0.0092,74,0.0541
+UNKNOWN,Contact Roadside Assistance [01.04.02.01.03.03.03],4,436,0.0092,33,0.1212
+UNKNOWN,Guiding ASIA [01.04.03.01.02.08],4,436,0.0092,100,0.04
+UNKNOWN,IPA Visualization  [01.04.02.01.02.01.01],4,436,0.0092,44,0.0909
+UNKNOWN,Date and Time Settings [01.04.04.01.03.07],3,436,0.0069,16,0.1875
+UNKNOWN,Display & operation in the rear of entertainment sources (BMT) [01.04.01.03.02.02],3,436,0.0069,6,0.5
+UNKNOWN,Guiding 2.0 [01.04.02.01.03.03.07.07],3,436,0.0069,4,0.75
+UNKNOWN,HUD Settings [01.04.02.03.04.01.02],3,436,0.0069,7,0.4286
+UNKNOWN,Personalization: User Account Use [01.04.01.08.11],3,436,0.0069,24,0.125
+UNKNOWN,Provide App Center China [01.04.01.06.09],3,436,0.0069,65,0.0462
+UNKNOWN,Remote Services [01.04.02.02.01.01.01],3,436,0.0069,20,0.15
+UNKNOWN,Setting system language [01.04.04.01.03.12],3,436,0.0069,16,0.1875
+UNKNOWN,Charge CE Device Wireless [01.04.01.03.01.03],2,436,0.0046,32,0.0625
+UNKNOWN,Drive Recorder V3 [01.02.02.15.04.02.02],2,436,0.0046,6,0.3333
+UNKNOWN,IC-HMI_Gear_and_shift_indication [01.02.02.15.02.15.12.03],2,436,0.0046,2,1.0
+UNKNOWN,Pentest Security,2,436,0.0046,2,1.0
+UNKNOWN,Personal Assistant - Widget [01.04.02.01.02.01.02],2,436,0.0046,11,0.1818
+UNKNOWN,Provide 3rd Party Gaming App [01.04.01.02.03.05],2,436,0.0046,8,0.25
+UNKNOWN,Provide My Modes  [01.04.02.01.04.06],2,436,0.0046,10,0.2
+UNKNOWN,Provide connected company context [01.04.02.03.02.03],2,436,0.0046,5,0.4
+UNKNOWN,Request synchronous customer confirmation [01.04.02.01.03.03.03.11],2,436,0.0046,3,0.6667
+UNKNOWN,SWO Vehicle [01.04.02.01.02.01.06.01],2,436,0.0046,14,0.1429
+UNKNOWN,Smart Access / Digital Key (Plus) [01.03.03.03.04],2,436,0.0046,29,0.069
+UNKNOWN,Speedlock,2,436,0.0046,2,1.0
+UNKNOWN,Telephony via customer device [01.04.01.04.01.01],2,436,0.0046,52,0.0385
+UNKNOWN,Turn Signaling provision [01.03.03.01.04.02],2,436,0.0046,2,1.0
+UNKNOWN,Welcome & Goodbye [01.04.02.01.04.05],2,436,0.0046,4,0.5
+UNKNOWN,Audio volume change: entertainment [01.04.01.01.06.01],1,436,0.0023,1,1.0
+UNKNOWN,BT Child Seat App connection [01.06.02.04.04.04],1,436,0.0023,2,0.5
+UNKNOWN,Battery Preconditioning Strategy [01.01.04.04.12],1,436,0.0023,2,0.5
+UNKNOWN,Charging Remote Control (Mobile App) [01.04.03.02.03.01],1,436,0.0023,1,1.0
+UNKNOWN,Configuration Driver Assistance [01.02.01.02.07.03.02],1,436,0.0023,2,0.5
+UNKNOWN,Confirm One Update with the customer or start it manually [01.05.02.12.03.10],1,436,0.0023,1,1.0
+UNKNOWN,Connected Music China [01.04.01.06.04],1,436,0.0023,144,0.0069
+UNKNOWN,Control steering wheel heating [01.02.03.05.05.01],1,436,0.0023,1,1.0
+UNKNOWN,Data Privacy menu - Client part [01.05.02.09.03.02],1,436,0.0023,14,0.0714
+UNKNOWN,Display LiveCar [01.04.04.01.04.01.04.03],1,436,0.0023,2,0.5
+UNKNOWN,Display RSU update progress in Update Center [01.05.02.12.04.01],1,436,0.0023,1,1.0
+UNKNOWN,Drive readiness establish&exit [01.01.01.01],1,436,0.0023,1,1.0
+UNKNOWN,"Enable Registration, Login, Mapping [01.04.01.08.01]",1,436,0.0023,105,0.0095
+UNKNOWN,Festival Mode [01.04.02.01.02.01.04],1,436,0.0023,27,0.037
+UNKNOWN,Functional Bookmark Control [01.04.02.03.01.01.03],1,436,0.0023,53,0.0189
+UNKNOWN,Guiding ECE+ROW [01.04.03.01.01.09],1,436,0.0023,1,1.0
+UNKNOWN,HMI Digital Keys display and operating [01.04.04.01.04.02.01.48],1,436,0.0023,1,1.0
+UNKNOWN,HMI Live Vehicle Journey data display [01.01.02.06.09],1,436,0.0023,1,1.0
+UNKNOWN,HMI MyModes Moments display and operation [01.04.02.01.04.06.20],1,436,0.0023,6,0.1667
+UNKNOWN,HMI Snapshot display and operation [01.04.02.02.01.04.04.08],1,436,0.0023,1,1.0
+UNKNOWN,IPA Proactive Elements  [01.03.03.05.02.11],1,436,0.0023,1,1.0
+UNKNOWN,IPA Proposals provided [01.04.02.01.02.01.07],1,436,0.0023,2,0.5
+UNKNOWN,IPA Routines provided [01.04.02.01.02.01.06],1,436,0.0023,12,0.0833
+UNKNOWN,Location Based Charging Settings 2.0 [01.04.03.01.03.04.02.01],1,436,0.0023,1,1.0
+UNKNOWN,Location-based Services [01.04.03.01.03.04.02],1,436,0.0023,3,0.3333
+UNKNOWN,MR_HMI eCall [01.07.04.04.01.05],1,436,0.0023,1,1.0
+UNKNOWN,MR_eCall voice communication [01.07.04.04.01.01],1,436,0.0023,1,1.0
+UNKNOWN,Manage BMW Apps [01.04.01.05.03.03],1,436,0.0023,18,0.0556
+UNKNOWN,Manage and Plan Routes ASIA [01.04.03.01.02.06],1,436,0.0023,22,0.0455
+UNKNOWN,Map [01.04.03.01.03.02.01],1,436,0.0023,70,0.0143
+UNKNOWN,Map and Navigation Data update ASIA [01.04.03.01.02.02],1,436,0.0023,1,1.0
+UNKNOWN,Open My Highlights App from the Update Center [01.05.02.12.02.15],1,436,0.0023,8,0.125
+UNKNOWN,PHUD Services,1,436,0.0023,5,0.2
+UNKNOWN,PaDi China Custom Android Launcher and System HMI [01.04.04.01.05.05],1,436,0.0023,1,1.0
+UNKNOWN,Panoramadisplay Kinematik [01.03.05.03.05],1,436,0.0023,2,0.5
+UNKNOWN,Park View 21.0 [ParkVi21.0] [01.02.02.05.02.04],1,436,0.0023,10,0.1
+UNKNOWN,Parking Assist View for AVP provisioning [01.02.02.15.04.04.01.21],1,436,0.0023,1,1.0
+UNKNOWN,Performance,1,436,0.0023,50,0.02
+UNKNOWN,Play Showroom video in display elements [01.05.02.01.14.10],1,436,0.0023,1,1.0
+UNKNOWN,Play audio via Bluetooth [01.04.01.01.04.02],1,436,0.0023,76,0.0132
+UNKNOWN,Play audio via USB [01.04.01.01.04.04],1,436,0.0023,23,0.0435
+UNKNOWN,Position Based Services ASIA [01.04.03.01.02.09],1,436,0.0023,1,1.0
+UNKNOWN,Positioning ASIA [01.04.03.01.02.01.02],1,436,0.0023,6,0.1667
+UNKNOWN,Provide BMW Lens navigation [01.04.02.02.01.04.09.02],1,436,0.0023,1,1.0
+UNKNOWN,Provide IPA interactive Elements China [01.04.02.01.02.01.03.01],1,436,0.0023,14,0.0714
+UNKNOWN,Provide RSE Launcher [01.04.01.09.02.01],1,436,0.0023,13,0.0769
+UNKNOWN,Provide SHUD Navigation [01.04.02.03.03.03],1,436,0.0023,17,0.0588
+UNKNOWN,Remote 360 21.0 [Remote36021.0] [01.02.02.05.03],1,436,0.0023,6,0.1667
+UNKNOWN,Remote Camera Service [01.04.02.02.01.03.06.01],1,436,0.0023,1,1.0
+UNKNOWN,Remote Operation for Parking 22.0 [ROP22.0] [01.02.02.04.04],1,436,0.0023,1,1.0
+UNKNOWN,Slip-Through,1,436,0.0023,2,0.5
+UNKNOWN,Sound Design Interior [01.04.04.01.02.04],1,436,0.0023,1,1.0
+UNKNOWN,Speech control via CE-Device [01.04.01.03.02.01],1,436,0.0023,2,0.5
+UNKNOWN,Steady-state climatic comfort [01.03.04.02.01],1,436,0.0023,2,0.5
+UNKNOWN,Tencent MiniProgramPlatform (Tencent MPP) [01.04.01.06.01],1,436,0.0023,41,0.0244
+UNKNOWN,Trip Computer and Additional Notifications [01.04.04.01.03.02],1,436,0.0023,1,1.0
+UNKNOWN,Use Rear Seat Entertainment [01.04.01.09.02],1,436,0.0023,22,0.0455
+UNKNOWN,Use Third Party App Store [01.04.01.05.03.02],1,436,0.0023,17,0.0588
+UNKNOWN,ZBE Control [01.04.02.03.01.01.05],1,436,0.0023,24,0.0417
+UNKNOWN,provide PHUD settings [01.04.02.03.04.02.01],1,436,0.0023,6,0.1667
+UNKNOWN,provide eCall [01.04.02.01.03.03.02],1,436,0.0023,28,0.0357

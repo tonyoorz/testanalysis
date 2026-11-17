@@ -1,8 +1,7 @@
 import os
 
 # 检查是否为reloader进程，如果是则跳过数据加载操作
-WERKZEUG_RUN_MAIN = os.environ.get('WERKZEUG_RUN_MAIN')
-IS_RELOADER = WERKZEUG_RUN_MAIN is not None and WERKZEUG_RUN_MAIN != 'true'
+IS_RELOADER = os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
 
 if not IS_RELOADER:
     import json
@@ -418,7 +417,7 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
     # 添加严重性分组和TopIssue分类 - 新的风险评分系统
     def calculate_topissue_risk_score(row):
         """
-        计算TopIssue风险分数 - 改进版非线性算法，基于原有线性基础增加非线性考虑：
+        计算TopIssue风险分数 - 非线性算法，基于原有线性基础增加非线性考虑：
         
         核心改进：
         1. Matrix严重度 - 指数衰减：Matrix-1a(30分) → 1b(24分) → 1c(19分)，高危等级分数差距更大

@@ -133,56 +133,6 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
         
         if not phase_changes:
             return {'error': f'No phase changes found for ticket {ticket_id}'}
-
-        lifecycle_start_ts = None
-        lifecycle_end_ts = None
-        lifecycle_start_dt = None
-        lifecycle_end_dt = None
-
-        for ch in phase_changes:
-            ts = ch.get("timestamp")
-            to_phase = str(ch.get("to_phase") or "").strip()
-            if not ts:
-                continue
-            try:
-                dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-            except Exception:
-                continue
-            if lifecycle_start_dt is None and (to_phase.startswith("00-") or to_phase.startswith("01-")):
-                lifecycle_start_dt = dt
-                lifecycle_start_ts = ts
-                continue
-
-        if lifecycle_start_dt is None:
-            first_ts = phase_changes[0].get("timestamp")
-            if first_ts:
-                try:
-                    lifecycle_start_dt = datetime.fromisoformat(str(first_ts).replace("Z", "+00:00"))
-                    lifecycle_start_ts = first_ts
-                except Exception:
-                    lifecycle_start_dt = None
-                    lifecycle_start_ts = None
-
-        if lifecycle_start_dt is not None:
-            for ch in phase_changes:
-                ts = ch.get("timestamp")
-                to_phase = str(ch.get("to_phase") or "").strip()
-                if not ts:
-                    continue
-                try:
-                    dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-                except Exception:
-                    continue
-                if dt < lifecycle_start_dt:
-                    continue
-                if to_phase.startswith("06-") or to_phase.startswith("09-"):
-                    lifecycle_end_dt = dt
-                    lifecycle_end_ts = ts
-                    break
-
-        lifecycle_days = None
-        if lifecycle_start_dt is not None and lifecycle_end_dt is not None:
-            lifecycle_days = round((lifecycle_end_dt - lifecycle_start_dt).total_seconds() / 86400, 2)
         
         # 计算持续时间
         durations = calculate_phase_duration(phase_changes)
@@ -196,9 +146,6 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
             'phase_durations': durations,
             'found_in_functions': sorted(found_in_functions),
             'phase02_found_in_functions': sorted(phase02_found_in_functions),
-            'lifecycle_start_ts': lifecycle_start_ts,
-            'lifecycle_end_ts': lifecycle_end_ts,
-            'lifecycle_days': lifecycle_days,
             'total_duration_hours': round(total_hours, 2),
             'total_duration_days': round(total_hours / 24, 2)
         }
@@ -207,7 +154,7 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
         return {'error': f'Error processing ticket {ticket_id}: {str(e)}'}
 
 
-_CACHE_VERSION = 4
+_CACHE_VERSION = 3
 _TICKET_ANALYSIS_CACHE = {}
 _TICKET_ANALYSIS_CACHE_LOCK = threading.Lock()
 
@@ -262,9 +209,6 @@ def analyze_ticket_phases_cached(
                     "phase_durations": payload.get("phase_durations") or [],
                     "found_in_functions": payload.get("found_in_functions") or [],
                     "phase02_found_in_functions": payload.get("phase02_found_in_functions") or [],
-                    "lifecycle_start_ts": payload.get("lifecycle_start_ts"),
-                    "lifecycle_end_ts": payload.get("lifecycle_end_ts"),
-                    "lifecycle_days": payload.get("lifecycle_days"),
                     "total_duration_hours": payload.get("total_duration_hours", 0),
                     "total_duration_days": payload.get("total_duration_days", 0),
                 }
@@ -285,9 +229,6 @@ def analyze_ticket_phases_cached(
         "phase_durations": result.get("phase_durations") or [],
         "found_in_functions": result.get("found_in_functions") or [],
         "phase02_found_in_functions": result.get("phase02_found_in_functions") or [],
-        "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-        "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-        "lifecycle_days": result.get("lifecycle_days"),
         "total_duration_hours": result.get("total_duration_hours", 0),
         "total_duration_days": result.get("total_duration_days", 0),
     }
@@ -309,9 +250,6 @@ def analyze_ticket_phases_cached(
                         "phase_durations": minimal_result["phase_durations"],
                         "found_in_functions": minimal_result["found_in_functions"],
                         "phase02_found_in_functions": minimal_result["phase02_found_in_functions"],
-                        "lifecycle_start_ts": minimal_result["lifecycle_start_ts"],
-                        "lifecycle_end_ts": minimal_result["lifecycle_end_ts"],
-                        "lifecycle_days": minimal_result["lifecycle_days"],
                         "total_duration_hours": minimal_result["total_duration_hours"],
                         "total_duration_days": minimal_result["total_duration_days"],
                     },
@@ -407,12 +345,7 @@ def bulk_analyze_phases(
                 if all_results is not None:
                     all_results.append(result)
                 if ticket_meta is not None and ticket_id is not None:
-                    ticket_meta[str(ticket_id)] = {
-                        "found_in_functions": result.get("found_in_functions") or result.get("phase02_found_in_functions") or [],
-                        "lifecycle_days": result.get("lifecycle_days"),
-                        "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-                        "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-                    }
+                    ticket_meta[str(ticket_id)] = result.get("found_in_functions") or result.get("phase02_found_in_functions") or []
 
                 for duration in result.get("phase_durations", []):
                     phase_transition = f"{duration['from_phase']} → {duration['to_phase']}"
@@ -443,12 +376,7 @@ def bulk_analyze_phases(
             if all_results is not None:
                 all_results.append(result)
             if ticket_meta is not None:
-                ticket_meta[str(ticket_id)] = {
-                    "found_in_functions": result.get("found_in_functions") or result.get("phase02_found_in_functions") or [],
-                    "lifecycle_days": result.get("lifecycle_days"),
-                    "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-                    "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-                }
+                ticket_meta[str(ticket_id)] = result.get("found_in_functions") or result.get("phase02_found_in_functions") or []
 
             for duration in result.get("phase_durations", []):
                 phase_transition = f"{duration['from_phase']} → {duration['to_phase']}"

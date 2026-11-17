@@ -14,6 +14,188 @@ from test_coverage_components import (
 )
 from data_processor import create_empty_figure
 
+def build_chart3_export_xlsx(store_data):
+    if not store_data:
+        return None
+    df = pd.DataFrame(store_data)
+    if df.empty:
+        return None
+
+    from io import BytesIO
+
+    base_cols = ['test_id', 'test_name', 'top_aida', 'fvp', 'fv', 'project', 'pu', 'tester']
+    required_cols = ['test_week'] + base_cols
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = ''
+
+    status_col = 'export_status' if 'export_status' in df.columns else next(
+        (c for c in ['run_status', 'status', 'execution_status'] if c in df.columns),
+        None
+    )
+    if not status_col:
+        return None
+
+    status_mapping = {
+        'passed': 'Passed',
+        'failed': 'Failed',
+        'blocked': 'Blocked',
+        'planned': 'Planned',
+        'requires attention': 'Blocked'
+    }
+    df['status_norm'] = df[status_col].apply(
+        lambda x: status_mapping.get(str(x).strip().lower(), str(x).strip()) if x is not None else ''
+    )
+
+    df['test_week_str'] = df['test_week'].apply(lambda x: str(x) if x is not None else '').fillna('')
+
+    parsed = df['test_week_str'].str.extract(r'(\d{2})-CW(\d{2})')
+    df['_year'] = pd.to_numeric(parsed[0], errors='coerce')
+    df['_cw'] = pd.to_numeric(parsed[1], errors='coerce')
+
+    week_meta = (
+        df[['test_week_str', '_year', '_cw']]
+        .drop_duplicates()
+        .assign(_year_sort=lambda d: d['_year'].fillna(99).astype(int),
+                _cw_sort=lambda d: d['_cw'].fillna(99).astype(int))
+        .sort_values(['_year_sort', '_cw_sort', 'test_week_str'])
+    )
+    years_present = week_meta['_year'].dropna().unique().tolist()
+    use_short_label = len(years_present) == 1
+
+    label_map = {}
+    used_labels = set()
+    for _, r in week_meta.iterrows():
+        wk = r['test_week_str']
+        yr = r['_year']
+        cw = r['_cw']
+        if pd.notna(yr) and pd.notna(cw):
+            if use_short_label:
+                label = f'CW{int(cw):02d}'
+            else:
+                label = f'{int(yr):02d}-CW{int(cw):02d}'
+        else:
+            label = wk
+        if label in used_labels:
+            label = wk
+        used_labels.add(label)
+        label_map[wk] = label
+
+    df['week_label'] = df['test_week_str'].map(label_map).fillna(df['test_week_str'])
+
+    priority = {'Failed': 4, 'Blocked': 3, 'Requires Attention': 3, 'Planned': 1, 'Passed': 0}
+
+    def pick_status(series):
+        return series.sort_values(key=lambda s: s.map(lambda x: priority.get(str(x), -1)), ascending=False).iloc[0]
+
+    grouped = (
+        df.groupby(base_cols + ['week_label'], dropna=False)['status_norm']
+        .apply(pick_status)
+        .reset_index()
+    )
+
+    pivot = grouped.pivot(index=base_cols, columns='week_label', values='status_norm')
+
+    ordered_week_labels = [label_map[w] for w in week_meta['test_week_str'].tolist() if w in label_map]
+    ordered_week_labels = [w for w in ordered_week_labels if w in pivot.columns]
+    remaining = [c for c in pivot.columns.tolist() if c not in ordered_week_labels]
+    week_cols = ordered_week_labels + remaining
+    pivot = pivot.reindex(columns=week_cols)
+    pivot = pivot.reset_index()
+
+    def _count_weeks_with_result(row):
+        vals = [row.get(c) for c in week_cols]
+        return sum(pd.notna(v) and str(v).strip() != '' for v in vals)
+
+    def _count_weeks_passed(row):
+        vals = [row.get(c) for c in week_cols]
+        vals = [v for v in vals if pd.notna(v) and str(v).strip() != '']
+        return sum(str(v).strip() == 'Passed' for v in vals)
+
+    total_weeks = len(week_cols)
+    pivot['_weeks_with_result'] = pivot.apply(_count_weeks_with_result, axis=1)
+    pivot['_weeks_passed'] = pivot.apply(_count_weeks_passed, axis=1)
+    pivot['Test Frequency'] = pivot['_weeks_with_result'].apply(lambda x: (x / total_weeks) if total_weeks > 0 else 0)
+    pivot['Pass Rate'] = pivot.apply(
+        lambda r: (r['_weeks_passed'] / r['_weeks_with_result']) if r['_weeks_with_result'] > 0 else 0,
+        axis=1
+    )
+
+    rename_map = {
+        'test_id': 'Testcase ID',
+        'test_name': 'Testcase Name',
+        'top_aida': 'Top AIDA',
+        'fvp': 'FVP',
+        'fv': 'FV',
+        'project': 'Project',
+        'pu': 'PU',
+        'tester': 'Tester'
+    }
+    pivot = pivot.rename(columns=rename_map)
+    base_headers = [rename_map.get(c, c) for c in base_cols]
+    output_cols = base_headers + week_cols + ['Test Frequency', 'Pass Rate']
+    pivot_out = pivot[output_cols]
+
+    stats_out = pivot[['Testcase ID', 'Testcase Name', 'Top AIDA', 'FVP', 'FV', 'Project', 'PU', 'Tester', '_weeks_with_result', '_weeks_passed', 'Test Frequency', 'Pass Rate']].copy()
+    stats_out = stats_out.rename(columns={'_weeks_with_result': 'Weeks With Result', '_weeks_passed': 'Weeks Passed'})
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        pivot_out.to_excel(writer, index=False, sheet_name='Pivot')
+        stats_out.to_excel(writer, index=False, sheet_name='Stats')
+
+        workbook = writer.book
+        worksheet = writer.sheets['Pivot']
+        stats_ws = writer.sheets['Stats']
+
+        nrows, ncols = pivot_out.shape
+        worksheet.autofilter(0, 0, nrows, ncols - 1)
+        worksheet.freeze_panes(1, len(base_headers))
+
+        worksheet.set_column(0, 0, 14)
+        worksheet.set_column(1, 1, 48)
+        worksheet.set_column(2, 2, 46)
+        worksheet.set_column(3, 7, 16)
+
+        first_week_col = len(base_headers)
+        last_week_col = first_week_col + len(week_cols) - 1
+        if len(week_cols) > 0:
+            worksheet.set_column(first_week_col, last_week_col, 11)
+
+        tf_col = pivot_out.columns.get_loc('Test Frequency')
+        pr_col = pivot_out.columns.get_loc('Pass Rate')
+
+        percent_fmt = workbook.add_format({'num_format': '0%'})
+        worksheet.set_column(tf_col, tf_col, 14, percent_fmt)
+        worksheet.set_column(pr_col, pr_col, 12, percent_fmt)
+
+        fmt_failed = workbook.add_format({'bg_color': '#FFC7CE'})
+        fmt_blocked = workbook.add_format({'bg_color': '#FFD966'})
+        fmt_planned = workbook.add_format({'bg_color': '#D9D9D9'})
+        fmt_passed = workbook.add_format({'bg_color': '#C6EFCE'})
+
+        if len(week_cols) > 0:
+            worksheet.conditional_format(1, first_week_col, nrows, last_week_col, {'type': 'text', 'criteria': 'containing', 'value': 'Failed', 'format': fmt_failed})
+            worksheet.conditional_format(1, first_week_col, nrows, last_week_col, {'type': 'text', 'criteria': 'containing', 'value': 'Blocked', 'format': fmt_blocked})
+            worksheet.conditional_format(1, first_week_col, nrows, last_week_col, {'type': 'text', 'criteria': 'containing', 'value': 'Planned', 'format': fmt_planned})
+            worksheet.conditional_format(1, first_week_col, nrows, last_week_col, {'type': 'text', 'criteria': 'containing', 'value': 'Passed', 'format': fmt_passed})
+
+        stats_rows, stats_cols = stats_out.shape
+        stats_ws.autofilter(0, 0, stats_rows, stats_cols - 1)
+        stats_ws.freeze_panes(1, 0)
+        tf2 = stats_out.columns.get_loc('Test Frequency')
+        pr2 = stats_out.columns.get_loc('Pass Rate')
+        stats_ws.set_column(tf2, tf2, 14, percent_fmt)
+        stats_ws.set_column(pr2, pr2, 12, percent_fmt)
+        stats_ws.set_column(0, 0, 14)
+        stats_ws.set_column(1, 1, 48)
+        stats_ws.set_column(2, 2, 46)
+        stats_ws.set_column(3, 7, 16)
+        stats_ws.set_column(8, 9, 18)
+
+    buffer.seek(0)
+    return buffer.getvalue()
+
 def register_test_coverage_callbacks(app, prefix="de-tc"):
     """注册测试覆盖率分析的回调函数"""
     
@@ -22,8 +204,8 @@ def register_test_coverage_callbacks(app, prefix="de-tc"):
         [Output(f'{prefix}-project-status-chart', 'figure'),
          Output(f'{prefix}-fvp-coverage-chart', 'figure'),
          Output(f'{prefix}-testcase-detail-chart', 'figure'),
-         Output(f'{prefix}-fv-dropdown', 'value'),
-         Output(f'{prefix}-aida-dropdown', 'value'),
+         Output(f'{prefix}-fv-dropdown', 'value'),        # 动态更新FV选项
+         Output(f'{prefix}-aida-dropdown', 'value'),      # 动态更新AIDA选项
          Output(f'{prefix}-chart3-filtered-store', 'data')],
         [Input(f'{prefix}-project-dropdown', 'value'),
          Input(f'{prefix}-testweek-dropdown', 'value'),
@@ -55,7 +237,7 @@ def register_test_coverage_callbacks(app, prefix="de-tc"):
         if not stored_data:
             print("警告: 数据存储为空")
             empty_fig = create_empty_figure("数据加载失败")
-            return empty_fig, empty_fig, empty_fig, [], []
+            return empty_fig, empty_fig, empty_fig, [], [], []
         
         try:
             tdf = pd.DataFrame(stored_data)
@@ -165,12 +347,43 @@ def register_test_coverage_callbacks(app, prefix="de-tc"):
                 fig3 = create_testcase_detail_chart(filtered_tdf, has_active_filters)
                 
                 print("--- 测试覆盖率回调完成 ---")
-                export_store = []
-                raw_cols = ['test_week', 'test_id', 'test_name', 'run_status', 'top_aida', 'fv', 'project', 'pu', 'tester']
-                for col in raw_cols:
-                    if col not in filtered_tdf.columns:
-                        filtered_tdf[col] = ''
-                export_store = filtered_tdf[raw_cols].to_dict('records')
+                def _extract_status_value(v):
+                    if isinstance(v, dict) and 'name' in v:
+                        return v.get('name')
+                    return v
+
+                status_mapping = {
+                    'passed': 'Passed',
+                    'failed': 'Failed',
+                    'blocked': 'Blocked',
+                    'planned': 'Planned',
+                    'requires attention': 'Blocked'
+                }
+
+                if 'native_status' in filtered_tdf.columns:
+                    status_series = filtered_tdf['native_status'].apply(_extract_status_value)
+                else:
+                    status_source_col = next((c for c in ['run_status', 'status', 'execution_status'] if c in filtered_tdf.columns), None)
+                    status_series = filtered_tdf[status_source_col] if status_source_col else pd.Series([''] * len(filtered_tdf))
+
+                export_status = status_series.apply(
+                    lambda x: status_mapping.get(str(x).strip().lower(), str(x).strip()) if x is not None else ''
+                )
+
+                export_df = filtered_tdf.copy()
+                export_df['export_status'] = export_status
+
+                export_cols = [
+                    'test_week', 'test_id', 'test_name',
+                    'export_status',
+                    'top_aida', 'fvp', 'fv',
+                    'project', 'pu', 'tester'
+                ]
+                for col in export_cols:
+                    if col not in export_df.columns:
+                        export_df[col] = ''
+                export_store = export_df[export_cols].to_dict('records')
+
                 return fig1, fig2, fig3, output_fvs, output_aidas, export_store
                 
             except Exception as e:
@@ -344,102 +557,35 @@ def register_test_coverage_callbacks(app, prefix="de-tc"):
             empty_kpi = html.Div("数据处理失败", style={'textAlign': 'center', 'color': '#dc3545'})
             return empty_fig, empty_fig, empty_fig, empty_kpi
 
-    print(f"测试覆盖率回调函数已注册 (前缀: {prefix})")
-
     @app.callback(
-        Output(f'{prefix}-download-chart3-xlsx', 'data'),
+        [Output(f'{prefix}-download-chart3-xlsx', 'data'),
+         Output(f'{prefix}-export-status', 'children'),
+         Output(f'{prefix}-export-progress', 'children')],
         Input(f'{prefix}-export-chart3-btn', 'n_clicks'),
         State(f'{prefix}-chart3-filtered-store', 'data'),
+        State(f'{prefix}-data-store', 'data'),
         prevent_initial_call=True
     )
-    def export_chart3_prefixed(n_clicks, store_data):
+    def export_chart3_prefixed(n_clicks, store_data, all_store_data):
         if not n_clicks:
-            return None
-        if not store_data:
-            return None
-        df = pd.DataFrame(store_data)
-        if df.empty:
-            return None
-        def to_cw_label(val):
-            s = str(val)
-            if 'CW' in s:
-                try:
-                    week = s.split('CW')[1][:2]
-                    return f'CW{week}'
-                except Exception:
-                    return s
-            return s
-        df['week_label'] = df['test_week'].apply(to_cw_label)
-        priority = { 'Failed': 4, 'Blocked': 3, 'Requires Attention': 2, 'Planned': 1, 'Passed': 0 }
-        def pick_status(series):
-            return series.sort_values(key=lambda s: s.map(lambda x: priority.get(str(x), -1)), ascending=False).iloc[0]
-        index_cols = ['test_id', 'test_name', 'top_aida', 'fv', 'project', 'pu', 'tester']
-        for col in index_cols:
-            if col not in df.columns:
-                df[col] = ''
-        grouped = df.groupby(index_cols + ['week_label'])['run_status'].apply(pick_status).reset_index()
-        pivot = grouped.pivot(index=index_cols, columns='week_label', values='run_status')
-        def week_sort_key(col):
-            try:
-                return int(str(col).replace('CW',''))
-            except Exception:
-                return 999
-        ordered_cols = sorted(pivot.columns.tolist(), key=week_sort_key)
-        pivot = pivot.reindex(columns=ordered_cols)
-        pivot = pivot.reset_index()
-        week_cols = ordered_cols
-        def overall_status_row(row):
-            vals = [str(row[c]) for c in week_cols if c in row and pd.notna(row[c])]
-            if not vals:
-                return ''
-            return sorted(vals, key=lambda x: priority.get(str(x), -1), reverse=True)[0]
-        pivot.insert(len(index_cols), '总体状态', pivot.apply(overall_status_row, axis=1))
-        def calc_freq(row):
-            vals = [row[c] for c in week_cols if c in row]
-            tested = sum(pd.notna(v) and str(v) != '' for v in vals)
-            return tested / len(week_cols) if len(week_cols) > 0 else 0
-        def calc_pass_rate(row):
-            vals = [row[c] for c in week_cols if c in row]
-            tested_vals = [v for v in vals if pd.notna(v) and str(v) != '']
-            if not tested_vals:
-                return 0
-            passed = sum(str(v) == 'Passed' for v in tested_vals)
-            return passed / len(tested_vals)
-        pivot['Test Frequency'] = pivot.apply(calc_freq, axis=1)
-        pivot['Pass Rate'] = pivot.apply(calc_pass_rate, axis=1)
-        avg_freq = float(pivot['Test Frequency'].mean(skipna=True)) if 'Test Frequency' in pivot.columns else 0
-        avg_pass = float(pivot['Pass Rate'].mean(skipna=True)) if 'Pass Rate' in pivot.columns else 0
-        avg_row = {col: '' for col in pivot.columns}
-        avg_row['总体状态'] = ''
-        avg_row['Test Frequency'] = avg_freq
-        avg_row['Pass Rate'] = avg_pass
-        pivot = pd.concat([pivot, pd.DataFrame([avg_row])], ignore_index=True)
-        from io import BytesIO
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            pivot.to_excel(writer, index=False, sheet_name='Pivot')
-            workbook = writer.book
-            worksheet = writer.sheets['Pivot']
-            nrows, ncols = pivot.shape
-            worksheet.autofilter(0, 0, nrows, ncols - 1)
-            worksheet.freeze_panes(1, len(index_cols) + 1)
-            fmt_failed = workbook.add_format({'bg_color': '#FFC7CE'})
-            fmt_blocked = workbook.add_format({'bg_color': '#FFD966'})
-            fmt_attention = workbook.add_format({'bg_color': '#FFF2CC'})
-            fmt_planned = workbook.add_format({'bg_color': '#D9D9D9'})
-            fmt_passed = workbook.add_format({'bg_color': '#C6EFCE'})
-            percent_fmt = workbook.add_format({'num_format': '0%'})
-            start_col = len(index_cols) + 1
-            end_col = ncols - 1
-            worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Failed', 'format': fmt_failed})
-            worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Blocked', 'format': fmt_blocked})
-            worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Requires Attention', 'format': fmt_attention})
-            worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Planned', 'format': fmt_planned})
-            worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Passed', 'format': fmt_passed})
-            tf_col = pivot.columns.get_loc('Test Frequency')
-            pr_col = pivot.columns.get_loc('Pass Rate')
-            worksheet.set_column(tf_col, tf_col, None, percent_fmt)
-            worksheet.set_column(pr_col, pr_col, None, percent_fmt)
-        buffer.seek(0)
-        from dash import dcc
-        return dcc.send_bytes(buffer.getvalue(), filename='测试覆盖率_图表三_导出.xlsx')
+            return None, '', ''
+
+        effective_store = store_data if store_data else all_store_data
+        if not effective_store:
+            return None, '无可导出数据（请先等待图表加载/选择筛选条件）', ''
+
+        try:
+            print(f"[chart3 export] click={n_clicks}, rows={len(effective_store)}")
+            xlsx_bytes = build_chart3_export_xlsx(effective_store)
+            if not xlsx_bytes:
+                return None, '导出失败：数据字段不完整', ''
+            from dash import dcc
+            return (
+                dcc.send_bytes(xlsx_bytes, filename='测试覆盖率_图表三_导出.xlsx'),
+                '已生成，开始下载',
+                f'导出记录数: {len(effective_store)}'
+            )
+        except Exception as e:
+            return None, f'导出失败: {str(e)[:120]}', ''
+
+    print(f"测试覆盖率回调函数已注册 (前缀: {prefix})")

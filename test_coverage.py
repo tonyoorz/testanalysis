@@ -1,7 +1,5 @@
-import os
-import socket
 import dash
-from dash import dcc, html, no_update
+from dash import dcc, html
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -10,7 +8,6 @@ import numpy as np # Needed for np.where
 from dash import callback_context # 用于识别触发回调的组件
 import traceback # 用于打印详细错误
 import dash_bootstrap_components as dbc # 导入 dbc
-from io import BytesIO
 
 # --- 安全列访问函数 ---
 def safe_get_unique_values(df, column_name, default_list=None):
@@ -129,7 +126,7 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
     dbc.Card([ # 将过滤器放入 Card 中
         dbc.CardHeader("筛选器"),
         dbc.CardBody([
-            dbc.Row([
+            dbc.Row([ # 第一行过滤器
                 dbc.Col([
                     dbc.Label("Project:", html_for='project-dropdown', style={'fontWeight': 'bold'}),
                     dcc.Dropdown(
@@ -138,20 +135,20 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
                                 [{'label': i, 'value': i} for i in safe_get_unique_values(tdf, 'project')],
                         value=['all'], multi=True, placeholder="选择 Project..."
                     )
-                ], md=3),
+                ], md=4), # 中等屏幕及以上占 4 列
                 dbc.Col([
                     dbc.Label("Test Week:", html_for='testweek-dropdown', style={'fontWeight': 'bold'}),
                     dcc.Dropdown(
                         id='testweek-dropdown',
                         options=[{'label': '全部', 'value': 'all'}] +
                         [{'label': i, 'value': i} for i in sorted(
-                            [wk for wk in safe_get_unique_values(tdf, 'test_week') if isinstance(wk, str)],
+                            [wk for wk in safe_get_unique_values(tdf, 'test_week') if isinstance(wk, str)], # 确保是字符串再排序
                             key=lambda x: (int(x.split('-')[0]) if '-' in x and x.split('-')[0].isdigit() else 99,
                                          int(x.split('CW')[1]) if 'CW' in x and x.split('CW')[1].isdigit() else 99)
                         )],
                          value=['all'], multi=True, placeholder="选择 Test Week..."
                     )
-                ], md=3),
+                ], md=4),
                 dbc.Col([
                     dbc.Label("PU:", html_for='pu-dropdown', style={'fontWeight': 'bold'}),
                     dcc.Dropdown(
@@ -160,17 +157,8 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
                                 [{'label': i, 'value': i} for i in safe_get_unique_values(tdf, 'pu')],
                          value=['all'], multi=True, placeholder="选择 PU..."
                     )
-                ], md=3),
-                dbc.Col([
-                    dbc.Label("Tester:", html_for='tester-dropdown', style={'fontWeight': 'bold'}),
-                    dcc.Dropdown(
-                        id='tester-dropdown',
-                        options=[{'label': '全部', 'value': 'all'}] +
-                                [{'label': i, 'value': i} for i in safe_get_unique_values(tdf, 'tester')],
-                         value=['all'], multi=True, placeholder="选择 Tester..."
-                    )
-                ], md=3),
-            ], className="mb-3"),
+                ], md=4),
+            ], className="mb-3"), # 添加下边距
             dbc.Row([ # 第二行过滤器
                  dbc.Col([
                     dbc.Label("Top AIDA:", html_for='aida-dropdown', style={'fontWeight': 'bold'}),
@@ -242,7 +230,7 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
      dbc.Row([ # 图表行
         dbc.Col([ # 图表列
             dbc.Card([ # 图表3 Card
-                dbc.CardHeader(dbc.Row([dbc.Col("图表 3: 按测试用例和测试周分类的状态", width=8), dbc.Col(dbc.Button("导出Excel", id='export-chart3-btn', color='primary', size='sm'), width=4, className='text-end')], align='center')),
+                dbc.CardHeader("图表 3: 按测试用例和测试周分类的状态"),
                 dbc.CardBody([
                     dcc.Loading(
                         id="loading-graph-3",
@@ -252,9 +240,7 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
                 ])
             ])
         ], md=12, className="mb-4") # 占满整行，添加下边距
-    ]),
-    dcc.Download(id='download-chart3-xlsx'),
-    dcc.Store(id='chart3-filtered-store')
+    ])
 
 ], fluid=True) # 设置 Container 为 fluid
 
@@ -264,12 +250,10 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
      Output('aida-vs-week-chart', 'figure'),
      Output('test-vs-week-chart', 'figure'),
      Output('fv-dropdown', 'value'),       
-     Output('aida-dropdown', 'value'),
-     Output('chart3-filtered-store', 'data')],    
+     Output('aida-dropdown', 'value')],    
     [Input('project-dropdown', 'value'),
      Input('testweek-dropdown', 'value'),
      Input('pu-dropdown', 'value'),
-     Input('tester-dropdown', 'value'),
      Input('aida-dropdown', 'value'),      
      Input('feature-region-dropdown', 'value'),
      Input('fvp-dropdown', 'value'),
@@ -280,7 +264,7 @@ app.layout = dbc.Container([ # 使用 dbc.Container 作为最外层容器
     [State('fv-dropdown', 'value'),       
      State('aida-dropdown', 'value')]     
 )
-def update_graph(selected_projects, selected_testweeks, selected_pus, selected_testers,
+def update_graph(selected_projects, selected_testweeks, selected_pus,
                  selected_aidas_input, selected_feature_regions, selected_fvps, selected_fvs_input, 
                  click_data_fv, click_data_aida, click_data_test, 
                  fv_state, aida_state): 
@@ -379,8 +363,6 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
         filtered_tdf = filtered_tdf[filtered_tdf['test_week'].isin(selected_testweeks)]
     if is_filter_active(selected_pus):
         filtered_tdf = filtered_tdf[filtered_tdf['pu'].isin(selected_pus)]
-    if is_filter_active(selected_testers):
-        filtered_tdf = filtered_tdf[filtered_tdf['tester'].isin(selected_testers)]
     if is_filter_active(output_aidas): 
         if 'top_aida' in filtered_tdf.columns:
             try:
@@ -388,11 +370,11 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
             except Exception as e:
                 print(f"Error applying Top AIDA filter: {e}")
                 empty_fig = create_empty_figure("Top AIDA 筛选时出错")
-                return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas, []
+                return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas 
         else:
             print("警告: Top AIDA filter selected but 'top_aida' column missing.")
             empty_fig = create_empty_figure("错误: 'top_aida' 列不存在")
-            return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas, []
+            return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas 
 
     if is_filter_active(selected_feature_regions):
         if 'feature_region' in filtered_tdf.columns:
@@ -401,11 +383,11 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
             except Exception as e:
                 print(f"Error applying Feature Region filter: {e}")
                 empty_fig = create_empty_figure("Feature Region 筛选时出错")
-                return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas, []
+                return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas 
         else:
             print("警告: Feature Region filter selected but 'feature_region' column missing.")
             empty_fig = create_empty_figure("错误: 'feature_region' 列不存在")
-            return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas, []
+            return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas 
 
     if is_filter_active(selected_fvps):
         filtered_tdf = filtered_tdf[filtered_tdf['fvp'].isin(selected_fvps)]
@@ -416,7 +398,7 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
     if filtered_tdf.empty:
         print("Filtered data is empty.")
         empty_fig = create_empty_figure()
-        return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas, []
+        return empty_fig, empty_fig, empty_fig, output_fvs, output_aidas 
 
     # --- Check for Count Column --- 
     count_col = None
@@ -428,7 +410,7 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
     if count_col is None:
         print(f"警告: 无法找到用于计数的列 ('test_case_id' 或 'id').")
         error_fig = create_empty_figure("错误：缺少用于计数的列")
-        return error_fig, error_fig, error_fig, output_fvs, output_aidas, []
+        return error_fig, error_fig, error_fig, output_fvs, output_aidas 
         
     # ====================================
     # --- Chart 1: Bubble Chart (FV vs Week) ---
@@ -581,32 +563,28 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
                 )
                 
                 sorted_weeks3 = grouped_data3['test_week'].dropna().unique()
-                sorted_y_labels3 = grouped_data3['y_axis_label'].dropna().unique() 
-                # 为不同状态在同一周内提供水平位移，避免重叠同时保持与周刻度对齐
-                week_index_map = {wk: i for i, wk in enumerate(sorted_weeks3)}
-                grouped_data3['week_index'] = grouped_data3['test_week'].map(week_index_map)
-                status_offset_map = {
-                    'Passed': -0.2,
-                    'Requires Attention': 0.0,
-                    'Failed': 0.2,
-                    'Planned': 0.4
-                }
-                grouped_data3['status_offset'] = grouped_data3['run_status'].map(status_offset_map).fillna(0.0)
-                grouped_data3['x_pos'] = grouped_data3['week_index'].astype(float) + grouped_data3['status_offset']
+                y_order_df = grouped_data3[['test_id', 'y_axis_label']].drop_duplicates()
+                try:
+                    y_order_df['test_id_numeric'] = pd.to_numeric(y_order_df['test_id'])
+                    y_order_df = y_order_df.sort_values(['test_id_numeric'])
+                except (ValueError, TypeError):
+                    y_order_df = y_order_df.sort_values(['test_id'])
+                sorted_y_labels3 = y_order_df['y_axis_label'].dropna().tolist()
                 
                 # === 新增: 创建自定义悬停文本 ===
                 def format_hover(row):
                     mr_ids_str = ', '.join(map(str, row['mr_ids']))
+                    # 显示最多5个MR ID，如果更多则加省略号
                     max_mr_ids_to_show = 5
                     if len(row['mr_ids']) > max_mr_ids_to_show:
                         mr_ids_str = ', '.join(map(str, row['mr_ids'][:max_mr_ids_to_show])) + ', ...'
                     else:
                         mr_ids_str = ', '.join(map(str, row['mr_ids']))
+                        
                     testers_str = ', '.join(row['testers'])
-                    test_case_full = f"{row['test_id']} - {row['test_name']}"
                     return (f"状态={row['run_status']}<br>"
                             f"测试周={row['test_week']}<br>"
-                            f"测试用例={test_case_full}<br>"
+                            f"测试用例={row['y_axis_label']}<br>"
                             f"执行次数={row['count']}<br>"
                             f"MR IDs={mr_ids_str}<br>"
                             f"测试名称={row['test_name']}<br>"
@@ -617,58 +595,61 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
 
                 # === 修改: 更新 px.scatter 调用 ===
                 fig3 = px.scatter(
-                    grouped_data3,
-                    x='x_pos',
-                    y='y_axis_label',
-                    color='run_status',
-                    size='count',
-                    size_max=15,
+                    grouped_data3, 
+                    x='test_week', 
+                    y='y_axis_label', 
+                    color='run_status', 
+                    size='count', # 大小基于 count (即 MR ID 数量)
+                    size_max=15, 
                     opacity=0.8,
-                    title="按测试用例和测试周分类的状态 (气泡图)",
+                    title="按测试用例和测试周分类的状态 (气泡图)", 
                     labels={
-                        'count': '执行次数',
-                        'y_axis_label': '测试用例 (ID - 名称)',
-                        'run_status': '状态'
+                        'count': '执行次数', 
+                        'y_axis_label': '测试用例 (ID - 名称)', 
+                        'test_week': '测试周', 
+                        'run_status': '状态', 
+                        # 以下标签虽然存在于数据中，但已包含在自定义悬停文本里，故不再需要单独列出
+                        # 'test_name': '测试名称', 
+                        # 'tester': '测试员'
                     },
                     color_discrete_map=color_map,
                     category_orders={
-                        'y_axis_label': list(sorted_y_labels3),
+                        'test_week': list(sorted_weeks3), 
+                        'y_axis_label': list(sorted_y_labels3), 
                         'run_status': list(color_map.keys())
                     },
-                    custom_data=["top_aida", "hover_text", "test_week"],
-                    symbol='run_status',
-                    symbol_map={'Passed': 'circle', 'Failed': 'square', 'Requires Attention': 'diamond', 'Planned': 'triangle-up'}
+                    # 显式指定 custom_data
+                    custom_data=["top_aida", "hover_text"], # top_aida 在前用于点击，hover_text 在后用于悬停
+                    hover_name='y_axis_label' # 主要标识符，或可移除
+                    # hover_data 参数被移除，因为我们使用自定义悬停模板
                 )
                 
                 # 更新布局 (保持不变)
                 fig3.update_layout(
-                    height=max(1000, len(sorted_y_labels3) * 22 + 200),
-                    margin=dict(l=100, r=60, t=100, b=50),
-                    xaxis={
-                        'tickangle': -45,
-                        'tickmode': 'array',
-                        'tickvals': list(week_index_map.values()),
-                        'ticktext': list(week_index_map.keys())
-                    },
+                    height=max(1000, len(sorted_y_labels3) * 28 + 240), 
+                    margin=dict(l=120, r=60, t=120, b=90), 
+                    xaxis={'tickangle': -45}, 
                     yaxis={
-                        'type': 'category',
-                        'categoryorder': 'array',
+                        'type': 'category', 
+                        'categoryorder':'array', 
                         'categoryarray': list(sorted_y_labels3),
-                        'tickmode': 'linear'
-                    },
-                    xaxis_title="测试周",
+                        'automargin': True
+                    }, 
+                    xaxis_title="测试周", 
                     yaxis_title="测试用例 (ID - 名称)",
                     legend_title_text="运行状态",
-                    xaxis_showgrid=True,
-                    yaxis_showgrid=True,
-                    plot_bgcolor='rgba(248, 248, 250, 0.5)'
+                    xaxis_showgrid=True, 
+                    yaxis_showgrid=True, 
+                    plot_bgcolor='rgba(248, 248, 250, 0.5)',
+                    # hoverlabel=dict(bgcolor="white", font_size=12, font_family="Rockwell") # Hoverlabel可能不再需要
                 )
                                 
                 # === 修改: 更新 hovertemplate ===
                 fig3.update_traces(
-                    hovertemplate='%{customdata[1]}<br>测试周=%{customdata[2]}<extra></extra>',
+                    hovertemplate='%{customdata[1]}<extra></extra>', # 显示 custom_data 的第二个元素 (hover_text)
                     marker=dict(
                         sizemode='area',
+                        sizemin=4,
                         line_width=1,
                         line_color='black'
                     )
@@ -681,144 +662,10 @@ def update_graph(selected_projects, selected_testweeks, selected_pus, selected_t
         fig3 = create_empty_figure(f"创建图表3时出错: {e}")
 
     print("--- Callback finished ---")
-    export_store = []
-    try:
-        raw_cols = ['test_week', 'test_id', 'test_name', 'run_status', 'top_aida', 'fv', 'project', 'pu', 'tester']
-        for col in raw_cols:
-            if col not in filtered_tdf.columns:
-                filtered_tdf[col] = ''
-        export_store = filtered_tdf[raw_cols].to_dict('records')
-    except Exception:
-        export_store = []
-    return fig1, fig2, fig3, output_fvs, output_aidas, export_store
-
-@app.callback(
-    Output('download-chart3-xlsx', 'data'),
-    Input('export-chart3-btn', 'n_clicks'),
-    State('chart3-filtered-store', 'data'),
-    prevent_initial_call=True
-)
-def export_chart3(n_clicks, store_data):
-    if not n_clicks:
-        return no_update
-    if not store_data:
-        return no_update
-    df = pd.DataFrame(store_data)
-    if df.empty:
-        return no_update
-    # 生成周标签（如 CW04）
-    def to_cw_label(val):
-        s = str(val)
-        if 'CW' in s:
-            try:
-                week = s.split('CW')[1][:2]
-                return f'CW{week}'
-            except Exception:
-                return s
-        return s
-    df['week_label'] = df['test_week'].apply(to_cw_label)
-    # 选择每个 (row, week) 的唯一状态，按优先级
-    priority = { 'Failed': 4, 'Blocked': 3, 'Requires Attention': 2, 'Planned': 1, 'Passed': 0 }
-    def pick_status(series):
-        return series.sort_values(key=lambda s: s.map(lambda x: priority.get(str(x), -1)), ascending=False).iloc[0]
-    index_cols = ['test_id', 'test_name', 'top_aida', 'fv', 'project', 'pu', 'tester']
-    for col in index_cols:
-        if col not in df.columns:
-            df[col] = ''
-    grouped = df.groupby(index_cols + ['week_label'])['run_status'].apply(pick_status).reset_index()
-    # 生成透视表
-    pivot = grouped.pivot(index=index_cols, columns='week_label', values='run_status')
-    # 排序周列（按数字）
-    def week_sort_key(col):
-        try:
-            return int(str(col).replace('CW',''))
-        except Exception:
-            return 999
-    ordered_cols = sorted(pivot.columns.tolist(), key=week_sort_key)
-    pivot = pivot.reindex(columns=ordered_cols)
-    pivot = pivot.reset_index()
-    week_cols = ordered_cols
-    def overall_status_row(row):
-        vals = [str(row[c]) for c in week_cols if c in row and pd.notna(row[c])]
-        if not vals:
-            return ''
-        return sorted(vals, key=lambda x: priority.get(str(x), -1), reverse=True)[0]
-    pivot.insert(len(index_cols), '总体状态', pivot.apply(overall_status_row, axis=1))
-    def calc_freq(row):
-        vals = [row[c] for c in week_cols if c in row]
-        tested = sum(pd.notna(v) and str(v) != '' for v in vals)
-        return tested / len(week_cols) if len(week_cols) > 0 else np.nan
-    def calc_pass_rate(row):
-        vals = [row[c] for c in week_cols if c in row]
-        tested_vals = [v for v in vals if pd.notna(v) and str(v) != '']
-        if not tested_vals:
-            return np.nan
-        passed = sum(str(v) == 'Passed' for v in tested_vals)
-        return passed / len(tested_vals)
-    pivot['Test Frequency'] = pivot.apply(calc_freq, axis=1)
-    pivot['Pass Rate'] = pivot.apply(calc_pass_rate, axis=1)
-    avg_freq = float(pivot['Test Frequency'].mean(skipna=True)) if 'Test Frequency' in pivot.columns else np.nan
-    avg_pass = float(pivot['Pass Rate'].mean(skipna=True)) if 'Pass Rate' in pivot.columns else np.nan
-    avg_row = {col: '' for col in pivot.columns}
-    avg_row['总体状态'] = ''
-    avg_row['Test Frequency'] = avg_freq
-    avg_row['Pass Rate'] = avg_pass
-    pivot = pd.concat([pivot, pd.DataFrame([avg_row])], ignore_index=True)
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        pivot.to_excel(writer, index=False, sheet_name='Pivot')
-        workbook = writer.book
-        worksheet = writer.sheets['Pivot']
-        nrows, ncols = pivot.shape
-        worksheet.autofilter(0, 0, nrows, ncols - 1)
-        worksheet.freeze_panes(1, len(index_cols) + 1)
-        fmt_failed = workbook.add_format({'bg_color': '#FFC7CE'})
-        fmt_blocked = workbook.add_format({'bg_color': '#FFD966'})
-        fmt_attention = workbook.add_format({'bg_color': '#FFF2CC'})
-        fmt_planned = workbook.add_format({'bg_color': '#D9D9D9'})
-        fmt_passed = workbook.add_format({'bg_color': '#C6EFCE'})
-        percent_fmt = workbook.add_format({'num_format': '0%'})
-        start_col = len(index_cols) + 1
-        end_col = ncols - 1
-        worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Failed', 'format': fmt_failed})
-        worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Blocked', 'format': fmt_blocked})
-        worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Requires Attention', 'format': fmt_attention})
-        worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Planned', 'format': fmt_planned})
-        worksheet.conditional_format(1, start_col, nrows, end_col, {'type': 'text', 'criteria': 'containing', 'value': 'Passed', 'format': fmt_passed})
-        tf_col = pivot.columns.get_loc('Test Frequency')
-        pr_col = pivot.columns.get_loc('Pass Rate')
-        worksheet.set_column(tf_col, tf_col, None, percent_fmt)
-        worksheet.set_column(pr_col, pr_col, None, percent_fmt)
-    buffer.seek(0)
-    return dcc.send_bytes(buffer.getvalue(), filename='图表三_测试结果透视.xlsx')
+    # 返回图表和更新后的下拉菜单值
+    return fig1, fig2, fig3, output_fvs, output_aidas 
 
 # --- 5. 运行应用 ---
-def _get_lan_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except Exception:
-            return '127.0.0.1'
-
 if __name__ == '__main__':
-    host = os.environ.get('DASH_HOST', '0.0.0.0')
-    port_env = os.environ.get('DASH_PORT')
-    debug = os.environ.get('DASH_DEBUG', 'true').lower() == 'true'
-    ports = [int(port_env)] if port_env else list(range(8055, 8066))
-    lan_ip = _get_lan_ip()
-    for p in ports:
-        try:
-            print(f"Starting Test Coverage at http://{lan_ip}:{p}/ (LAN) and http://127.0.0.1:{p}/")
-            app.run(debug=debug, port=p, host=host)
-            break
-        except OSError as e:
-            if 'Address already in use' in str(e):
-                continue
-            else:
-                raise
+    # 监听所有网络接口，允许局域网访问
+    app.run(debug=True, port=8055, host='0.0.0.0')

@@ -341,26 +341,17 @@ def create_test_coverage_charts(prefix="tc"):
         
         # 第三个图表 - 全宽显示
         html.Div([
-            # 使用栅格，避免浮动按钮在主题样式下被遮挡
             html.Div([
-                html.Div(
-                    [
-                        html.Div("图表 3: 按测试用例和测试周分类的状态", style=active_label_style),
-                        html.Div(
-                            dcc.Loading(
-                                type='circle',
-                                children=html.Div([
-                                    html.Button("导出Excel", id=f'{prefix}-export-chart3-btn', style={'padding': '6px 12px'}),
-                                    html.Span(id=f'{prefix}-export-status', style={'marginLeft': '10px', 'color': '#6b7280', 'fontSize': '12px'}),
-                                    html.Div(id=f'{prefix}-export-progress', style={'marginTop': '6px'})
-                                ])
-                            ),
-                            style={'textAlign': 'right'}
-                        )
-                    ],
-                    style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}
+                html.H4("图表 3: 按测试用例和测试周分类的状态", style=active_label_style),
+                dcc.Loading(
+                    type='circle',
+                    children=html.Div([
+                        html.Button("导出Excel", id=f'{prefix}-export-chart3-btn', style={'padding': '6px 12px'}),
+                        html.Span(id=f'{prefix}-export-status', style={'marginLeft': '10px', 'color': '#6b7280', 'fontSize': '12px'}),
+                        html.Div(id=f'{prefix}-export-progress', style={'marginTop': '6px'})
+                    ])
                 )
-            ]),
+            ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}),
             dcc.Graph(id=f'{prefix}-testcase-detail-chart'),
         ], style={**chart_container_style, 'width': '100%', 'marginBottom': '30px'}),
         
@@ -427,9 +418,9 @@ def create_test_coverage_page(source="standalone"):
         # 图表区域
         create_test_coverage_charts(prefix),
         
+        # 隐藏的数据存储
         dcc.Store(id=f'{prefix}-data-store', data=tdf.to_dict('records')),
         dcc.Store(id=f'{prefix}-chart3-filtered-store'),
-        dcc.Store(id=f'{prefix}-export-trigger'),
         dcc.Download(id=f'{prefix}-download-chart3-xlsx'),
     ])
 
