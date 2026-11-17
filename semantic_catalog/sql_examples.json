@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "description": "Few-shot SQL examples for NL→SQL generation, organized by intent",
+  "examples": [
+    {
+      "question": "一共有多少缺陷",
+      "sql": "SELECT COUNT(DISTINCT id) AS total_defects FROM octane_defects",
+      "intent": "summary"
+    },
+    {
+      "question": "各项目的Critical缺陷数量",
+      "sql": "SELECT tproject, COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE severity='Critical' GROUP BY tproject ORDER BY cnt DESC",
+      "intent": "comparison"
+    },
+    {
+      "question": "最近4周的新增缺陷趋势",
+      "sql": "SELECT test_week, COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE test_week >= (SELECT DISTINCT test_week FROM octane_defects ORDER BY test_week DESC LIMIT 1 OFFSET 3) GROUP BY test_week ORDER BY test_week",
+      "intent": "trend"
+    },
+    {
+      "question": "idcevo项目的TopIssue有哪些",
+      "sql": "SELECT id, severity, matrix_display, aida_english, status_phase FROM octane_defects WHERE tproject='idcevo' AND is_topissue=1 ORDER BY creation_time DESC LIMIT 50",
+      "intent": "risk"
+    },
+    {
+      "question": "各严重度的缺陷分布",
+      "sql": "SELECT severity, COUNT(DISTINCT id) AS cnt FROM octane_defects GROUP BY severity ORDER BY cnt DESC",
+      "intent": "summary"
+    },
+    {
+      "question": "各项目各严重度的缺陷数",
+      "sql": "SELECT tproject, severity, COUNT(DISTINCT id) AS cnt FROM octane_defects GROUP BY tproject, severity ORDER BY tproject, cnt DESC",
+      "intent": "comparison"
+    },
+    {
+      "question": "目前还未关闭的Critical缺陷",
+      "sql": "SELECT id, tproject, aida_english, status_phase, creation_time FROM octane_defects WHERE severity='Critical' AND status_phase NOT IN ('Closed', 'Rejected') ORDER BY creation_time DESC LIMIT 100",
+      "intent": "risk"
+    },
+    {
+      "question": "各AIDA域的缺陷数排名",
+      "sql": "SELECT aida_english, COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE aida_english IS NOT NULL AND aida_english != '' GROUP BY aida_english ORDER BY cnt DESC LIMIT 20",
+      "intent": "comparison"
+    },
+    {
+      "question": "某缺陷的历史状态变更",
+      "sql": "SELECT h.defect_id, h.field_name, h.old_value, h.new_value, h.change_time FROM octane_defect_histories h WHERE h.defect_id = ? ORDER BY h.change_time",
+      "intent": "defect"
+    },
+    {
+      "question": "各状态阶段的缺陷数",
+      "sql": "SELECT status_phase, COUNT(DISTINCT id) AS cnt FROM octane_defects GROUP BY status_phase ORDER BY cnt DESC",
+      "intent": "summary"
+    },
+    {
+      "question": "哪些FV团队的缺陷最多",
+      "sql": "SELECT fv, COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE fv IS NOT NULL AND fv != '' GROUP BY fv ORDER BY cnt DESC LIMIT 15",
+      "intent": "comparison"
+    },
+    {
+      "question": "1A/1B矩阵等级的高风险缺陷",
+      "sql": "SELECT id, tproject, severity, matrix_display, aida_english, status_phase FROM octane_defects WHERE matrix_display IN ('1A', '1B') ORDER BY creation_time DESC LIMIT 50",
+      "intent": "risk"
+    },
+    {
+      "question": "本周新增了多少缺陷",
+      "sql": "SELECT COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE test_week = (SELECT MAX(test_week) FROM octane_defects)",
+      "intent": "trend"
+    },
+    {
+      "question": "各domain团队的未关闭缺陷数",
+      "sql": "SELECT domain, COUNT(DISTINCT id) AS cnt FROM octane_defects WHERE status_phase NOT IN ('Closed', 'Rejected') AND domain IS NOT NULL AND domain != '' GROUP BY domain ORDER BY cnt DESC",
+      "intent": "comparison"
+    },
+    {
+      "question": "缺陷从New到Fixed的平均天数",
+      "sql": "SELECT tproject, ROUND(AVG(JULIANDAY(DATE(closed_time)) - JULIANDAY(DATE(creation_time))), 1) AS avg_days FROM octane_defects WHERE status_phase IN ('Fixed', 'Closed') AND closed_time IS NOT NULL GROUP BY tproject ORDER BY avg_days DESC",
+      "intent": "trend"
+    }
+  ]
+}

@@ -19,9 +19,68 @@
 
 ---
 
+## 🚀 快速启动
+
+### 开发模式（默认）
+```bash
+python defect_explore.py
+```
+- **第一次启动**: ~40秒（处理数据并生成缓存）
+- **后续启动**: ~3秒（从缓存加载）
+- 数据文件变化时自动重新处理
+
+### 强制重新处理（修改代码后）
+```bash
+DEV_MODE=1 python defect_explore.py
+```
+- 适用于修改了数据处理逻辑，需要验证效果时
+
+### 生产模式（Gunicorn）
+```bash
+# 安装依赖
+pip install gunicorn gevent
+
+# 启动（macOS）
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+gunicorn -w 2 -k gthread --threads 4 --bind 0.0.0.0:8051 defect_explore:server
+```
+
+### 清除缓存
+```bash
+rm cache/defect_data_*.pkl
+```
+
+---
+
 ## ✨ 主要功能
 
-### 1. 🤖 AI 智能分析系统
+### 1. 🤖 AI 智能分析系统 (全新升级！)
+
+#### 🎯 核心增强功能 (2025-02-04 更新)
+
+**智能上下文生成器** (`smart_context_generator.py`)
+- ✅ 意图驱动的字段选择 - 根据问题类型自动选择相关字段
+- ✅ 问题关键词提取 - 智能识别项目名、ECU等实体
+- ✅ 自动异常检测 - 发现数据中的异常模式
+- ✅ 精简但信息丰富 - 避免token浪费，提升回答质量
+
+**增强记忆系统** (`enhanced_memory_system.py`)
+- ✅ 三层记忆架构 - 短期/工作/长期记忆
+- ✅ 洞察存储与检索 - 记住高价值的分析结果
+- ✅ 用户偏好学习 - 越用越懂你的需求
+- ✅ 跨会话知识积累 - 持久化存储重要发现
+
+**智能工具选择器** (`smart_tool_selector.py`)
+- ✅ 基于意图的工具映射 - 自动选择最合适的分析工具
+- ✅ 工具性能历史追踪 - 学习哪些工具组合效果好
+- ✅ 数据可用性验证 - 确保工具有所需的数据字段
+- ✅ 动态工具组合优化 - 持续改进工具选择策略
+
+**可解释性模块** (`explainable_agent.py`)
+- ✅ 决策过程可视化 - 展示AI如何得出结论
+- ✅ 置信度评估 - 告诉你答案的可信程度
+- ✅ 关键发现提取 - 自动总结重要洞察
+- ✅ 友好的解释生成 - 让AI决策透明化
 
 #### Agent UI (Next.js 前端)
 - **现代化聊天界面**: 类似 Google Gemini 的交互体验
@@ -36,11 +95,18 @@ npm run dev
 # 访问 http://localhost:3000
 ```
 
-#### Python AI Chat Manager
-- **统一聊天管理**: `ai_chat_manager.py` 提供跨模块 AI 能力
+#### Python AI Chat Manager (增强版)
+- **统一聊天管理**: `agent/core/enhanced_ai_chat_manager.py` 集成所有新功能
 - **多看板支持**: 缺陷分析、测试覆盖率、趋势分析、通用类型
-- **上下文感知**: 根据当前筛选数据智能分析
+- **智能上下文感知**: 根据问题动态生成最相关的数据上下文
+- **记忆系统集成**: 记住对话历史和重要洞察
 - **降级策略**: 无 API 密钥时自动降级到基础分析
+
+#### Agent 开发落位规则（强制）
+- 后续新增或重构的 Agent 相关代码文件仅允许放在 `agent/` 目录内
+- 根目录不再新增 Agent 相关 Python 文件；历史文件仅用于兼容导入
+- 按职责落位：`agent/core`（编排与主流程）、`agent/tools`（工具策略）、`agent/memory`（记忆）、`agent/evaluation`（评测）
+- 新增 Agent 功能时需同步更新 `agent/` 下对应模块与文档导航
 
 ### 2. 📊 缺陷分析仪表板
 
@@ -108,6 +174,15 @@ NumPy 1.24+          # 数值计算
 Plotly 5.14+         # 交互式可视化
 SQLAlchemy 2.0+      # 数据库 ORM
 OpenAI SDK 1.0+      # DeepSeek API 兼容
+SQLite3              # 记忆系统和工具性能数据库
+```
+
+### AI 增强模块 (新增)
+```
+smart_context_generator.py    # 智能上下文生成
+enhanced_memory_system.py     # 三层记忆架构
+smart_tool_selector.py        # 智能工具选择
+explainable_agent.py          # 可解释性模块
 ```
 
 ### 前端 (Next.js)
@@ -165,6 +240,16 @@ python downloader3.py --defect-years 2025 --auth-method cookie
 
 # 更新 AIDA 映射
 python aida_mapping_updater.py
+
+# (可选) PostgreSQL 双写（保持 SQLite 与本地 JSON 兼容）
+./deploy/start_postgres.sh up
+python init_postgres_db.py --pg-url "postgresql://octane:octane_pwd@localhost:5432/octane_local"
+python download/octane_downloader.py --auth-method cookie --enable-pg --pg-url "postgresql://octane:octane_pwd@localhost:5432/octane_local" --fetch-history
+
+# (可选) PostgreSQL 读取（默认仍是 SQLite）
+export DB_BACKEND=postgres
+export POSTGRES_URL="postgresql://octane:octane_pwd@localhost:5432/octane_local"
+export PG_SCHEMA=public
 ```
 
 ### 4️⃣ 启动应用
@@ -228,8 +313,23 @@ testanalysis/
 │   ├── risk_analysis.py           # 风险评估 (8057)
 │   └── test_coverage.py           # 测试覆盖率 (8055)
 │
-├── 🤖 AI 集成
-│   ├── ai_chat_manager.py         # AI 聊天管理器
+├── 🤖 Agent 目录（统一归档）
+│   ├── agent/
+│   │   ├── core/                  # 编排、聊天管理、智能体主流程
+│   │   │   ├── ai_chat_manager.py
+│   │   │   ├── enhanced_ai_chat_manager.py
+│   │   │   ├── intelligent_agent.py
+│   │   │   ├── smart_context_generator.py
+│   │   │   └── explainable_agent.py
+│   │   ├── tools/                 # 工具策略与选择
+│   │   │   └── smart_tool_selector.py
+│   │   ├── memory/                # 记忆系统
+│   │   │   └── enhanced_memory_system.py
+│   │   ├── evaluation/            # 评测与质疑模块
+│   │   │   ├── agent_critic.py
+│   │   │   └── run_agent_eval_cases.py
+│   │   └── adapters/              # 外部适配层
+│   │
 │   ├── agent_ui/                  # Next.js 前端
 │   │   ├── app/                   # Next.js App Router
 │   │   ├── components/            # React 组件
@@ -258,6 +358,9 @@ testanalysis/
 │   ├── aida/                      # AIDA 映射
 │   ├── cache/                     # 缓存文件
 │   ├── database/                  # SQLite 数据库
+│   │   ├── local_data.db          # 本地数据
+│   │   ├── agent_memory.db        # Agent记忆系统 ⭐
+│   │   └── tool_performance.db    # 工具性能追踪 ⭐
 │   └── mr/                        # 测试需求数据
 │
 ├── 📓 配置文件
@@ -280,6 +383,7 @@ testanalysis/
 └── 📄 文档
     ├── README.md                  # 本文档
     ├── CLAUDE.md                  # Claude Code 指南
+    ├── OPTIMIZATION_STATUS.md     # 优化状态
     ├── requirements.txt           # Python 依赖
     └── .gitignore                 # Git 忽略规则
 ```
@@ -287,6 +391,196 @@ testanalysis/
 ---
 
 ## 🔧 开发指南
+
+### 🎯 使用新增的AI增强功能
+
+#### 1. 智能上下文生成器
+
+```python
+from smart_context_generator import create_smart_context_generator
+
+# 创建生成器
+generator = create_smart_context_generator()
+
+# 生成智能上下文
+context = generator.generate_context(
+    question="What is the defect trend for G01 project?",
+    full_data=defect_dataframe,
+    intents=['trend', 'comparison']  # 可选，会自动检测
+)
+
+print(context)
+# 输出：包含趋势分析、异常检测、关键指标的精简上下文
+```
+
+**特点：**
+- 自动检测问题意图（trend, risk, comparison等）
+- 提取问题中的关键词（项目名、ECU等）
+- 自动发现数据异常
+- 生成精简但信息丰富的上下文
+
+#### 2. 增强记忆系统
+
+```python
+from enhanced_memory_system import create_memory_system
+
+# 创建记忆系统
+memory = create_memory_system(user_id="analyst_001")
+
+# 存储洞察
+memory.store_insight(
+    insight_type='pattern',
+    content='G01 project consistently shows high defect rate in Matrix 1A',
+    confidence=0.85,
+    data_snapshot={'project': 'G01', 'matrix': '1A', 'rate': 0.35},
+    tags=['G01', 'high_risk', 'pattern']
+)
+
+# 检索相关洞察
+insights = memory.retrieve_relevant_insights(
+    question="What patterns exist in G01 defects?",
+    top_k=5
+)
+
+# 学习用户偏好
+memory.learn_user_preference('favorite_metrics', ['defect_count', 'critical_rate'])
+
+# 获取用户偏好
+prefs = memory.get_user_preference('favorite_metrics')
+
+# 查看记忆系统状态
+summary = memory.get_memory_summary()
+print(summary)
+# 输出：{'short_term_size': 10, 'long_term_insights': 25, ...}
+```
+
+**特点：**
+- 三层记忆架构（短期/工作/长期）
+- 自动去重和置信度过滤
+- 跨会话知识积累
+- 用户偏好学习
+
+#### 3. 智能工具选择器
+
+```python
+from smart_tool_selector import create_smart_tool_selector
+
+# 创建选择器
+selector = create_smart_tool_selector()
+
+# 选择最优工具
+recommendations = selector.select_tools(
+    question="Analyze defect trends over time",
+    intents=['trend', 'summary'],
+    data_context={'data_size': 5000},
+    available_columns=['created_date', 'project', 'severity_group'],
+    max_tools=5
+)
+
+for rec in recommendations:
+    print(f"Tool: {rec.tool_name}")
+    print(f"Confidence: {rec.confidence:.2f}")
+    print(f"Reason: {rec.reason}")
+    print(f"Estimated time: {rec.estimated_time:.2f}s")
+
+# 记录工具执行结果（用于学习）
+selector.record_execution(
+    tool_name='time_series_counts',
+    success=True,
+    execution_time=0.8,
+    result_quality=0.9,
+    data_size=5000,
+    intents=['trend']
+)
+
+# 查看工具统计
+stats = selector.get_tool_statistics('time_series_counts')
+print(stats)
+# 输出：{'success_rate': 0.95, 'avg_execution_time': 0.75, ...}
+```
+
+**特点：**
+- 基于意图自动选择工具
+- 学习工具性能历史
+- 验证数据可用性
+- 持续优化选择策略
+
+#### 4. 可解释性模块
+
+```python
+from explainable_agent import create_explainable_agent
+
+# 创建可解释agent
+explainer = create_explainable_agent()
+
+# 生成完整解释
+explanation = explainer.generate_explanation(
+    question="What is the defect trend?",
+    intents=['trend', 'summary'],
+    tool_executions=[
+        {'tool': 'time_series_counts', 'success': True, 'execution_time': 0.8},
+        {'tool': 'top_counts', 'success': True, 'execution_time': 0.3}
+    ],
+    final_answer="Defects are increasing by 20% month-over-month...",
+    data_context={'data_size': 5000, 'missing_rate': 0.05}
+)
+
+print(explanation)
+# 输出：包含问题理解、分析过程、关键发现、置信度评估的完整解释
+
+# 生成简单解释
+simple = explainer.generate_simple_explanation(tool_executions, confidence=0.85)
+print(simple)
+# 输出：一段简洁的解释文字
+```
+
+**特点：**
+- 决策过程透明化
+- 置信度评估
+- 关键发现自动提取
+- 识别分析局限性
+
+#### 5. 集成到现有看板
+
+```python
+from agent.core.enhanced_ai_chat_manager import create_enhanced_chat_manager
+
+# 创建增强版聊天管理器
+chat_manager = create_enhanced_chat_manager(
+    dashboard_type='defect',
+    use_agent=True,
+    assistant_name='SiSi'
+)
+
+# 在Dash应用中使用
+app = dash.Dash(__name__)
+
+# 创建聊天界面
+chat_interface = chat_manager.create_enhanced_chat_interface('defect-chat')
+
+# 创建存储组件
+chat_stores = chat_manager.create_enhanced_chat_stores('defect-chat')
+
+# 注册回调
+chat_manager.register_enhanced_callbacks(
+    app=app,
+    chat_id_prefix='defect-chat',
+    data_store_id='filtered-data',
+    data_processor_func=None  # 可选的数据处理函数
+)
+
+# 布局
+app.layout = html.Div([
+    *chat_stores,
+    chat_interface
+])
+```
+
+**新功能自动启用：**
+- ✅ 智能上下文生成
+- ✅ 记忆系统
+- ✅ 工具选择优化
+- ✅ 可解释性
 
 ### 添加新模块
 
@@ -328,7 +622,7 @@ testanalysis/
 ### 集成 AI 功能
 
 ```python
-from ai_chat_manager import ai_chat_manager
+from agent.core.ai_chat_manager import ai_chat_manager
 
 # 创建聊天界面
 ai_chat_manager.create_chat_interface(

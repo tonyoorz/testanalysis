@@ -1297,4 +1297,4 @@ def update_active_tab(animation_enabled, selected_aida):
 
 # --- 5. 运行应用 ---
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8057, host='0.0.0.0')
+    app.run(debug=True, port=8057, host='0.0.0.0')

@@ -1,12 +1,15 @@
 import os
 
-# 检查是否为reloader进程，如果是则跳过数据加载操作
-WERKZEUG_RUN_MAIN = os.environ.get('WERKZEUG_RUN_MAIN')
-IS_RELOADER = WERKZEUG_RUN_MAIN is not None and WERKZEUG_RUN_MAIN != 'true'
+# 默认关闭 reloader/hot reload，避免运行时文件写入触发服务重载
+DISABLE_RELOADER = os.environ.get("DISABLE_RELOADER", "1").lower() in ("1", "true", "yes")
+
+# 检查是否为 reloader 父进程：仅在启用 reloader 时才成立
+IS_RELOADER = (not DISABLE_RELOADER) and (os.environ.get("WERKZEUG_RUN_MAIN") != "true")
 
 if not IS_RELOADER:
     import json
     import re
+    import sqlite3
     import numpy as np
     import pandas as pd
     import glob
@@ -18,12 +21,28 @@ if not IS_RELOADER:
     from functools import lru_cache
     import concurrent.futures
     from typing import Dict, Optional, List
+
+    # 导入数据库相关配置和工具
+    try:
+        from db_migration_config import DB_PATH, DEFAULT_TEAM, is_using_optimized_schema, is_db_first_mode, is_db_only_mode
+        from database_utils import with_db_retry, get_db_connection
+        HAS_DB_CONFIG = True
+    except ImportError:
+        HAS_DB_CONFIG = False
+    try:
+        from unified_data_loader import UnifiedDataLoader, DataSourceConfig
+        HAS_UNIFIED_LOADER = True
+    except ImportError:
+        HAS_UNIFIED_LOADER = False
 else:
     # Reloader进程的占位符导入
     print("🔄 data_processor: Reloader进程跳过重度导入")
     import json
+    import sqlite3
     import pandas as pd
     from typing import Dict, Optional, List
+    HAS_DB_CONFIG = False
+    HAS_UNIFIED_LOADER = False
 
 # ===== 历史数据缓存管理 =====
 
@@ -67,13 +86,9 @@ class HistoryCache:
         
         def load_single_history(defect_id):
             try:
-                history_file = os.path.join(history_dir, f"{defect_id}_history.json")
-                if not os.path.exists(history_file):
+                history_data = get_history_data(defect_id, history_dir)
+                if not history_data:
                     return None
-                
-                with open(history_file, 'r', encoding='utf-8') as f:
-                    history_data = json.load(f)
-                
                 return defect_id, history_data
             except Exception as e:
                 print(f"预加载历史文件失败 {defect_id}: {e}")
@@ -96,29 +111,65 @@ class HistoryCache:
 # 全局历史缓存实例
 history_cache = HistoryCache(cache_size=2000)
 
-def get_history_data(defect_id: str, history_dir: str = "history") -> Optional[Dict]:
+_DEFAULT_OCTANE_DB_PATH = os.environ.get("OCTANE_DB_PATH", os.path.join("database", "local_data.db"))
+_DEFAULT_OCTANE_TEAM = os.environ.get("OCTANE_TEAM", "DTSV_China")
+_DEFAULT_HISTORY_ALLOW_FILE_FALLBACK = os.environ.get("OCTANE_HISTORY_ALLOW_FILE_FALLBACK", "0").lower() in ("1", "true", "yes")
+
+
+def _load_history_from_db(defect_id: str, db_path: str) -> Optional[Dict]:
+    if not db_path or not os.path.exists(db_path):
+        return None
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            row = conn.execute(
+                "SELECT payload_json FROM octane_defect_histories WHERE defect_id = ?",
+                (str(defect_id),),
+            ).fetchone()
+            if not row:
+                return None
+            return json.loads(row[0])
+        finally:
+            conn.close()
+    except Exception:
+        return None
+
+
+def get_history_data(defect_id: str, history_dir: str = "history", db_path: Optional[str] = None) -> Optional[Dict]:
     """获取历史数据，使用缓存优化"""
     # 先从缓存获取
     cached_data = history_cache.get(defect_id)
     if cached_data is not None:
         return cached_data
     
-    # 缓存未命中，从文件加载
+    db_path_val = db_path or _DEFAULT_OCTANE_DB_PATH
+    history_data_db = _load_history_from_db(defect_id, db_path_val)
+    if history_data_db is not None:
+        history_cache.set(defect_id, history_data_db)
+        return history_data_db
+    return None
+
+
+def _iter_histories_from_db(db_path: Optional[str] = None):
+    db_path_val = db_path or _DEFAULT_OCTANE_DB_PATH
+    if not db_path_val or not os.path.exists(db_path_val):
+        return
     try:
-        history_file = os.path.join(history_dir, f"{defect_id}_history.json")
-        if not os.path.exists(history_file):
-            return None
-        
-        with open(history_file, 'r', encoding='utf-8') as f:
-            history_data = json.load(f)
-        
-        # 存入缓存
-        history_cache.set(defect_id, history_data)
-        return history_data
-        
-    except Exception as e:
-        print(f"读取历史文件失败 {defect_id}: {e}")
-        return None
+        conn = sqlite3.connect(db_path_val)
+        try:
+            rows = conn.execute("SELECT defect_id, payload_json FROM octane_defect_histories").fetchall()
+        finally:
+            conn.close()
+        for defect_id, payload_json in rows:
+            if payload_json is None:
+                continue
+            try:
+                payload = json.loads(payload_json)
+            except Exception:
+                continue
+            yield str(defect_id), payload
+    except Exception:
+        return
 
 # ===== 通用工具函数 =====
 
@@ -140,6 +191,200 @@ def extract_english(text):
     english_words = re.findall(r'[a-zA-Z]+', str(text))
     # 如果找到英文单词，则用空格连接，否则返回'Unknown'
     return ' '.join(english_words) if english_words else 'Unknown'
+
+def load_vin_project_mapping(excel_file="project/vin_project_mapping.xlsx"):
+    try:
+        if not os.path.exists(excel_file):
+            return {}, {}
+        df_mapping = pd.read_excel(excel_file)
+        if 'VIN' not in df_mapping.columns or 'project' not in df_mapping.columns:
+            return {}, {}
+        project_name_mapping = {
+            'MGU_02_A': 'IDC',
+            'MGU_02_L': 'MGU',
+            'IDCEVO25': 'IDCEVO'
+        }
+        vin_to_project = {}
+        vin_to_market = {}
+        for _, row in df_mapping.iterrows():
+            vin = str(row['VIN']).strip().upper()
+            hu_name = str(row['project']).strip()
+            project = project_name_mapping.get(hu_name, hu_name)
+            vin_to_project[vin] = project
+            if 'ISO Countrycode (INT)' in df_mapping.columns:
+                iso_country = str(row['ISO Countrycode (INT)']).strip() if pd.notna(row['ISO Countrycode (INT)']) else ''
+                if iso_country:
+                    vin_to_market[vin] = iso_country
+        return vin_to_project, vin_to_market
+    except Exception:
+        return {}, {}
+
+def apply_vin_project_mapping(df, excel_file="project/vin_project_mapping.xlsx"):
+    if df is None or df.empty:
+        return df
+    vin_col = None
+    if 'vin' in df.columns:
+        vin_col = 'vin'
+    elif 'vin_udf' in df.columns:
+        vin_col = 'vin_udf'
+    if not vin_col:
+        if 'project' not in df.columns:
+            df['project'] = 'Unknown'
+        if 'market' not in df.columns:
+            df['market'] = 'Unknown'
+        return df
+    try:
+        df[vin_col] = df[vin_col].astype(str).str.strip().str.upper()
+    except Exception:
+        pass
+    vin_to_project, vin_to_market = load_vin_project_mapping(excel_file=excel_file)
+    if 'project' not in df.columns:
+        df['project'] = 'Unknown'
+    if 'market' not in df.columns:
+        df['market'] = 'Unknown'
+    if vin_to_project:
+        def _map_project(vin_val):
+            if not isinstance(vin_val, str):
+                return 'Unknown'
+            projects = [vin_to_project.get(v.strip(), '') for v in vin_val.split(',') if v.strip() in vin_to_project]
+            return ', '.join([p for p in projects if p]) or 'Unknown'
+        df['project'] = df[vin_col].map(_map_project)
+    if vin_to_market:
+        def _map_market(vin_val):
+            if not isinstance(vin_val, str):
+                return 'Unknown'
+            markets = [vin_to_market.get(v.strip(), '') for v in vin_val.split(',') if v.strip() in vin_to_market]
+            return ', '.join([m for m in markets if m]) or 'Unknown'
+        df['market'] = df[vin_col].map(_map_market)
+    else:
+        df['market'] = 'Unknown'
+    return df
+
+def load_app_rsu_mapping(excel_file="aida/top_aida_project_fv_mapping.xlsx"):
+    try:
+        if not os.path.exists(excel_file):
+            return {'app': [], 'rsu': []}
+        app_df = pd.read_excel(excel_file, sheet_name='App')
+        rsu_df = pd.read_excel(excel_file, sheet_name='RSU')
+        app_top_aidas = app_df['top_aida'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique().tolist() if 'top_aida' in app_df.columns else []
+        rsu_top_aidas = rsu_df['top_aida'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique().tolist() if 'top_aida' in rsu_df.columns else []
+        return {'app': app_top_aidas, 'rsu': rsu_top_aidas}
+    except Exception:
+        return {'app': [], 'rsu': []}
+
+def apply_app_rsu_project_override(df, excel_file="aida/top_aida_project_fv_mapping.xlsx"):
+    if df is None or df.empty:
+        return df
+    if 'top_aida' not in df.columns:
+        return df
+    if 'project' not in df.columns:
+        df['project'] = 'Unknown'
+    mapping = load_app_rsu_mapping(excel_file=excel_file)
+    app_top_aidas = mapping.get('app', []) or []
+    rsu_top_aidas = mapping.get('rsu', []) or []
+    if app_top_aidas:
+        app_mask = df['top_aida'].isin(app_top_aidas)
+        df.loc[app_mask, 'project'] = 'App'
+    if rsu_top_aidas:
+        rsu_mask = df['top_aida'].isin(rsu_top_aidas)
+        df.loc[rsu_mask, 'project'] = 'RSU'
+    return df
+
+def _get_file_mtime(path: str) -> float:
+    try:
+        return os.path.getmtime(path) if os.path.exists(path) else 0.0
+    except Exception:
+        return 0.0
+
+@lru_cache(maxsize=8)
+def _load_top_aida_fv_mapping(excel_file: str, mtime: float):
+    mapping = {}
+    if not os.path.exists(excel_file):
+        return mapping
+    try:
+        writer = pd.ExcelFile(excel_file)
+        for sheet_name in writer.sheet_names:
+            try:
+                df_map = pd.read_excel(excel_file, sheet_name=sheet_name)
+            except Exception:
+                continue
+            if 'top_aida' not in df_map.columns or 'fv' not in df_map.columns:
+                continue
+            for _, row in df_map[['top_aida', 'fv']].dropna().iterrows():
+                key = str(row['top_aida']).strip()
+                val = str(row['fv']).strip()
+                if key and val and val.lower() != 'nan' and key not in mapping:
+                    mapping[key] = val
+    except Exception:
+        return {}
+    return mapping
+
+def apply_aida_fv_mapping(df, excel_file="aida/top_aida_project_fv_mapping.xlsx"):
+    if df is None or df.empty:
+        return df
+    if 'fv' not in df.columns:
+        df['fv'] = None
+    if 'top_aida' not in df.columns and 'aida_english' in df.columns:
+        df['top_aida'] = df['aida_english']
+    if 'top_aida' not in df.columns:
+        df['fv'] = df['fv'].fillna('Unknown')
+        return df
+    mtime = _get_file_mtime(excel_file)
+    mapping = _load_top_aida_fv_mapping(excel_file, mtime)
+    if not mapping:
+        df['fv'] = df['fv'].fillna('Unknown')
+        return df
+    mask = df['fv'].isna() | (df['fv'].astype(str).str.strip() == '') | (df['fv'].astype(str) == 'Unknown')
+    if mask.any():
+        df.loc[mask, 'fv'] = df.loc[mask, 'top_aida'].astype(str).map(mapping)
+    df['fv'] = df['fv'].fillna('Unknown')
+    return df
+
+def apply_team_fvp_mapping(df):
+    if df is None or df.empty:
+        return df
+    if 'fv' not in df.columns:
+        return df
+    dips_fvs = [
+        'DIPS_TSP_Call_Services', 'DIPS_TSP_CD_Updates', 'DIPS_TSP_Remote_Services',
+        'Mybmw App', 'eMob', 'DIPS_TSP_Car_Apps_CN', 'DIPS_TSP_MobileApps',
+        'DIPS_TSP_Enabler', 'Slip-Through'
+    ]
+    if 'team' not in df.columns:
+        df['team'] = None
+    team_mask = df['team'].isna() | (df['team'].astype(str).str.strip() == '') | (df['team'].astype(str) == 'Unknown')
+    if team_mask.any():
+        df.loc[team_mask, 'team'] = np.where(
+            df.loc[team_mask, 'fv'].isin(dips_fvs) | df.loc[team_mask, 'fv'].isna(),
+            'DIPS',
+            'IUK'
+        )
+    fvp_mapping = {
+        'DIPS_TSP_Call_Services': 'Tianhua',
+        'DIPS_TSP_CD_Updates': 'Tianhua',
+        'DIPS_TSP_Remote_Services': 'Tianhua',
+        'eMob': 'Tianhua',
+        'DIPS_TSP_MobileApps': 'Tianhua',
+        'DIPS_TSP_Enabler': 'Tianhua',
+        'IuK_TSP_Navi': 'Tony',
+        'IuK_TSP_AZV': 'Xu Miao',
+        'IuK_TSP_Entertainment': 'Xu Miao',
+        'IuK_TSP_Audio': 'Xu Miao',
+        'IuK_TSP_Connectivity': 'Xu Miao',
+        'DIPS_TSP_Car_Apps_CN': 'Huanran',
+        'IuK_TSP_HMI': 'Jerry',
+        'DIPS_TSP_RSU': 'Jerry',
+        'IuK_TSP_Carfunctions': 'Jerry',
+        'IuK_TSP_Perso CN': 'Jerry',
+        'RSU': 'Jerry',
+        'Mybmw App': 'Marin'
+    }
+    if 'fvp' not in df.columns:
+        df['fvp'] = None
+    fvp_mask = df['fvp'].isna() | (df['fvp'].astype(str).str.strip() == '') | (df['fvp'].astype(str) == 'Unknown')
+    if fvp_mask.any():
+        df.loc[fvp_mask, 'fvp'] = df.loc[fvp_mask, 'fv'].map(fvp_mapping).fillna('Unknown')
+    return df
 
 def apply_chart_style(fig, title, x_title=None, y_title=None, height=600):
     """应用统一的图表样式，根据当前主题动态调整"""
@@ -238,63 +483,677 @@ def get_top_req(req):
     return top_req
 # --- 添加结束 ---
 
+# ===== 数据库加载支持 =====
+
+def _load_defects_from_optimized_table(file_pattern="defect/2025_defect.json") -> pd.DataFrame:
+    """
+    从优化后的 octane_defects 表加载数据
+    """
+    if not HAS_DB_CONFIG:
+        return pd.DataFrame()
+
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        # 从文件模式提取年份
+        year_match = re.search(r"(\d{4})", file_pattern)
+        year_val = int(year_match.group(1)) if year_match else None
+
+        try:
+            params = []
+            update_where = "WHERE (relation_to IS NULL OR TRIM(relation_to) = '') AND json_extract(raw_json, '$.relation_to_udf') IS NOT NULL AND TRIM(CAST(json_extract(raw_json, '$.relation_to_udf') AS TEXT)) <> ''"
+            if year_val:
+                update_where += " AND year = ?"
+                params.append(year_val)
+            conn.execute(
+                f"""
+                UPDATE octane_defects
+                SET relation_to = CAST(json_extract(raw_json, '$.relation_to_udf') AS TEXT)
+                {update_where}
+                """,
+                params,
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        # 构建查询 - 现在数据库中的字段应该已经正确填充
+        # 不需要再从 raw_json 中提取
+        query = """
+            SELECT
+                defect_id as id, name, creation_time, last_modified,
+                team, problem_finder_team, program, author,
+                aida_businesskey, aida_english, top_aida,
+                product_areas, user_tags,
+                phase, severity, problem_severity, status_phase,
+                owner, detected_by,
+                detected_in_release, software_version,
+                vin, assigned_ecu as ecu, lead_model, ecu_no_of_changes as pingpong,
+                parent_id, parent_child_type as parent_child, relation_to,
+                test_week, risk_score, fv, fvp,
+                tqr, blocking_reason, error_occurrence,
+                solution_responsible, solution_cluster, solution_cluster as domain,
+                json_extract(raw_json, '$.reporting_class_udf') as reporting_class_json,
+                json_extract(raw_json, '$.sab_comment_udf') as sab_comment_udf_json,
+                json_extract(raw_json, '$.parent_phase_udf') as parent_phase_udf_json,
+                function_responsible,
+                involved_i_step, first_use_sop_of_function as pu,
+                tolerated_count, reprel_changes,
+                year, fetched_at
+            FROM octane_defects
+            WHERE 1=1
+        """
+        params = []
+
+        if year_val:
+            query += " AND year = ?"
+            params.append(year_val)
+
+        df = pd.read_sql_query(query, conn, params=params)
+
+        # 在JSON解析前，先保存user_tags用于matrix提取（数据库中是逗号分隔字符串，不是JSON）
+        if 'user_tags' in df.columns:
+            df['user_tags_raw'] = df['user_tags'].copy()
+
+        # 解析 JSON 列（tqr 是 JSON 格式）
+        # 注意：product_areas 和 reporting_class 现在是逗号分隔字符串
+        if 'tqr' in df.columns:
+            def safe_parse_json(x):
+                if not x or not isinstance(x, str):
+                    return []
+                x = x.strip()
+                if not x or x in ('null', 'NULL', 'None'):
+                    return []
+                try:
+                    return json.loads(x)
+                except json.JSONDecodeError:
+                    return []
+            df['tqr'] = df['tqr'].apply(safe_parse_json)
+
+        if 'reporting_class_json' in df.columns:
+            def extract_classification(reporting_class_json):
+                if not reporting_class_json:
+                    return []
+                try:
+                    data = json.loads(reporting_class_json) if isinstance(reporting_class_json, str) else reporting_class_json
+                    if isinstance(data, dict) and 'data' in data and isinstance(data['data'], list):
+                        return [item.get('name', '') for item in data['data'] if isinstance(item, dict) and item.get('name')]
+                    return []
+                except Exception:
+                    return []
+            df['classification'] = df['reporting_class_json'].apply(extract_classification)
+            df = df.drop(columns=['reporting_class_json'])
+
+        if 'sab_comment_udf_json' in df.columns:
+            def extract_obj(val):
+                if val is None or val == '':
+                    return None
+                try:
+                    data = json.loads(val) if isinstance(val, str) else val
+                    return data if isinstance(data, dict) else None
+                except Exception:
+                    return None
+            df['sab_comment_udf'] = df['sab_comment_udf_json'].apply(extract_obj)
+            df = df.drop(columns=['sab_comment_udf_json'])
+
+        if 'parent_phase_udf_json' in df.columns:
+            def extract_obj2(val):
+                if val is None or val == '':
+                    return None
+                try:
+                    data = json.loads(val) if isinstance(val, str) else val
+                    return data if isinstance(data, dict) else None
+                except Exception:
+                    return None
+            df['parent_phase_udf'] = df['parent_phase_udf_json'].apply(extract_obj2)
+            df = df.drop(columns=['parent_phase_udf_json'])
+
+        # 处理时间列
+        if 'creation_time' in df.columns:
+            df['creation_time'] = pd.to_datetime(df['creation_time'], errors='coerce')
+
+        # 修复 status_phase 字段 - 去掉严重程度后缀（如 _Medium, _Low 等）
+        # 数据库中的 status_phase 包含状态和下划线后缀，需要提取纯状态名
+        if 'status_phase' in df.columns:
+            def extract_base_status(status):
+                """从 status_phase 中提取基础状态名，去掉后缀"""
+                if pd.isna(status) or not isinstance(status, str):
+                    return status
+                # 查找最后一个下划线的位置
+                if '_' in status:
+                    # 检查是否是已知的严重程度后缀
+                    severity_suffixes = ['_Critical', '_Very High', '_High', '_Medium', '_Low', '_Very Low']
+                    for suffix in severity_suffixes:
+                        if status.endswith(suffix):
+                            return status[:-len(suffix)]
+                return status
+            df['status_phase'] = df['status_phase'].apply(extract_base_status)
+
+        # 添加 matrix_display 列（从 user_tags 中提取 matrix 标签）
+        def extract_matrix_display(user_tags):
+            """从 user_tags 中提取 Matrix 标签用于显示"""
+            # 处理字符串格式（从数据库加载的user_tags是逗号分隔的字符串）
+            if isinstance(user_tags, str):
+                tags = [t.strip() for t in user_tags.split(',') if t.strip()]
+                for tag in tags:
+                    if 'matrix-' in tag.lower():
+                        return tag.replace('matrix-', 'Matrix-').upper()
+                return 'UnknownMatrix'
+            # 处理列表格式
+            elif isinstance(user_tags, list):
+                for tag in user_tags:
+                    if isinstance(tag, dict):
+                        tag_name = tag.get('name', '')
+                    else:
+                        tag_name = str(tag)
+                    if tag_name and 'matrix-' in tag_name.lower():
+                        # 转换为显示格式：matrix-1a -> Matrix-1A
+                        return tag_name.replace('matrix-', 'Matrix-').upper()
+                return 'UnknownMatrix'
+            return 'UnknownMatrix'
+
+        # 使用原始user_tags提取matrix（未被JSON解析破坏的）
+        if 'user_tags_raw' in df.columns:
+            df['matrix_display'] = df['user_tags_raw'].apply(extract_matrix_display)
+            df['matrix'] = df['matrix_display']  # 同时设置 matrix 列
+            df['user_tags'] = df['user_tags_raw']  # 恢复为原始值
+            df.drop('user_tags_raw', axis=1, inplace=True)
+        elif 'user_tags' in df.columns:
+            df['matrix_display'] = df['user_tags'].apply(extract_matrix_display)
+            df['matrix'] = df['matrix_display']
+
+        # 添加缺失列的默认值，确保与文件加载格式一致
+        # 注意：列表类型需要使用 .loc 或列表推导式创建
+        string_columns = ['tester', 'severity_group', 'occurrence', 'release', 'istep', 'blocking_reason']
+        list_columns = ['tags', 'ticket_quality', 'aidas']
+
+        for col in string_columns:
+            if col not in df.columns:
+                df[col] = 'Unknown' if col in ['tester', 'release', 'istep'] else ''
+
+        for col in list_columns:
+            if col not in df.columns:
+                df[col] = [[] for _ in range(len(df))]
+
+        # 从 product_areas 设置 aidas（product_areas 是逗号分隔字符串）
+        if 'aidas' in df.columns and 'product_areas' in df.columns:
+            try:
+                def extract_aidas_from_string(x):
+                    """从逗号分隔的 product_areas 字符串提取 aidas 列表"""
+                    if x is None or x == '':
+                        return []
+                    if isinstance(x, str):
+                        return [item.strip() for item in x.split(',') if item.strip()]
+                    return []
+
+                df['aidas'] = df['product_areas'].apply(extract_aidas_from_string)
+                print(f"  已从 product_areas 提取 aidas，非空值计数: {(df['aidas'].apply(len) > 0).sum()}")
+            except Exception as e:
+                print(f"  警告: 无法从 product_areas 设置 aidas: {e}")
+                df['aidas'] = [[] for _ in range(len(df))]
+
+        if 'relation_to' in df.columns and 'relation_to_udf' not in df.columns:
+            df['relation_to_udf'] = df['relation_to']
+
+        # 注意：top_aida 和 aida_english 现在已经在数据库存储时正确计算
+        # 不需要在这里重新计算
+
+        # 确保 classification 列不是 None
+        if 'classification' in df.columns:
+            df['classification'] = df['classification'].apply(lambda x: x if isinstance(x, list) else [])
+        else:
+            df['classification'] = [[] for _ in range(len(df))]
+
+        if 'ecu_no_of_changes_udf' not in df.columns and 'pingpong' in df.columns:
+            df['ecu_no_of_changes_udf'] = pd.to_numeric(df['pingpong'], errors='coerce').fillna(0).astype(int)
+
+        # 创建 phase.name 列（兼容旧代码期望的格式）
+        # 数据库中 phase 是字符串，需要创建嵌套字典格式
+        if 'phase' in df.columns:
+            # 创建 phase.name 列，与文件加载格式一致
+            df['phase.name'] = df['phase']
+            # 同时创建 phase 嵌套字典格式（某些代码可能使用）
+            df['phase_dict'] = df['phase'].apply(lambda x: {'name': x} if x else {'name': ''})
+
+        # 创建 severity.name 列（兼容格式）
+        if 'severity' in df.columns:
+            df['severity.name'] = df['severity']
+
+        # 创建 detected_in_release.name 列（兼容格式）
+        if 'detected_in_release' in df.columns:
+            df['detected_in_release.name'] = df['detected_in_release']
+
+        if 'team' in df.columns:
+            try:
+                team_series = df['team'].fillna('').astype(str)
+                if (team_series == _DEFAULT_OCTANE_TEAM).any():
+                    if 'octane_team' not in df.columns:
+                        df['octane_team'] = df['team']
+                    df['team'] = None
+            except Exception:
+                pass
+
+        df = apply_vin_project_mapping(df)
+        df = apply_app_rsu_project_override(df)
+        df = apply_aida_fv_mapping(df)
+        df = apply_team_fvp_mapping(df)
+
+        if 'id' in df.columns and 'relation_to_udf' in df.columns:
+            try:
+                df['id'] = df['id'].astype(str)
+                rel = df['relation_to_udf'].fillna('').astype(str).replace('nan', '').replace('None', '').str.strip()
+
+                if 'parent_child' in df.columns:
+                    pc = df['parent_child'].fillna('').astype(str)
+                else:
+                    pc = pd.Series(['' for _ in range(len(df))], index=df.index)
+
+                is_child = pc.isin(['Child', 'Child (candidate)', 'Child (Candidate)'])
+                is_parent = pc.eq('Parent')
+
+                df['master_id'] = np.where(is_child, rel, '')
+
+                master_child_counts = df.loc[is_child, 'master_id'].astype(str).str.strip()
+                master_child_counts = master_child_counts[master_child_counts != ''].value_counts()
+                df['child_count_of_master'] = df['master_id'].map(master_child_counts).fillna(0).astype(int)
+
+                df['child_count'] = 0
+                df.loc[is_parent, 'child_count'] = rel[is_parent].apply(_count_linked_defects).astype(int)
+
+                if 'parent_child' not in df.columns:
+                    df['parent_child'] = ''
+                pc = df['parent_child'].fillna('').astype(str)
+                empty_pc = pc.str.strip() == ''
+                if empty_pc.any():
+                    df.loc[empty_pc, 'parent_child'] = np.where(
+                        df.loc[empty_pc, 'master_id'].astype(str).str.strip() != '',
+                        'Child',
+                        np.where(rel[empty_pc].apply(_count_linked_defects).astype(int) > 0, 'Parent', '')
+                    )
+            except Exception:
+                pass
+
+        if 'detected_by' in df.columns:
+            detected_series = df['detected_by'].fillna('').astype(str).str.strip()
+            if 'tester' not in df.columns:
+                df['tester'] = detected_series
+            else:
+                tester_series = df['tester'].fillna('').astype(str).str.strip()
+                unknown_mask = tester_series.str.lower().isin({'', 'unknown', 'unknown tester', 'nan', 'none'})
+                if unknown_mask.any():
+                    df.loc[unknown_mask, 'tester'] = detected_series[unknown_mask]
+        elif 'tester' not in df.columns:
+            df['tester'] = 'Unknown'
+        
+        # 再次确认tester列没有空字符串
+        if 'tester' in df.columns:
+            tester_clean = df['tester'].fillna('').astype(str).str.strip()
+            tester_clean = tester_clean.replace({'nan': '', 'None': '', 'none': ''})
+            df['tester'] = tester_clean.where(tester_clean != '', 'Unknown')
+
+        # 注意：author 和 owner 已经在数据库存储时提取为 full_name
+        # 不需要在这里再次提取
+
+        if 'project' in df.columns:
+            try:
+                print(f"项目分布: {df['project'].value_counts().to_dict()}")
+            except Exception:
+                pass
+
+        # 注意：FV、FVP、Team 等字段已经在数据库存储时正确计算和填充
+        # 不需要在这里再次处理
+
+        return df
+
+    except Exception as e:
+        print(f"从优化表加载失败: {e}")
+        return pd.DataFrame()
+    finally:
+        conn.close()
+
+def _ensure_defect_features_table(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS defect_features (
+            defect_id TEXT PRIMARY KEY,
+            topissue_risk_score REAL,
+            topissue_display TEXT,
+            topissue_recommend_reason TEXT,
+            is_topissue INTEGER,
+            is_master_score INTEGER,
+            source_fetched_at TEXT,
+            computed_at TEXT,
+            feature_version TEXT
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_defect_features_is_topissue ON defect_features(is_topissue)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_defect_features_risk_score ON defect_features(topissue_risk_score)")
+
+def _load_defect_features(conn: sqlite3.Connection, defect_ids: List[str]) -> pd.DataFrame:
+    if not defect_ids:
+        return pd.DataFrame()
+    placeholders = ",".join(["?"] * len(defect_ids))
+    query = f"""
+        SELECT
+            defect_id,
+            topissue_risk_score,
+            topissue_display,
+            topissue_recommend_reason,
+            is_topissue,
+            is_master_score,
+            source_fetched_at,
+            computed_at,
+            feature_version
+        FROM defect_features
+        WHERE defect_id IN ({placeholders})
+    """
+    return pd.read_sql_query(query, conn, params=defect_ids)
+
+def _upsert_defect_features(conn: sqlite3.Connection, rows: List[Dict]) -> None:
+    if not rows:
+        return
+    conn.executemany(
+        """
+        INSERT INTO defect_features(
+            defect_id,
+            topissue_risk_score,
+            topissue_display,
+            topissue_recommend_reason,
+            is_topissue,
+            is_master_score,
+            source_fetched_at,
+            computed_at,
+            feature_version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(defect_id) DO UPDATE SET
+            topissue_risk_score=excluded.topissue_risk_score,
+            topissue_display=excluded.topissue_display,
+            topissue_recommend_reason=excluded.topissue_recommend_reason,
+            is_topissue=excluded.is_topissue,
+            is_master_score=excluded.is_master_score,
+            source_fetched_at=excluded.source_fetched_at,
+            computed_at=excluded.computed_at,
+            feature_version=excluded.feature_version
+        """,
+        [
+            (
+                str(r.get("defect_id", "")),
+                float(r.get("topissue_risk_score", 0.0)),
+                str(r.get("topissue_display", "")),
+                str(r.get("topissue_recommend_reason", "")),
+                int(r.get("is_topissue", 0)),
+                int(r.get("is_master_score", 0)),
+                str(r.get("source_fetched_at", "")),
+                str(r.get("computed_at", "")),
+                str(r.get("feature_version", "")),
+            )
+            for r in rows
+        ],
+    )
+
+def _count_linked_defects(relation_str) -> int:
+    if relation_str is None or pd.isna(relation_str):
+        return 0
+    try:
+        ids = str(relation_str).split(",")
+        return len([x.strip() for x in ids if x and x.strip()])
+    except Exception:
+        return 0
+
+def _build_topissue_recommendation(ticket_row: Dict) -> str:
+    parts = []
+    severity_items = []
+    matrix = ticket_row.get("matrix", "")
+    if matrix:
+        severity_items.append(f"Matrix {str(matrix).replace('matrix-', '').replace('Matrix-', '').upper()}")
+    classification = ticket_row.get("classification", [])
+    if isinstance(classification, list):
+        for name in [
+            "Showstopper_Confirmed",
+            "Preventing Maturity Grade ConDrive",
+            "Showstopper_Candidate",
+            "Obstructing Maturity Grade ConDrive",
+            "Homologation L-labelled",
+        ]:
+            if name in classification:
+                severity_items.append(name)
+    if severity_items:
+        parts.append(f"SEVERITY: {'; '.join(severity_items)}")
+
+    high_runner_items = []
+    ecu_pingpong = ticket_row.get("ecu_no_of_changes_udf", 0) or ticket_row.get("pingpong", 0)
+    try:
+        ecu_pingpong = int(ecu_pingpong)
+    except Exception:
+        ecu_pingpong = 0
+    if ecu_pingpong > 0:
+        high_runner_items.append(f"ECU transfer {ecu_pingpong} times")
+    domain_pingpong = ticket_row.get("domain_pingpong_display", 0) or ticket_row.get("domain_pingpong_count", 0)
+    try:
+        domain_pingpong = int(domain_pingpong)
+    except Exception:
+        domain_pingpong = 0
+    if domain_pingpong > 0:
+        high_runner_items.append(f"Domain transfer {domain_pingpong} times")
+    if high_runner_items:
+        parts.append(f"HIGH RUNNER: {'; '.join(high_runner_items)}")
+
+    complexity_items = []
+    parent_child = ticket_row.get("parent_child", "")
+    if parent_child == "Parent":
+        c = ticket_row.get("子票数量", 0) or ticket_row.get("child_count", 0)
+        try:
+            c = int(c)
+        except Exception:
+            c = 0
+        if c > 0:
+            complexity_items.append(f"{c} child tickets")
+    elif parent_child in ["Child", "Child (candidate)"]:
+        c = ticket_row.get("子票数量", 0) or ticket_row.get("child_count", 0)
+        try:
+            c = int(c)
+        except Exception:
+            c = 0
+        if c > 0:
+            complexity_items.append(f"Master has {c} children")
+    if complexity_items:
+        parts.append(f"COMPLEXITY: {'; '.join(complexity_items)}")
+
+    long_runner_items = []
+    processing_days = ticket_row.get("processing_cycle_days", 0)
+    try:
+        processing_days = int(processing_days)
+    except Exception:
+        processing_days = 0
+    if processing_days >= 7:
+        long_runner_items.append(f"Cycle {processing_days} days")
+    shift_pu = ticket_row.get("Shift_PU", "")
+    if shift_pu and str(shift_pu).strip():
+        long_runner_items.append(f"Shift {str(shift_pu).strip()}")
+    if long_runner_items:
+        parts.append(f"LONG RUNNER: {'; '.join(long_runner_items)}")
+
+    return "\n".join(parts) if parts else "No specific risk factors"
+
+def _ensure_and_attach_topissue_features(ddf: pd.DataFrame) -> pd.DataFrame:
+    if ddf is None or ddf.empty or "id" not in ddf.columns:
+        return ddf
+
+    defect_ids = ddf["id"].astype(str).tolist()
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        _ensure_defect_features_table(conn)
+        existing = _load_defect_features(conn, defect_ids)
+        existing_map = {}
+        if existing is not None and not existing.empty:
+            existing_map = existing.set_index("defect_id").to_dict("index")
+
+        to_compute = []
+        for _, row in ddf[["id", "fetched_at"]].astype(str).iterrows():
+            did = row["id"]
+            fetched_at = row.get("fetched_at", "")
+            cur = existing_map.get(did)
+            if not cur:
+                to_compute.append(did)
+                continue
+            if fetched_at and str(cur.get("source_fetched_at", "")) != fetched_at:
+                to_compute.append(did)
+
+        if to_compute:
+            from risk_score_calculator import calculate_risk_score, calculate_with_master
+
+            subset = ddf[ddf["id"].astype(str).isin(set(to_compute))].copy()
+            if "processing_cycle_days" not in subset.columns and {"status_phase", "creation_time"}.issubset(set(subset.columns)):
+                subset["processing_cycle_days"] = subset.apply(
+                    lambda r: calculate_processing_cycle_days(str(r.get("id")), r.get("status_phase", ""), r.get("creation_time")),
+                    axis=1,
+                )
+            if "processing_cycle_days" not in ddf.columns and "processing_cycle_days" in subset.columns:
+                ddf = ddf.merge(subset[["id", "processing_cycle_days"]], on="id", how="left")
+
+            master_lookup = {}
+            if "parent_child" in ddf.columns:
+                masters = ddf[ddf["parent_child"] == "Parent"].copy()
+            else:
+                masters = pd.DataFrame()
+            if not masters.empty:
+                masters["子票数量"] = masters["relation_to"].apply(_count_linked_defects) if "relation_to" in masters.columns else 0
+                keys = [
+                    "id",
+                    "matrix",
+                    "classification",
+                    "ecu_no_of_changes_udf",
+                    "pingpong",
+                    "domain_pingpong_display",
+                    "domain_pingpong_count",
+                    "parent_child",
+                    "子票数量",
+                    "processing_cycle_days",
+                    "Shift_PU",
+                ]
+                keys = [k for k in keys if k in masters.columns]
+                master_lookup = masters[keys].set_index("id").to_dict("index")
+
+            computed_at = datetime.utcnow().isoformat()
+            feature_version = "topissue_v1"
+            upserts = []
+            for _, row in subset.iterrows():
+                r = row.to_dict()
+                parent_id = r.get("parent_id")
+                if parent_id and not isinstance(r.get("parent"), dict):
+                    r["parent"] = {"id": str(parent_id)}
+                if r.get("parent_child") == "Parent":
+                    r["子票数量"] = _count_linked_defects(r.get("relation_to"))
+                score, _, _ = calculate_with_master(r, master_lookup)
+                child_score, _, _ = calculate_risk_score(r)
+                is_master_score = bool(
+                    r.get("parent_child") in ["Child", "Child (candidate)"] and score > child_score
+                )
+                chosen_row = r
+                if is_master_score and isinstance(r.get("parent"), dict):
+                    mid = r.get("parent", {}).get("id")
+                    if mid and str(mid) in master_lookup:
+                        chosen_row = master_lookup[str(mid)].copy()
+                        chosen_row["parent_child"] = "Parent"
+                        chosen_row["子票数量"] = chosen_row.get("子票数量", 0)
+                rec = _build_topissue_recommendation({**chosen_row, "processing_cycle_days": r.get("processing_cycle_days", chosen_row.get("processing_cycle_days", 0))})
+                display = f"{int(round(score))}{'*' if is_master_score else ''}" if score and score > 0 else "0"
+                upserts.append(
+                    {
+                        "defect_id": str(r.get("id")),
+                        "topissue_risk_score": float(score),
+                        "topissue_display": display,
+                        "topissue_recommend_reason": rec,
+                        "is_topissue": 1 if score >= 60 else 0,
+                        "is_master_score": 1 if is_master_score else 0,
+                        "source_fetched_at": str(r.get("fetched_at", "")),
+                        "computed_at": computed_at,
+                        "feature_version": feature_version,
+                    }
+                )
+
+            _upsert_defect_features(conn, upserts)
+            conn.commit()
+
+        features = _load_defect_features(conn, defect_ids)
+        if features is None or features.empty:
+            return ddf
+        merged = ddf.merge(features, left_on="id", right_on="defect_id", how="left")
+        merged = merged.drop(columns=["defect_id"])
+        return merged
+    finally:
+        conn.close()
+
+
 # ===== 缺陷管理数据处理 =====
 
-def load_defect_data(file_pattern="defect/2025_defect.json"):
-    """加载缺陷数据并进行基础处理，并添加 FV, Team, FVP 列"""
+def load_defect_data(file_pattern="defect/2025_defect.json", use_db=None):
+    """
+    加载缺陷数据并进行基础处理，并添加 FV, Team, FVP 列
+
+    Args:
+        file_pattern: 文件匹配模式（文件模式时使用）
+        use_db: 强制使用数据库（None=根据配置，True=强制数据库，False=强制文件）
+    """
     # 如果是reloader进程，返回空DataFrame避免数据加载
     if IS_RELOADER:
         print("🔄 data_processor.load_defect_data: Reloader进程跳过数据加载")
         return pd.DataFrame()
-    
-    dfs = []
-    files = glob.glob(file_pattern)
-    
-    # 过滤掉失败记录文件和master数据文件，只保留实际的缺陷数据文件
-    filtered_files = [f for f in files if not any(pattern in f for pattern in [
-        'master_download_failures', 
-        'defect_master.json',
-        '_master.json'
-    ])]
-    
-    for file in filtered_files:
-        with open(file, encoding="utf8") as f:
-            try:
-                # 重置文件指针以供 json.load 使用
-                f.seek(0)
-                loaded_json = json.load(f)
-                data_list = None
 
-                # 检查JSON结构
-                if isinstance(loaded_json, dict) and "data" in loaded_json and isinstance(loaded_json["data"], list):
-                    data_list = loaded_json["data"]
-                elif isinstance(loaded_json, list):
-                    data_list = loaded_json # 整个JSON文件就是记录列表
-                else:
-                    print(f"警告: 文件 {file} 的 JSON 结构不符合预期（既不是包含 'data' 列表的字典，也不是纯列表）。已跳过。")
-                    continue
-                
-                if not data_list: # 如果 data 列表为空
-                    print(f"警告: 文件 {file} 中提取的 'data' 列表为空或格式不正确。已跳过。")
-                    continue
-                
-                # 确保 data_list 的元素是字典 (适合 json_normalize)
-                if not all(isinstance(item, dict) for item in data_list):
-                    print(f"警告: 文件 {file} 的 data_list 包含非字典元素。已跳过。")
-                    continue
+    # 检查是否应该从数据库加载
+    should_use_db = use_db if use_db is not None else (
+        HAS_DB_CONFIG and (is_db_first_mode() or is_db_only_mode())
+    )
 
-                dfs.append(pd.json_normalize(data_list, max_level=0))
-            except json.JSONDecodeError as e:
-                print(f"警告: 解析文件 {file} 时出错: {e}。已跳过。")
-                continue
-            except Exception as e:
-                print(f"警告: 处理文件 {file} 时发生意外错误: {e}。已跳过。")
-                continue
-    
-    if not dfs:
+    # 如果配置使用优化表，从新表加载
+    if should_use_db and HAS_DB_CONFIG and is_using_optimized_schema():
+        try:
+            print("💾 从数据库优化表加载数据...")
+            df = _load_defects_from_optimized_table(file_pattern)
+            if not df.empty:
+                print(f"✅ 从数据库加载 {len(df)} 条记录")
+                return _ensure_and_attach_topissue_features(df)
+            print("⚠️ 数据库优化表为空，继续尝试数据库原始载荷表")
+        except Exception as e:
+            print(f"⚠️ 从数据库加载失败: {e}")
+            if is_db_only_mode():
+                raise
+
+    try:
+        year_match = re.search(r"(\d{4})", str(file_pattern or ""))
+        year_val = int(year_match.group(1)) if year_match else None
+    except Exception:
+        year_val = None
+
+    db_path_val = _DEFAULT_OCTANE_DB_PATH
+    if not os.path.exists(db_path_val):
         return pd.DataFrame()
-        
-    ddf = pd.concat(dfs, ignore_index=True)
+
+    try:
+        conn = sqlite3.connect(db_path_val)
+        try:
+            if year_val is not None:
+                row = conn.execute(
+                    "SELECT payload_json FROM octane_payloads WHERE kind=? AND team=? AND year=? AND spec=?",
+                    ("defects", _DEFAULT_OCTANE_TEAM, int(year_val), ""),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT payload_json FROM octane_payloads WHERE kind=? AND team=? ORDER BY fetched_at DESC LIMIT 1",
+                    ("defects", _DEFAULT_OCTANE_TEAM),
+                ).fetchone()
+        finally:
+            conn.close()
+
+        if not row:
+            return pd.DataFrame()
+        payload = json.loads(row[0])
+        data_list = payload.get("data") if isinstance(payload, dict) else payload
+        if not (isinstance(data_list, list) and data_list and all(isinstance(item, dict) for item in data_list)):
+            return pd.DataFrame()
+        ddf = pd.json_normalize(data_list, max_level=0)
+    except Exception:
+        return pd.DataFrame()
     
     # 处理时间和测试周
     if 'creation_time' in ddf.columns:
@@ -309,6 +1168,7 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
     
     # 处理字段映射
     field_mappings = {
+        "vin": "vin_udf",
         "occurrence": "error_occurrence_udf",
         "severity": "problem_severity_udf",
         "status_phase": "phase",
@@ -372,6 +1232,15 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
         ddf['top_aida'] = "" # Ensure column exists even if 'aidas' was missing
     # ---> END ADDED <---
 
+    # 应用基于Excel的字段映射 (Project, FV, Team, FVP) - 恢复原有逻辑
+    try:
+        ddf = apply_vin_project_mapping(ddf)
+        ddf = apply_app_rsu_project_override(ddf)
+        ddf = apply_aida_fv_mapping(ddf)
+        ddf = apply_team_fvp_mapping(ddf)
+    except Exception as e:
+        print(f"应用Excel映射失败: {e}")
+
     # 提取Matrix标签
     def extract_matrix(tags):
         if isinstance(tags, list) and len(tags) > 0:
@@ -398,12 +1267,15 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
     # 添加 Classification 列 (从 reporting_class_udf)
     if 'reporting_class_udf' in ddf.columns:
         ddf["classification"] = ddf["reporting_class_udf"].apply(
-             lambda x: [i.get("name", "") for i in x["data"] if isinstance(i, dict)] 
-                       if isinstance(x, dict) and "data" in x and isinstance(x["data"], list) 
+             lambda x: [i.get("name", "") for i in x["data"] if isinstance(i, dict)]
+                       if isinstance(x, dict) and "data" in x and isinstance(x["data"], list)
                        else []
         )
     else:
         ddf["classification"] = [[] for _ in range(len(ddf))]
+
+    # 确保 classification 列没有 None 值
+    ddf["classification"] = ddf["classification"].apply(lambda x: x if isinstance(x, list) else [])
 
     # 添加Matrix显示和排序值
     ddf["matrix_display"] = ddf["matrix"].apply(lambda x: x.replace("matrix-", "").upper() if isinstance(x, str) and x else "")
@@ -418,7 +1290,7 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
     # 添加严重性分组和TopIssue分类 - 新的风险评分系统
     def calculate_topissue_risk_score(row):
         """
-        计算TopIssue风险分数 - 改进版非线性算法，基于原有线性基础增加非线性考虑：
+        计算TopIssue风险分数 - 非线性算法，基于原有线性基础增加非线性考虑：
         
         核心改进：
         1. Matrix严重度 - 指数衰减：Matrix-1a(30分) → 1b(24分) → 1c(19分)，高危等级分数差距更大
@@ -963,24 +1835,24 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
             'is_master_score': is_master_score
         }
 
-    # 预加载master数据以提高性能
     master_data_cache = {}
     try:
-        with open("defect/2025_defect_master.json", "r", encoding="utf-8") as f:
-            master_data = json.load(f)
-        master_df_temp = pd.json_normalize(master_data)
-        
-        if not master_df_temp.empty:
-            # 将master数据转换为字典，以id为key，方便快速查找
-            master_df_temp['id'] = master_df_temp['id'].astype(str)
-            for _, row in master_df_temp.iterrows():
-                master_data_cache[row['id']] = row.to_dict()
+        if 'id' in ddf.columns and 'relation_to_udf' in ddf.columns and not ddf.empty:
+            master_mask = ddf['relation_to_udf'].notna() & ddf['relation_to_udf'].astype(str).str.strip().ne('')
+            if 'parent_child' in ddf.columns:
+                master_mask = master_mask | (ddf['parent_child'].astype(str) == 'Parent')
+            master_df_temp = ddf.loc[master_mask].copy()
+            if not master_df_temp.empty:
+                master_df_temp['id'] = master_df_temp['id'].astype(str)
+                for _, row in master_df_temp.iterrows():
+                    mid = row.get('id')
+                    if mid:
+                        master_data_cache[str(mid)] = row.to_dict()
         print(f"预加载了 {len(master_data_cache)} 个master票数据以提高性能")
     except Exception as e:
         print(f"警告：无法预加载master ticket数据: {e}")
         master_data_cache = {}
-    
-    # 将master缓存添加到函数属性中，避免重复加载
+
     calculate_topissue_risk_score.master_data_cache = master_data_cache
 
     # 添加缺失的字段
@@ -1073,103 +1945,26 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
                 return np.nan
         
         ddf['complexity'] = ddf['ECU Pingpong'].apply(categorize_complexity)
+
+    ddf["is_critical_issue"] = ddf["severity_group"].astype(str).str.lower().str.contains("critical")
+    if "complexity" in ddf.columns:
+        ddf["is_complex_ticket"] = ddf["complexity"].astype(str).str.lower().eq("complex")
+    if "processing_cycle_days" in ddf.columns:
+        ddf["is_long_runner"] = pd.to_numeric(ddf["processing_cycle_days"], errors="coerce").fillna(0).ge(30)
     
-    # 定义tproject数据 - 使用Excel文件映射
-    def load_vin_project_mapping(excel_file="project/vin_project_mapping.xlsx"):
-        """从Excel文件加载VIN和项目的映射关系，以及VIN到Market的映射"""
-        try:
-            if not os.path.exists(excel_file):
-                print(f"警告: VIN项目映射文件 '{excel_file}' 不存在。使用空映射。")
-                return {}, {}
-            
-            df_mapping = pd.read_excel(excel_file)
-            
-            # 检查必要的列是否存在
-            if 'VIN' not in df_mapping.columns or 'project' not in df_mapping.columns:
-                print(f"警告: VIN项目映射文件缺少必要的列（需要 'VIN' 和 'project'）。使用空映射。")
-                return {}, {}
-            
-            # 项目名称转换映射
-            project_name_mapping = {
-                'MGU_02_A': 'IDC',
-                'MGU_02_L': 'MGU', 
-                'IDCEVO25': 'IDCEVO'
-            }
-            
-            # 创建VIN到项目的映射字典和VIN到Market的映射字典
-            vin_to_project = {}
-            vin_to_market = {}
-            
-            for _, row in df_mapping.iterrows():
-                vin = str(row['VIN']).strip().upper()
-                hu_name = str(row['project']).strip()
-                
-                # 转换项目名称
-                project = project_name_mapping.get(hu_name, hu_name)
-                vin_to_project[vin] = project
-                
-                # 添加Market映射（从ISO Countrycode (INT)字段）
-                if 'ISO Countrycode (INT)' in df_mapping.columns:
-                    iso_country = str(row['ISO Countrycode (INT)']).strip() if pd.notna(row['ISO Countrycode (INT)']) else ''
-                    if iso_country:
-                        vin_to_market[vin] = iso_country
-            
-            print(f"成功加载 {len(vin_to_project)} 个VIN项目映射关系")
-            print(f"项目分布: {pd.Series(list(vin_to_project.values())).value_counts().to_dict()}")
-            
-            if vin_to_market:
-                print(f"成功加载 {len(vin_to_market)} 个VIN市场映射关系")
-                print(f"市场分布: {pd.Series(list(vin_to_market.values())).value_counts().to_dict()}")
-            
-            return vin_to_project, vin_to_market
-            
-        except Exception as e:
-            print(f"错误: 加载VIN项目映射文件 '{excel_file}' 时出错: {e}。使用空映射。")
-            return {}, {}
-
-    # 加载VIN到项目的映射和VIN到Market的映射
-    vin_to_project, vin_to_market = load_vin_project_mapping()
-    
-    # 初始化tproject列
-    ddf['project'] = ''
-
-    if 'vin_udf' in ddf.columns:
-        ddf['vin_udf'] = ddf['vin_udf'].astype(str).str.strip().str.upper()
-
-        def update_tproject(vin_udf):
-            # 检查 vin_udf 是否为字符串类型
-            if not isinstance(vin_udf, str):
-                return '' # 如果不是字符串（例如 None 或 NaN），返回空字符串
-            # 使用 filter(None, ...) 来过滤掉查找失败时产生的空字符串 ''
-            projects = [vin_to_project.get(vin.strip(), '') 
-                        for vin in vin_udf.split(',') 
-                        if vin.strip() in vin_to_project]
-            return ', '.join(filter(None, projects))
-
-        ddf['project'] = ddf['vin_udf'].map(update_tproject)
-        
-        # 添加Market字段处理
-        def update_market(vin_udf):
-            # 检查 vin_udf 是否为字符串类型
-            if not isinstance(vin_udf, str):
-                return '' # 如果不是字符串（例如 None 或 NaN），返回空字符串
-            # 使用 filter(None, ...) 来过滤掉查找失败时产生的空字符串 ''
-            markets = [vin_to_market.get(vin.strip(), '') 
-                      for vin in vin_udf.split(',') 
-                      if vin.strip() in vin_to_market]
-            return ', '.join(filter(None, markets))
-        
-        # 初始化Market列
+    if 'project' not in ddf.columns:
+        ddf['project'] = ''
+    if 'market' not in ddf.columns:
         ddf['market'] = ''
-        if vin_to_market:  # 只有当存在market映射时才处理
-            ddf['market'] = ddf['vin_udf'].map(update_market)
-            print(f"Market字段处理完成，共映射 {len(ddf[ddf['market'] != ''])} 条记录")
-        else:
-            print("警告: 没有可用的VIN到Market映射数据")
-    else:
-        print("警告: DataFrame 中缺少 'vin_udf' 列，无法分配项目信息。")
-        # 即使没有vin_udf列，也要初始化market列
-        ddf['market'] = ''
+
+    if 'program' in ddf.columns:
+        empty_mask = ddf['project'].isna() | (ddf['project'].astype(str).str.strip() == '')
+        if empty_mask.any():
+            ddf.loc[empty_mask, 'project'] = ddf.loc[empty_mask, 'program'].fillna('').astype(str)
+
+    empty_mask2 = ddf['project'].isna() | (ddf['project'].astype(str).str.strip() == '')
+    if empty_mask2.any() and 'lead_model' in ddf.columns:
+        ddf.loc[empty_mask2, 'project'] = ddf.loc[empty_mask2, 'lead_model'].fillna('').astype(str)
     
     # 处理 aida_english 字段
     if 'aidas' in ddf.columns:
@@ -1196,33 +1991,7 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
         ddf['top_aida'] = '' # 创建空列以避免后续错误
     # --- top_aida 计算结束 ---
     
-    # --- 新增：基于top_aida映射App/RSU项目 ---
-    print("开始根据top_aida映射App/RSU项目...")
-    try:
-        app_rsu_mapping = load_app_rsu_mapping()
-        app_top_aidas = app_rsu_mapping.get('app', [])
-        rsu_top_aidas = app_rsu_mapping.get('rsu', [])
-        
-        if 'top_aida' in ddf.columns:
-            # 将符合App条件的记录tproject设为'App'
-            if app_top_aidas:
-                app_mask = ddf['top_aida'].isin(app_top_aidas)
-                ddf.loc[app_mask, 'project'] = 'App'
-                print(f"已将 {app_mask.sum()} 条记录的project设为'App'")
-            
-            # 将符合RSU条件的记录project设为'RSU'
-            if rsu_top_aidas:
-                rsu_mask = ddf['top_aida'].isin(rsu_top_aidas)
-                ddf.loc[rsu_mask, 'project'] = 'RSU'
-                print(f"已将 {rsu_mask.sum()} 条记录的project设为'RSU'")
-                
-            print(f"项目分布: {ddf['project'].value_counts().to_dict()}")
-        else:
-            print("警告: 缺少 'top_aida' 列，无法映射App/RSU项目")
-            
-    except Exception as e:
-        print(f"警告: App/RSU项目映射过程中出错: {e}")
-    # --- App/RSU项目映射结束 ---
+    # --- App/RSU项目映射 (已移至上方统一处理) ---
 
     # 提取Matrix标签
     def extract_matrix(tags):
@@ -1244,12 +2013,15 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
     # 添加 Classification 列 (从 reporting_class_udf)
     if 'reporting_class_udf' in ddf.columns:
         ddf["classification"] = ddf["reporting_class_udf"].apply(
-             lambda x: [i.get("name", "") for i in x["data"] if isinstance(i, dict)] 
-                       if isinstance(x, dict) and "data" in x and isinstance(x["data"], list) 
+             lambda x: [i.get("name", "") for i in x["data"] if isinstance(i, dict)]
+                       if isinstance(x, dict) and "data" in x and isinstance(x["data"], list)
                        else []
         )
     else:
         ddf["classification"] = [[] for _ in range(len(ddf))]
+
+    # 确保 classification 列没有 None 值
+    ddf["classification"] = ddf["classification"].apply(lambda x: x if isinstance(x, list) else [])
 
     # 添加Matrix显示和排序值
     ddf["matrix_display"] = ddf["matrix"].apply(lambda x: x.replace("matrix-", "").upper() if isinstance(x, str) and x else "")
@@ -1261,220 +2033,13 @@ def load_defect_data(file_pattern="defect/2025_defect.json"):
         # 可以选择在这里定义一个默认的排序逻辑或赋值为 NaN/None
         ddf["matrix_order"] = pd.NA 
      
-    # --- 新增：合并 AIDA/FV 映射 ---
-    print("开始为缺陷数据合并 AIDA/FV 映射...")
-    excel_file = "aida/top_aida_project_fv_mapping.xlsx" # 确保路径相对于项目根目录或可访问
+    # --- Team 和 FVP 分配 (已移至上方统一处理) ---
 
-    # 检查 project 和 top_aida 列是否存在
-    if 'project' not in ddf.columns or 'top_aida' not in ddf.columns:
-         print(f"警告: 缺少 'project' 或 'top_aida' 列，无法合并 FV 数据。将 'fv' 列填充为 'Unknown'。")
-         ddf['fv'] = 'Unknown'
-    elif not os.path.exists(excel_file):
-        print(f"警告: Excel 文件 '{excel_file}' 不存在。无法合并 FV 数据。将 'fv' 列填充为 'Unknown'。")
-        ddf['fv'] = 'Unknown'
-    else:
-        try:
-            writer = pd.ExcelFile(excel_file)
-            print(f"找到 Excel 文件，包含工作表: {writer.sheet_names}")
-
-            for sheet_name in writer.sheet_names:
-                print(f"正在处理工作表: {sheet_name}...")
-                try:
-                    df_map = pd.read_excel(excel_file, sheet_name=sheet_name)
-                except Exception as read_err:
-                    print(f"警告: 读取工作表 '{sheet_name}' 时出错: {read_err}。跳过此工作表。")
-                    continue
-
-                required_map_cols = ['project', 'top_aida', 'fv']
-                if not all(col in df_map.columns for col in required_map_cols):
-                    print(f"警告: 工作表 '{sheet_name}' 缺少必要的列（需要 'project', 'top_aida', 'fv'）。跳过此工作表。")
-                    continue
-
-                fv_col = f"fv_{sheet_name}"
-                df_map = df_map.rename(columns={'fv': fv_col})
-                df_subset = df_map[['top_aida', fv_col]].drop_duplicates(subset=['top_aida'])
-
-                # 确保连接键 top_aida 类型一致
-                ddf['top_aida'] = ddf['top_aida'].astype(str)
-                df_subset['top_aida'] = df_subset['top_aida'].astype(str)
-
-                # 合并前记录行数
-                rows_before_merge = len(ddf)
-                # 使用 left merge
-                ddf = ddf.merge(df_subset, on=['top_aida'], how='left')
-                # 检查合并后行数是否增加（不应增加）
-                if len(ddf) > rows_before_merge:
-                     print(f"警告: 合并工作表 '{sheet_name}' 后行数增加，可能存在重复键。请检查映射文件。")
-                     # 可以考虑在这里去重或采取其他措施
-                     ddf = ddf.drop_duplicates(subset=[col for col in ddf.columns if not col.startswith('fv_')])
-
-
-                print(f"合并工作表 '{sheet_name}' 后，列数: {len(ddf.columns)}")
-
-            # 合并来自不同 sheet 的 fv 列
-            fv_columns = [col for col in ddf.columns if col.startswith('fv_')]
-            if fv_columns:
-                print(f"找到临时 FV 列: {fv_columns}，正在合并...")
-                # 使用 bfill 填充，然后取第一个非空值
-                ddf['fv'] = ddf[fv_columns].bfill(axis=1).iloc[:, 0]
-                # 删除临时的 fv_sheet 列
-                ddf = ddf.drop(columns=fv_columns)
-                print("临时 FV 列已合并并删除。")
-            else:
-                print("警告: 未找到任何 'fv_' 开头的临时列进行合并。'fv' 列可能未创建或为空。")
-                ddf['fv'] = 'Unknown' # 如果没有合并成功，填充默认值
-
-            # 填充 fv 中的 NaN 为 'Unknown' (或者保持 NaN 以便后续处理)
-            # ddf['fv'] = ddf['fv'].fillna('Unknown') # 暂时注释掉，让 isna() 能工作
-
-        except FileNotFoundError:
-            print(f"错误: 读取 Excel 文件 '{excel_file}' 时文件未找到。将 'fv' 列填充为 'Unknown'。")
-            ddf['fv'] = 'Unknown'
-        except Exception as e:
-            print(f"错误: 处理 Excel 文件 '{excel_file}' 时出错: {e}。将 'fv' 列填充为 'Unknown'。")
-            ddf['fv'] = 'Unknown'
-    # --- FV 合并结束 ---
-
-    # --- 新增：分配 Team 和 FVP (逻辑与 load_test_data 一致) ---
-    print("开始为缺陷数据分配 Team 和 FVP...")
-
-    # Team 分配
-    dips_fvs = [
-        'DIPS_TSP_Call_Services', 'DIPS_TSP_CD_Updates', 'DIPS_TSP_Remote_Services',
-        'Mybmw App', 'eMob', 'DIPS_TSP_Car_Apps_CN', 'DIPS_TSP_MobileApps',
-        'DIPS_TSP_Enabler', 'Slip-Through' # 使用更新后的列表
-    ]
-    if 'fv' in ddf.columns:
-        # 使用更新后的条件，包含 isna() 检查
-        ddf['team'] = np.where(
-            (ddf['fv'].isin(dips_fvs)) | (ddf['fv'].isna()), # 检查 NaN
-            'DIPS',
-            'IUK'
-        )
-        print("Team 列计算完成。")
-    else:
-        print("警告: DataFrame 中缺少 'fv' 列，无法分配 'team'。")
-        ddf['team'] = 'Unknown'
-
-    # FVP 映射
-    fvp_mapping = {
-        'DIPS_TSP_Call_Services': 'Tianhua',
-        'DIPS_TSP_CD_Updates': 'Tianhua',
-        'DIPS_TSP_Remote_Services': 'Tianhua',
-        'eMob': 'Tianhua',
-        'DIPS_TSP_MobileApps': 'Tianhua',
-        'DIPS_TSP_Enabler': 'Tianhua', # 使用更新后的字典
-        'IuK_TSP_Navi': 'Tony',
-        'IuK_TSP_AZV': 'Xu Miao',
-        'IuK_TSP_Entertainment': 'Xu Miao',
-        'IuK_TSP_Audio': 'Xu Miao',
-        'IuK_TSP_Connectivity': 'Xu Miao',
-        'DIPS_TSP_Car_Apps_CN': 'Huanran',
-        'IuK_TSP_HMI': 'Jerry',
-        'DIPS_TSP_RSU': 'Jerry',
-        'IuK_TSP_Carfunctions': 'Jerry',
-        'IuK_TSP_Perso CN': 'Jerry',
-        'RSU': 'Jerry',
-        'Mybmw App': 'Marin'
-    }
-    if 'fv' in ddf.columns:
-        ddf['fvp'] = ddf['fv'].map(fvp_mapping).fillna('Unknown') # 映射并填充 NaN
-        print("FVP 列计算完成。")
-    else:
-        print("警告: DataFrame 中缺少 'fv' 列，无法分配 'fvp'。")
-        ddf['fvp'] = 'Unknown'
-    # --- Team 和 FVP 分配结束 ---
-
-    # --- 智能FV补全（增强版） ---
     print("开始智能FV补全...")
-    
-    # 统计补全前的空值数量
-    null_fv_count_before = ddf['fv'].isna().sum()
-    if null_fv_count_before > 0:
-        print(f"补全前FV空值: {null_fv_count_before} 条")
-        
-        try:
-            # 建立完整的AIDA-FV映射字典（包含模糊匹配）
-            comprehensive_aida_fv_map = {}
-            
-            for sheet_name in ['IDCevo', 'IDC', 'MGU', 'App', 'RSU']:
-                try:
-                    df_map = pd.read_excel(excel_file, sheet_name=sheet_name)
-                    if 'top_aida' in df_map.columns and 'fv' in df_map.columns:
-                        for _, row in df_map.iterrows():
-                            if pd.notna(row['top_aida']) and pd.notna(row['fv']):
-                                aida = str(row['top_aida']).strip()
-                                fv = str(row['fv']).strip()
-                                if aida and fv and fv != 'nan':
-                                    # 存储原始映射
-                                    comprehensive_aida_fv_map[aida] = fv
-                                    # 添加aida_english格式的映射
-                                    aida_english = extract_english(aida)
-                                    if aida_english and aida_english != 'Unknown':
-                                        comprehensive_aida_fv_map[aida_english] = fv
-                    
-                    # 同时处理aida_english列（如果存在）
-                    if 'aida_english' in df_map.columns and 'fv' in df_map.columns:
-                        for _, row in df_map.iterrows():
-                            if pd.notna(row['aida_english']) and pd.notna(row['fv']):
-                                aida_english = str(row['aida_english']).strip()
-                                fv = str(row['fv']).strip()
-                                if aida_english and fv and fv != 'nan':
-                                    comprehensive_aida_fv_map[aida_english] = fv
-                                    
-                except Exception as e:
-                    print(f"警告: 处理工作表 '{sheet_name}' 时出错: {e}")
-                    continue
-            
-            if comprehensive_aida_fv_map:
-                completed_count = 0
-                
-                # 对空值记录进行智能匹配
-                null_mask = ddf['fv'].isna()
-                for idx in ddf[null_mask].index:
-                    aida_english = str(ddf.at[idx, 'aida_english']).strip() if pd.notna(ddf.at[idx, 'aida_english']) else ''
-                    
-                    found_fv = None
-                    
-                    # 1. 精确匹配aida_english
-                    if aida_english and aida_english in comprehensive_aida_fv_map:
-                        found_fv = comprehensive_aida_fv_map[aida_english]
-                        
-                    # 2. 模糊匹配（大小写不敏感）
-                    elif aida_english:
-                        for map_key, map_fv in comprehensive_aida_fv_map.items():
-                            if map_key.lower() == aida_english.lower():
-                                found_fv = map_fv
-                                break
-                    
-                    if found_fv:
-                        ddf.at[idx, 'fv'] = found_fv
-                        completed_count += 1
-                
-                # 统计补全后的空值数量
-                null_fv_count_after = ddf['fv'].isna().sum()
-                print(f"智能FV补全完成: 补全了 {completed_count} 条记录")
-                print(f"补全后仍为空值: {null_fv_count_after} 条")
-                
-                # 为剩余的空值记录设置更清晰的标识
-                if null_fv_count_after > 0:
-                    ddf.loc[ddf['fv'].isna(), 'fv'] = '未分类数据'
-                    print(f"将剩余 {null_fv_count_after} 条记录标记为'未分类数据'以便在Dashboard中清晰显示")
-            else:
-                print("警告: 未能建立AIDA-FV映射字典")
-                ddf.loc[ddf['fv'].isna(), 'fv'] = '未分类数据'
-                
-        except Exception as e:
-            print(f"智能FV补全过程中出错: {e}")
-            ddf.loc[ddf['fv'].isna(), 'fv'] = '未分类数据'
+    if 'fv' not in ddf.columns:
+        ddf['fv'] = '未分类数据'
     else:
-        print("所有记录已有FV分配，无需补全")
-    
-    # 确保所有NaN都被处理
-    final_nan_count = ddf['fv'].isna().sum()
-    if final_nan_count > 0:
-        ddf.loc[ddf['fv'].isna(), 'fv'] = '未分类数据'
-        print(f"最终处理: 将剩余 {final_nan_count} 条空值记录标记为'未分类数据'")
+        ddf['fv'] = ddf['fv'].fillna('未分类数据')
     # --- 智能FV补全结束 ---
 
     # 从history补充缺失的solution cluster值
@@ -1520,38 +2085,47 @@ def enrich_ddf_with_master_info(ddf, master_file_path="defect/2025_defect_master
     主票据文件中的 'relation_to_udf' 字段将被解析以获取所有子票ID，用于与 ddf 的 'id' 字段进行匹配。
     匹配成功后，主票据的 ID、其自身的 child ticket 列表 (来自 relation_to_udf) 及其 child count 将被添加到 ddf 中。
     """
-    print(f"开始从主票据文件 '{master_file_path}' 加载主票据信息以充实 ddf...")
+    print("开始从数据库加载主票据信息以充实 ddf...")
 
-    if not os.path.exists(master_file_path):
-        print(f"警告: 主票据文件 {master_file_path} 未找到。跳过充实步骤。")
+    if ddf is None or ddf.empty:
         return ddf
+
+    if not HAS_DB_CONFIG or not is_using_optimized_schema():
+        return ddf
+
+    years = None
+    if 'year' in ddf.columns:
+        try:
+            years = sorted([int(y) for y in ddf['year'].dropna().unique().tolist() if str(y).strip().isdigit()])
+        except Exception:
+            years = None
 
     try:
-        with open(master_file_path, encoding="utf8") as f:
-            loaded_json = json.load(f) # load a single json object or list
-            data_list = None
-            # Handle Octane's typical structure where data is under a "data" key, or if the file is just a list of records
-            if isinstance(loaded_json, dict) and "data" in loaded_json and isinstance(loaded_json["data"], list):
-                data_list = loaded_json["data"]
-            elif isinstance(loaded_json, list):
-                data_list = loaded_json
-            else:
-                print(f"警告: 主票据文件 {master_file_path} 的 JSON 结构不符合预期（既不是包含 'data' 列表的字典，也不是纯列表）。已跳过。")
-                return ddf
-            
-            if not data_list or not all(isinstance(item, dict) for item in data_list): # ensure data_list contains dicts
-                print(f"警告: 主票据文件 {master_file_path} 中提取的 'data' 列表为空或其元素非字典类型。已跳过。")
-                return ddf
-            master_df = pd.json_normalize(data_list, max_level=1) # Use max_level=1 if fields like relation_to_udf might be dicts, or 0 if direct values
-    except json.JSONDecodeError as e:
-        print(f"警告: 解析主票据文件 {master_file_path} 时 JSON 解码失败: {e}。已跳过。")
-        return ddf
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            query = """
+                SELECT
+                    defect_id as id,
+                    relation_to as relation_to_udf,
+                    phase as "phase.name",
+                    status_phase
+                FROM octane_defects
+                WHERE parent_child_type = 'Parent' AND relation_to IS NOT NULL AND TRIM(relation_to) <> ''
+            """
+            params = []
+            if years:
+                placeholders = ",".join(["?"] * len(years))
+                query += f" AND year IN ({placeholders})"
+                params.extend(years)
+            master_df = pd.read_sql_query(query, conn, params=params)
+        finally:
+            conn.close()
     except Exception as e:
-        print(f"警告: 处理主票据文件 {master_file_path} 时发生意外错误: {e}。已跳过。")
+        print(f"警告: 从数据库加载主票数据失败: {e}")
         return ddf
 
-    if master_df.empty:
-        print(f"警告: 从 {master_file_path} 加载的主票据数据为空。跳过充实步骤。")
+    if master_df is None or master_df.empty:
+        print("警告: 数据库中未找到主票据数据。跳过充实步骤。")
         return ddf
 
     required_cols_master = ['id', 'relation_to_udf']
@@ -1559,6 +2133,32 @@ def enrich_ddf_with_master_info(ddf, master_file_path="defect/2025_defect_master
     if missing_cols:
         print(f"警告: 主票据文件 {master_file_path} 缺少必要列: {missing_cols}。可用列: {master_df.columns.tolist()}。跳过充实步骤。")
         return ddf
+
+    if 'master_id' in ddf.columns and 'child_count_of_master' in ddf.columns:
+        try:
+            ddf2 = ddf.copy()
+            ddf2['master_id'] = ddf2['master_id'].fillna('').astype(str)
+            if 'master_status' not in ddf2.columns:
+                ddf2['master_status'] = ''
+
+            m = master_df.copy()
+            m['id'] = m['id'].astype(str)
+            status_key = 'phase.name' if 'phase.name' in m.columns else 'status_phase'
+            master_status_map = dict(zip(m['id'], m[status_key].fillna('').astype(str)))
+
+            if 'parent_child' in ddf2.columns:
+                pc = ddf2['parent_child'].fillna('').astype(str)
+            else:
+                pc = pd.Series(['' for _ in range(len(ddf2))], index=ddf2.index, dtype=str)
+
+            child_mask = pc.isin(['Child', 'Child (candidate)', 'Child (Candidate)'])
+            if child_mask.any():
+                mids = ddf2.loc[child_mask, 'master_id'].astype(str).str.strip()
+                ddf2.loc[child_mask, 'master_status'] = mids.map(master_status_map).fillna('')
+
+            return ddf2
+        except Exception:
+            return ddf
 
     def parse_relation_to_udf(relations_val):
         """解析relation_to_udf字段，支持字符串和数字类型"""
@@ -1810,18 +2410,9 @@ def calculate_defect_lifecycles(history_dir="history"):
                          只包含已达到最终状态的缺陷。
     """
     lifecycle_data = []
-    history_files = glob.glob(os.path.join(history_dir, "*.json"))
-
-    for file_path in history_files:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                history = json.load(f)
-        except Exception as e:
-            print(f"警告: 无法读取或解析文件 {file_path}: {e}")
-            continue
-
+    histories = list(_iter_histories_from_db())
+    for _, history in histories:
         if not history or 'data' not in history or not history['data']:
-            print(f"警告: 文件 {file_path} 为空或格式不正确。")
             continue
 
         defect_id = None
@@ -1845,10 +2436,8 @@ def calculate_defect_lifecycles(history_dir="history"):
                      # 尝试其他格式，例如不带毫秒的
                      current_time = pd.to_datetime(ts_str.split('.')[0], errors='coerce', format='%Y-%m-%dT%H:%M:%S')
                      if pd.isna(current_time):
-                         print(f"警告: 无法解析时间戳 '{ts_str}' 在文件 {file_path} 中。跳过此条目。")
                          continue
             except Exception as e:
-                print(f"警告: 解析时间戳 '{ts_str}' 时出错: {e}")
                 continue
 
             if defect_id is None:
@@ -1872,7 +2461,6 @@ def calculate_defect_lifecycles(history_dir="history"):
                         status_changes.append({'time': current_time, 'status': status_value})
 
         if not defect_id or creation_time is None:
-            print(f"警告: 未能在文件 {file_path} 中找到有效的缺陷 ID 或创建时间。")
             continue
 
         # 查找最终状态 ('06 Solved' 或 '09 Rejected') 的首次出现时间
@@ -1904,7 +2492,6 @@ def calculate_defect_lifecycles(history_dir="history"):
             # 如果没有找到最终状态，则不添加到结果中，因为我们只关心已完成的生命周期
 
     if not lifecycle_data:
-        print("警告: 未能从 history 文件中计算出任何缺陷的生命周期。")
         # 返回一个空的 DataFrame，并指定列名和类型，以避免后续操作出错
         return pd.DataFrame(columns=['defect_id', 'creation_time', 'final_time', 'duration_days', 'final_status']).astype({
             'defect_id': str,
@@ -1999,21 +2586,15 @@ def apply_filters(df, projects=None, test_weeks=None, aidas=None, statuses=None,
                 # 获取所有主票ID
                 master_ids = filtered[child_mask]['master_id'].dropna()
                 if len(master_ids) > 0:
-                    # 加载主数据
-                    master_df = None
                     try:
-                        with open("defect/2025_defect_master.json", "r", encoding="utf-8") as f:
-                            master_data = json.load(f)
-                        master_df = pd.json_normalize(master_data)
-                        
                         # 检查主票是否为需要排除的状态
                         excluded_master_statuses = ['06-Concluded', '09-Concluded without action', '10-Rejected']
-                        if 'phase.name' in master_df.columns:
-                            # 使用phase.name字段
-                            excluded_masters = master_df[master_df['phase.name'].isin(excluded_master_statuses)]['id'].astype(str).tolist()
-                        elif 'status' in master_df.columns:
-                            # 备用：使用status字段
-                            excluded_masters = master_df[master_df['status'].isin(excluded_master_statuses)]['id'].astype(str).tolist()
+                        master_id_strs = master_ids.astype(str).tolist()
+                        master_rows = filtered[filtered['id'].astype(str).isin(master_id_strs)] if 'id' in filtered.columns else pd.DataFrame()
+                        if not master_rows.empty and 'phase.name' in master_rows.columns:
+                            excluded_masters = master_rows[master_rows['phase.name'].isin(excluded_master_statuses)]['id'].astype(str).tolist()
+                        elif not master_rows.empty and 'status_phase' in master_rows.columns:
+                            excluded_masters = master_rows[master_rows['status_phase'].isin(excluded_master_statuses)]['id'].astype(str).tolist()
                         else:
                             excluded_masters = []
                         
@@ -2021,7 +2602,7 @@ def apply_filters(df, projects=None, test_weeks=None, aidas=None, statuses=None,
                         if excluded_masters:
                             child_mask = child_mask & (~filtered['master_id'].astype(str).isin(excluded_masters))
                     except Exception as e:
-                        print(f"警告：无法加载主数据文件: {e}")
+                        print(f"警告：无法加载主票状态用于筛选: {e}")
             
             # 合并筛选条件
             if normal_statuses:
@@ -2047,74 +2628,68 @@ def load_test_data():
         print("🔄 data_processor.load_test_data: Reloader进程跳过数据加载")
         return pd.DataFrame()
     print("开始加载测试管理数据...")
-    dfs = []
-    json_files = glob.glob("mr/R25*.json")
-    if not json_files:
-        print("警告: 在 'mr/' 目录下未找到 'R25*.json' 文件。将返回空 DataFrame。")
-        # 返回一个包含预期列的空 DataFrame，以避免后续错误
-        expected_cols = [
-            'model', 'test_id', 'test_name', 'author_name', 'test_event',
-            'tester', 'aida_count', 'aida', 'pu', 'run_status',
-            'finished_udf', 'test_week', 'project', 'top_aida', 'fv', 'team', 'fvp', 'lead_model'
-            # 确保包含所有后续代码会用到的列
-        ]
+    expected_cols = [
+        'model', 'test_id', 'test_name', 'author_name', 'test_event',
+        'tester', 'aida_count', 'aida', 'pu', 'run_status',
+        'finished_udf', 'test_week', 'project', 'top_aida', 'fv', 'team', 'fvp', 'lead_model'
+    ]
+    if not (HAS_DB_CONFIG and HAS_UNIFIED_LOADER):
         return pd.DataFrame(columns=expected_cols)
 
-    print(f"找到 {len(json_files)} 个 JSON 文件，正在加载...")
-    for file in json_files:
-        try:
-            with open(file, encoding="utf8") as f:
-                # 检查文件是否为空
-                content = f.read()
-                if not content.strip():
-                    print(f"警告: 文件 {file} 为空，已跳过。")
-                    continue
-                # 重置文件指针以供 json.load 使用
-                f.seek(0)
-                loaded_json = json.load(f)
-                data_list = None
+    try:
+        config = DataSourceConfig()
+        config.config = {**config.config, "mode": "db_only", "priority": "database", "fallback": False}
+        loader = UnifiedDataLoader(db_path=DB_PATH, config=config, use_connection_pool=True)
+        tdf = loader.load_tests(report_period=None, team=DEFAULT_TEAM)
+        if tdf is None or tdf.empty:
+            print("警告: 数据库中未找到测试数据。")
+            return pd.DataFrame(columns=expected_cols)
+        print(f"✅ 从数据库加载 {len(tdf)} 条测试数据")
+    except Exception as e:
+        print(f"⚠️ 从数据库加载测试数据失败: {e}")
+        raise
 
-                # 检查JSON结构
-                if isinstance(loaded_json, dict) and "data" in loaded_json and isinstance(loaded_json["data"], list):
-                    data_list = loaded_json["data"]
-                elif isinstance(loaded_json, list):
-                    data_list = loaded_json # 整个JSON文件就是记录列表
-                else:
-                    print(f"警告: 文件 {file} 的 JSON 结构不符合预期（既不是包含 'data' 列表的字典，也不是纯列表）。已跳过。")
-                    continue
-                
-                if not data_list: # 如果 data 列表为空
-                    print(f"警告: 文件 {file} 中提取的 'data' 列表为空或格式不正确。已跳过。")
-                    continue
-                
-                # 确保 data_list 的元素是字典 (适合 json_normalize)
-                if not all(isinstance(item, dict) for item in data_list):
-                    print(f"警告: 文件 {file} 的 data_list 包含非字典元素。已跳过。")
-                    continue
-
-                dfs.append(pd.json_normalize(data_list, max_level=0))
-        except json.JSONDecodeError as e:
-            print(f"警告: 解析文件 {file} 时出错: {e}。已跳过。")
-            continue
-        except Exception as e:
-             print(f"警告: 处理文件 {file} 时发生意外错误: {e}。已跳过。")
-             continue
-
-    if not dfs:
-        print("警告: 未能从任何 JSON 文件成功加载数据。将返回空 DataFrame。")
-        expected_cols = [
-            'model', 'test_id', 'test_name', 'author_name', 'test_event',
-            'tester', 'aida_count', 'aida', 'pu', 'run_status',
-            'finished_udf', 'test_week', 'project', 'top_aida', 'fv', 'team', 'fvp'
-        ]
+    if tdf is None or tdf.empty:
         return pd.DataFrame(columns=expected_cols)
-
-    print("JSON 数据加载完成，正在合并...")
-    tdf = pd.concat(dfs, ignore_index=True)
-    print(f"合并后的 DataFrame 有 {len(tdf)} 行，列: {list(tdf.columns)}")
 
     # --- 数据转换和特征工程 ---
     print("开始进行数据转换和特征工程...")
+
+    if 'exec_model_series_udf' not in tdf.columns and 'exec_model_series' in tdf.columns:
+        tdf['exec_model_series_udf'] = tdf['exec_model_series'].apply(lambda x: {'name': x} if pd.notna(x) else {'name': ''})
+    if 'test' not in tdf.columns and ('test_id' in tdf.columns or 'test_name' in tdf.columns):
+        tdf['test'] = tdf.apply(lambda row: {'id': row.get('test_id', ''), 'name': row.get('test_name', '')}, axis=1)
+    if 'author' in tdf.columns:
+        tdf['author'] = tdf['author'].apply(lambda x: x if isinstance(x, dict) else {'full_name': x if pd.notna(x) else ''})
+    elif 'author_name' in tdf.columns:
+        tdf['author'] = tdf['author_name'].apply(lambda x: {'full_name': x} if pd.notna(x) else {'full_name': ''})
+    if 'release' in tdf.columns:
+        tdf['release'] = tdf['release'].apply(lambda x: x if isinstance(x, dict) else {'name': x if pd.notna(x) else ''})
+    if 'run_by' in tdf.columns:
+        tdf['run_by'] = tdf['run_by'].apply(lambda x: x if isinstance(x, dict) else {'full_name': x if pd.notna(x) else ''})
+    if 'product_areas' in tdf.columns:
+        def _wrap_product_areas(val):
+            if isinstance(val, dict):
+                return val
+            if val is None or (isinstance(val, float) and pd.isna(val)):
+                return {'total_count': 0, 'data': []}
+            if isinstance(val, list):
+                data = [{'name': item} for item in val if isinstance(item, str) and item]
+                return {'total_count': len(data), 'data': data}
+            if isinstance(val, str):
+                items = [v.strip() for v in val.split(',') if v.strip()]
+                data = [{'name': item} for item in items]
+                return {'total_count': len(data), 'data': data}
+            return {'total_count': 0, 'data': []}
+        tdf['product_areas'] = tdf['product_areas'].apply(_wrap_product_areas)
+    if 'set_udf' not in tdf.columns and 'set_field' in tdf.columns:
+        tdf['set_udf'] = tdf['set_field'].apply(lambda x: {'name': x} if pd.notna(x) else {'name': ''})
+    if 'status' in tdf.columns:
+        tdf['status'] = tdf['status'].apply(lambda x: x if isinstance(x, dict) else {'name': x if pd.notna(x) else ''})
+    if 'finished_udf' not in tdf.columns and 'finished' in tdf.columns:
+        tdf['finished_udf'] = tdf['finished']
+    if 'target_ecu_conf_udf' not in tdf.columns and 'target_ecu_conf' in tdf.columns:
+        tdf['target_ecu_conf_udf'] = tdf['target_ecu_conf']
 
     # 安全地提取嵌套字段
     def safe_get_name(x):
@@ -2286,205 +2861,27 @@ def load_test_data():
         print("="*30)
 
 
-    # --- 合并 AIDA/FV 映射 ---
     print("开始合并 AIDA/FV 映射...")
-    excel_file = "aida/top_aida_project_fv_mapping.xlsx"
-    # top_aida 列已在项目分类前生成，无需重复生成
-    
-    # 添加 aida_english 列，从 top_aida 中提取英文部分
     print("为测试数据生成 aida_english 字段...")
     tdf['aida_english'] = tdf['top_aida'].apply(extract_english)
     print("aida_english 字段生成完成。")
 
-    if not os.path.exists(excel_file):
-        print(f"警告: Excel 文件 '{excel_file}' 不存在。无法合并 FV 数据。将 'fv' 列填充为 'Unknown'。")
-        tdf['fv'] = 'Unknown'
-    else:
-        try:
-            writer = pd.ExcelFile(excel_file)
-            original_cols = tdf.columns.tolist()
-            print(f"找到 Excel 文件，包含工作表: {writer.sheet_names}")
+    if 'fv' not in tdf.columns:
+        tdf['fv'] = None
+    tdf['fv'] = tdf['fv'].apply(lambda x: x.get('name') if isinstance(x, dict) else x)
+    tdf = apply_aida_fv_mapping(tdf)
+    fv_series = tdf['fv']
+    fv_series = fv_series.where(pd.notna(fv_series), '')
+    fv_series = fv_series.astype(str).str.strip()
+    fv_series = fv_series.replace({'': 'Unknown', 'nan': 'Unknown', 'None': 'Unknown'})
+    tdf['fv'] = fv_series
+    tdf.loc[tdf['fv'] == 'Unknown', 'fv'] = '未分类数据'
 
-            for sheet_name in writer.sheet_names:
-                print(f"正在处理工作表: {sheet_name}...")
-                df_map = pd.read_excel(excel_file, sheet_name=sheet_name)
-                # 检查映射文件是否包含必要列
-                required_map_cols = ['project', 'top_aida', 'fv']
-                if not all(col in df_map.columns for col in required_map_cols):
-                    print(f"警告: 工作表 '{sheet_name}' 缺少必要的列（需要 'project', 'top_aida', 'fv'）。跳过此工作表。")
-                    continue
-
-                fv_col = f"fv_{sheet_name}" # 为每个 sheet 的 fv 创建临时唯一列名
-                df_map = df_map.rename(columns={'fv': fv_col})
-                df_subset = df_map[['top_aida', fv_col]].drop_duplicates(subset=['top_aida'])
-
-                # 确保连接键 top_aida 类型一致
-                tdf['top_aida'] = tdf['top_aida'].astype(str)
-                df_subset['top_aida'] = df_subset['top_aida'].astype(str)
-
-                # 合并前记录行数
-                rows_before_merge = len(tdf)
-                # 使用 left merge
-                tdf = tdf.merge(df_subset, on=['top_aida'], how='left')
-                # 检查合并后行数是否增加（不应增加）
-                if len(tdf) > rows_before_merge:
-                     print(f"警告: 合并工作表 '{sheet_name}' 后行数增加，可能存在重复键。请检查映射文件。")
-                     # 可以考虑在这里去重或采取其他措施
-                     tdf = tdf.drop_duplicates(subset=[col for col in tdf.columns if not col.startswith('fv_')])
-
-
-                print(f"合并工作表 '{sheet_name}' 后，列数: {len(tdf.columns)}")
-
-            # 合并来自不同 sheet 的 fv 列
-            fv_columns = [col for col in tdf.columns if col.startswith('fv_')]
-            if fv_columns:
-                print(f"找到临时 FV 列: {fv_columns}，正在合并...")
-                # 使用 bfill 填充，然后取第一个非空值
-                tdf['fv'] = tdf[fv_columns].bfill(axis=1).iloc[:, 0]
-                # 删除临时的 fv_sheet 列
-                tdf.drop(columns=fv_columns, inplace=True)
-                print("临时 FV 列已合并并删除。")
-            else:
-                print("警告: 未找到任何 'fv_' 开头的临时列进行合并。'fv' 列可能未创建或为空。")
-                tdf['fv'] = 'Unknown' # 如果没有合并成功，填充默认值
-
-            # 填充 fv 中的 NaN 为 'Unknown'
-            tdf['fv'] = tdf['fv'].fillna('Unknown')
-
-        except FileNotFoundError:
-            print(f"错误: 读取 Excel 文件 '{excel_file}' 时文件未找到 (尽管 os.path.exists 通过了检查)。将 'fv' 列填充为 'Unknown'。")
-            tdf['fv'] = 'Unknown'
-        except Exception as e:
-            print(f"错误: 处理 Excel 文件 '{excel_file}' 时出错: {e}。将 'fv' 列填充为 'Unknown'。")
-            tdf['fv'] = 'Unknown'
-    
-    # --- 智能FV补全（基于模糊匹配） ---
-    print("开始智能FV补全...")
-    
-    # 统计补全前的Unknown数量
-    unknown_before = (tdf['fv'] == 'Unknown').sum()
-    if unknown_before > 0:
-        print(f"补全前FV为Unknown的记录: {unknown_before}条")
-        
-        try:
-            # 建立完整的AIDA-FV映射字典（包含模糊匹配）
-            comprehensive_aida_fv_map = {}
-            
-            for sheet_name in ['IDCevo', 'IDC', 'MGU', 'App', 'RSU']:
-                try:
-                    df_map = pd.read_excel(excel_file, sheet_name=sheet_name)
-                    if 'top_aida' in df_map.columns and 'fv' in df_map.columns:
-                        for _, row in df_map.iterrows():
-                            if pd.notna(row['top_aida']) and pd.notna(row['fv']):
-                                aida = str(row['top_aida']).strip()
-                                fv = str(row['fv']).strip()
-                                if aida and fv and fv != 'nan':
-                                    # 存储原始映射
-                                    comprehensive_aida_fv_map[aida] = fv
-                                    # 添加aida_english格式的映射
-                                    aida_english = extract_english(aida)
-                                    if aida_english and aida_english != 'Unknown':
-                                        comprehensive_aida_fv_map[aida_english] = fv
-                except Exception as e:
-                    print(f"警告: 处理工作表 '{sheet_name}' 时出错: {e}")
-                    continue
-            
-            if comprehensive_aida_fv_map:
-                completed_count = 0
-                
-                # 对Unknown的记录进行智能匹配
-                unknown_mask = tdf['fv'] == 'Unknown'
-                for idx in tdf[unknown_mask].index:
-                    top_aida = str(tdf.at[idx, 'top_aida']).strip() if pd.notna(tdf.at[idx, 'top_aida']) else ''
-                    aida_english = str(tdf.at[idx, 'aida_english']).strip() if pd.notna(tdf.at[idx, 'aida_english']) else ''
-                    
-                    found_fv = None
-                    
-                    # 1. 精确匹配top_aida
-                    if top_aida and top_aida in comprehensive_aida_fv_map:
-                        found_fv = comprehensive_aida_fv_map[top_aida]
-                        
-                    # 2. 精确匹配aida_english
-                    elif aida_english and aida_english in comprehensive_aida_fv_map:
-                        found_fv = comprehensive_aida_fv_map[aida_english]
-                        
-                    # 3. 模糊匹配（大小写不敏感）
-                    elif aida_english:
-                        for map_key, map_fv in comprehensive_aida_fv_map.items():
-                            if map_key.lower() == aida_english.lower():
-                                found_fv = map_fv
-                                break
-                    
-                    if found_fv:
-                        tdf.at[idx, 'fv'] = found_fv
-                        completed_count += 1
-                
-                # 统计补全后的Unknown数量
-                unknown_after = (tdf['fv'] == 'Unknown').sum()
-                print(f"智能FV补全完成: 补全了 {completed_count} 条记录")
-                print(f"补全后仍为Unknown: {unknown_after} 条")
-                
-                # 为剩余的Unknown记录设置更清晰的标识
-                if unknown_after > 0:
-                    tdf.loc[tdf['fv'] == 'Unknown', 'fv'] = '未分类数据'
-                    print(f"将剩余 {unknown_after} 条记录标记为'未分类数据'以便在Dashboard中清晰显示")
-            else:
-                print("警告: 未能建立AIDA-FV映射字典")
-                tdf.loc[tdf['fv'] == 'Unknown', 'fv'] = '未分类数据'
-                
-        except Exception as e:
-            print(f"智能FV补全过程中出错: {e}")
-            tdf.loc[tdf['fv'] == 'Unknown', 'fv'] = '未分类数据'
-    else:
-        print("所有记录已有FV分配，无需补全")
-
-    # --- 分配 Team 和 FVP ---
     print("开始分配 Team 和 FVP...")
-
-    # Team 分配
-    dips_fvs = [
-        'DIPS_TSP_Call_Services', 'DIPS_TSP_CD_Updates', 'DIPS_TSP_Remote_Services',
-        'Mybmw App', 'eMob', 'DIPS_TSP_Car_Apps_CN', 'DIPS_TSP_MobileApps',
-        'DIPS_TSP_Enabler', 'Slip-Through' # 更新的值
-    ]
-    if 'fv' in tdf.columns:
-        # 更新条件，包含 isna() 检查
-        tdf['team'] = np.where(
-            (tdf['fv'].isin(dips_fvs)) | (tdf['fv'].isna()), 
-            'DIPS', 
-            'IUK'
-        )
-    else:
-        print("警告: DataFrame 中缺少 'fv' 列，无法分配 'team'。")
-        tdf['team'] = 'Unknown'
-
-    # FVP 映射
-    fvp_mapping = {
-        'DIPS_TSP_Call_Services': 'Tianhua',
-        'DIPS_TSP_CD_Updates': 'Tianhua',
-        'DIPS_TSP_Remote_Services': 'Tianhua',
-        'eMob': 'Tianhua',
-        'DIPS_TSP_MobileApps': 'Tianhua',
-        'DIPS_TSP_Enabler': 'Tianhua', # 新增映射
-        'IuK_TSP_Navi': 'Tony',
-        'IuK_TSP_AZV': 'Xu Miao',
-        'IuK_TSP_Entertainment': 'Xu Miao',
-        'IuK_TSP_Audio': 'Xu Miao',
-        'IuK_TSP_Connectivity': 'Xu Miao',
-        'DIPS_TSP_Car_Apps_CN': 'Huanran',
-        'IuK_TSP_HMI': 'Jerry',
-        'DIPS_TSP_RSU': 'Jerry',
-        'IuK_TSP_Carfunctions': 'Jerry',
-        'IuK_TSP_Perso CN': 'Jerry',
-        'RSU': 'Jerry',
-        'Mybmw App': 'Marin'
-        # 可以添加更多映射
-    }
-    if 'fv' in tdf.columns:
-        tdf['fvp'] = tdf['fv'].map(fvp_mapping).fillna('Unknown') # 映射并填充 NaN
-    else:
-        print("警告: DataFrame 中缺少 'fv' 列，无法分配 'fvp'。")
-        tdf['fvp'] = 'Unknown'
+    tdf = apply_team_fvp_mapping(tdf)
+    if 'fvp' in tdf.columns:
+        tdf['fvp'] = tdf['fvp'].where(pd.notna(tdf['fvp']), '').astype(str).str.strip()
+        tdf.loc[tdf['fvp'].isin(['', 'nan', 'None']), 'fvp'] = 'Unknown'
 
     # --- 处理 Lead Model 字段 ---
     print("开始处理 Lead Model 字段...")
@@ -2533,18 +2930,10 @@ def get_latest_solution_cluster_from_history(defect_id, history_dir="history"):
     返回:
     最新的solution cluster name，如果没有找到则返回空字符串
     """
-    history_file = os.path.join(history_dir, f"{defect_id}_history.json")
-    
-    if not os.path.exists(history_file):
-        return ""
-    
     try:
-        with open(history_file, 'r', encoding='utf-8') as f:
-            history_data = json.load(f)
-        
+        history_data = get_history_data(defect_id, history_dir)
         if not history_data or 'data' not in history_data:
             return ""
-        
         # 按时间戳排序，获取最新的solution_cluster_udf变更
         history_entries = sorted(history_data['data'], 
                                key=lambda x: x.get('timestamp', ''), 
@@ -2811,30 +3200,6 @@ def enrich_data_with_transition_paths(df: pd.DataFrame) -> pd.DataFrame:
     
     return df_enriched
 
-def load_app_rsu_mapping(excel_file="aida/top_aida_project_fv_mapping.xlsx"):
-    """
-    加载App和RSU的top_aida映射关系
-    
-    返回:
-        dict: {'app': [app_top_aidas], 'rsu': [rsu_top_aidas]}
-    """
-    try:
-        # 读取App sheet
-        app_df = pd.read_excel(excel_file, sheet_name='App')
-        app_top_aidas = app_df['top_aida'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique().tolist()
-        
-        # 读取RSU sheet
-        rsu_df = pd.read_excel(excel_file, sheet_name='RSU')
-        rsu_top_aidas = rsu_df['top_aida'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique().tolist()
-        
-        return {
-            'app': app_top_aidas,
-            'rsu': rsu_top_aidas
-        }
-    except Exception as e:
-        print(f"警告：无法加载App/RSU映射文件 {excel_file}: {e}")
-        return {'app': [], 'rsu': []}
-
 def enhance_pu_filling(ddf):
     """
     增强PU填充逻辑
@@ -2864,30 +3229,29 @@ def enhance_pu_filling(ddf):
     
     # 策略2: 基于VIN的PU映射填充
     vin_pu_mapping = {}
-    vin_data = ddf[(ddf['vin_udf'].notna()) & (ddf['pu'] != '') & (~ddf['pu'].isna())]
-    
-    for _, row in vin_data.iterrows():
-        if pd.notna(row['vin_udf']):
-            vins = str(row['vin_udf']).split(',')
-            for vin in vins:
-                vin = vin.strip().upper()
-                if vin and vin not in vin_pu_mapping:
-                    vin_pu_mapping[vin] = row['pu']
-    
-    # 应用VIN映射
     vin_fill_count = 0
-    empty_mask = ((ddf['pu'] == '') | (ddf['pu'].isna()))
-    
-    for idx, row in ddf[empty_mask].iterrows():
-        if pd.notna(row['vin_udf']):
-            vins = str(row['vin_udf']).split(',')
-            for vin in vins:
-                vin = vin.strip().upper()
-                if vin in vin_pu_mapping:
-                    ddf.loc[idx, 'pu'] = vin_pu_mapping[vin]
-                    ddf.loc[idx, 'pu_fill_source'] = f'VIN_mapping'
-                    vin_fill_count += 1
-                    break
+    if 'vin_udf' in ddf.columns:
+        vin_data = ddf[(ddf['vin_udf'].notna()) & (ddf['pu'] != '') & (~ddf['pu'].isna())]
+
+        for _, row in vin_data.iterrows():
+            if pd.notna(row['vin_udf']):
+                vins = str(row['vin_udf']).split(',')
+                for vin in vins:
+                    vin = vin.strip().upper()
+                    if vin and vin not in vin_pu_mapping:
+                        vin_pu_mapping[vin] = row['pu']
+
+        empty_mask = ((ddf['pu'] == '') | (ddf['pu'].isna()))
+        for idx, row in ddf[empty_mask].iterrows():
+            if pd.notna(row['vin_udf']):
+                vins = str(row['vin_udf']).split(',')
+                for vin in vins:
+                    vin = vin.strip().upper()
+                    if vin in vin_pu_mapping:
+                        ddf.loc[idx, 'pu'] = vin_pu_mapping[vin]
+                        ddf.loc[idx, 'pu_fill_source'] = 'VIN_mapping'
+                        vin_fill_count += 1
+                        break
     
     filled_count += vin_fill_count
     
@@ -3026,20 +3390,17 @@ def _calculate_inflow_outflow_trends_impl(history_dir="history", date_range_week
     """
     Inflow/Outflow趋势分析的实际实现
     """
-    import glob
-    import json
     import pandas as pd
     from datetime import datetime, timedelta
     import time
     
     start_time = time.time()
     
-    # 获取所有历史文件
-    all_files = glob.glob(os.path.join(history_dir, "*_history.json"))
-    if not all_files:
+    histories = list(_iter_histories_from_db())
+    if not histories:
         return pd.DataFrame(columns=['week', 'inflow', 'outflow'])
     
-    print(f"正在分析 {len(all_files)} 个历史文件...")
+    print(f"正在分析 {len(histories)} 个历史记录...")
     
     # 时间范围设定（使用UTC时间以匹配历史数据）
     end_date = datetime.utcnow()
@@ -3054,15 +3415,11 @@ def _calculate_inflow_outflow_trends_impl(history_dir="history", date_range_week
     weekly_outflow = {}
     
     processed = 0
-    for file_path in all_files:
+    for _, data in histories:
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
             if not data or 'data' not in data:
                 continue
-            
-            # 处理文件中的所有条目
+
             for entry in data['data']:
                 timestamp_str = entry.get('timestamp')
                 if not timestamp_str:
@@ -3107,7 +3464,7 @@ def _calculate_inflow_outflow_trends_impl(history_dir="history", date_range_week
         processed += 1
         if processed % 100 == 0:
             elapsed = time.time() - start_time
-            print(f"📈 进度: {processed}/{len(all_files)} ({elapsed:.1f}s)")
+            print(f"📈 进度: {processed}/{len(histories)} ({elapsed:.1f}s)")
     
     # 只保留有实际数据的周期，不生成未来的空数据
     # 找到最早和最晚有数据的周期

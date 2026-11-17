@@ -24,11 +24,67 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 import sys
 import threading
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ========================================
 # Phase Analysis Core Functions
 # ========================================
+
+_DEFAULT_OCTANE_DB_PATH = os.environ.get("OCTANE_DB_PATH", os.path.join("database", "local_data.db"))
+
+
+def _load_history_from_db(ticket_id: str, db_path: Optional[str] = None) -> Optional[Dict]:
+    dbp = db_path or _DEFAULT_OCTANE_DB_PATH
+    if not dbp or not os.path.exists(dbp):
+        return None
+    try:
+        conn = sqlite3.connect(dbp)
+        try:
+            row = conn.execute(
+                "SELECT payload_json FROM octane_defect_histories WHERE defect_id = ?",
+                (str(ticket_id),),
+            ).fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return None
+        return json.loads(row[0])
+    except Exception:
+        return None
+
+
+def _history_db_fingerprint(ticket_id: str, db_path: Optional[str] = None) -> Optional[Dict]:
+    dbp = db_path or _DEFAULT_OCTANE_DB_PATH
+    if not dbp or not os.path.exists(dbp):
+        return None
+    try:
+        conn = sqlite3.connect(dbp)
+        try:
+            row = conn.execute(
+                "SELECT fetched_at, length(payload_json) FROM octane_defect_histories WHERE defect_id = ?",
+                (str(ticket_id),),
+            ).fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return None
+        fetched_at, size = row[0], row[1]
+        return {"fetched_at": str(fetched_at) if fetched_at is not None else "", "size": int(size or 0)}
+    except Exception:
+        return None
+
+
+def _read_history_from_file(ticket_id: str, history_folder: str) -> Optional[Dict]:
+    history_file = os.path.join(history_folder, f"{ticket_id}_history.json")
+    if not os.path.exists(history_file):
+        return None
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
 
 def extract_phase_changes(history_data: Dict) -> List[Dict]:
     """
@@ -93,14 +149,10 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
     """
     分析指定ticket的phase变更时间
     """
-    history_file = os.path.join(history_folder, f"{ticket_id}_history.json")
-    
-    if not os.path.exists(history_file):
-        return {'error': f'History file not found for ticket {ticket_id}'}
-    
     try:
-        with open(history_file, 'r', encoding='utf-8') as f:
-            history_data = json.load(f)
+        history_data = _load_history_from_db(ticket_id)
+        if history_data is None:
+            return {"error": f"History not found for ticket {ticket_id}"}
 
         found_in_functions = set()
         phase02_found_in_functions = set()
@@ -133,56 +185,6 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
         
         if not phase_changes:
             return {'error': f'No phase changes found for ticket {ticket_id}'}
-
-        lifecycle_start_ts = None
-        lifecycle_end_ts = None
-        lifecycle_start_dt = None
-        lifecycle_end_dt = None
-
-        for ch in phase_changes:
-            ts = ch.get("timestamp")
-            to_phase = str(ch.get("to_phase") or "").strip()
-            if not ts:
-                continue
-            try:
-                dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-            except Exception:
-                continue
-            if lifecycle_start_dt is None and (to_phase.startswith("00-") or to_phase.startswith("01-")):
-                lifecycle_start_dt = dt
-                lifecycle_start_ts = ts
-                continue
-
-        if lifecycle_start_dt is None:
-            first_ts = phase_changes[0].get("timestamp")
-            if first_ts:
-                try:
-                    lifecycle_start_dt = datetime.fromisoformat(str(first_ts).replace("Z", "+00:00"))
-                    lifecycle_start_ts = first_ts
-                except Exception:
-                    lifecycle_start_dt = None
-                    lifecycle_start_ts = None
-
-        if lifecycle_start_dt is not None:
-            for ch in phase_changes:
-                ts = ch.get("timestamp")
-                to_phase = str(ch.get("to_phase") or "").strip()
-                if not ts:
-                    continue
-                try:
-                    dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-                except Exception:
-                    continue
-                if dt < lifecycle_start_dt:
-                    continue
-                if to_phase.startswith("06-") or to_phase.startswith("09-"):
-                    lifecycle_end_dt = dt
-                    lifecycle_end_ts = ts
-                    break
-
-        lifecycle_days = None
-        if lifecycle_start_dt is not None and lifecycle_end_dt is not None:
-            lifecycle_days = round((lifecycle_end_dt - lifecycle_start_dt).total_seconds() / 86400, 2)
         
         # 计算持续时间
         durations = calculate_phase_duration(phase_changes)
@@ -196,9 +198,6 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
             'phase_durations': durations,
             'found_in_functions': sorted(found_in_functions),
             'phase02_found_in_functions': sorted(phase02_found_in_functions),
-            'lifecycle_start_ts': lifecycle_start_ts,
-            'lifecycle_end_ts': lifecycle_end_ts,
-            'lifecycle_days': lifecycle_days,
             'total_duration_hours': round(total_hours, 2),
             'total_duration_days': round(total_hours / 24, 2)
         }
@@ -207,7 +206,7 @@ def analyze_ticket_phases(ticket_id: str, history_folder: str = 'history') -> Di
         return {'error': f'Error processing ticket {ticket_id}: {str(e)}'}
 
 
-_CACHE_VERSION = 4
+_CACHE_VERSION = 3
 _TICKET_ANALYSIS_CACHE = {}
 _TICKET_ANALYSIS_CACHE_LOCK = threading.Lock()
 
@@ -234,12 +233,12 @@ def analyze_ticket_phases_cached(
     if not use_cache:
         return analyze_ticket_phases(ticket_id, history_folder)
 
-    history_file = os.path.join(history_folder, f"{ticket_id}_history.json")
-    fingerprint = _history_file_fingerprint(history_file)
+    fingerprint = _history_db_fingerprint(ticket_id)
     if fingerprint is None:
-        return {"error": f"History file not found for ticket {ticket_id}"}
+        return {"error": f"History not found for ticket {ticket_id}"}
+    else:
+        cache_key = (str(ticket_id), fingerprint.get("fetched_at") or "", int(fingerprint.get("size") or 0))
 
-    cache_key = (os.path.abspath(history_file), fingerprint["mtime_ns"], fingerprint["size"])
     with _TICKET_ANALYSIS_CACHE_LOCK:
         cached = _TICKET_ANALYSIS_CACHE.get(cache_key)
     if cached is not None:
@@ -252,19 +251,20 @@ def analyze_ticket_phases_cached(
                 payload = json.load(f)
             if (
                 payload.get("cache_version") == _CACHE_VERSION
-                and int(payload.get("source_mtime_ns", -1)) == fingerprint["mtime_ns"]
-                and int(payload.get("source_size", -1)) == fingerprint["size"]
                 and payload.get("ticket_id") == str(ticket_id)
                 and "phase_durations" in payload
             ):
+                if "source_fetched_at" in payload and "fetched_at" in fingerprint:
+                    if str(payload.get("source_fetched_at")) != str(fingerprint.get("fetched_at")):
+                        raise ValueError("cache mismatch")
+                if "source_size" in payload and "size" in fingerprint:
+                    if int(payload.get("source_size", -1)) != int(fingerprint.get("size") or 0):
+                        raise ValueError("cache mismatch")
                 result = {
                     "ticket_id": str(ticket_id),
                     "phase_durations": payload.get("phase_durations") or [],
                     "found_in_functions": payload.get("found_in_functions") or [],
                     "phase02_found_in_functions": payload.get("phase02_found_in_functions") or [],
-                    "lifecycle_start_ts": payload.get("lifecycle_start_ts"),
-                    "lifecycle_end_ts": payload.get("lifecycle_end_ts"),
-                    "lifecycle_days": payload.get("lifecycle_days"),
                     "total_duration_hours": payload.get("total_duration_hours", 0),
                     "total_duration_days": payload.get("total_duration_days", 0),
                 }
@@ -285,9 +285,6 @@ def analyze_ticket_phases_cached(
         "phase_durations": result.get("phase_durations") or [],
         "found_in_functions": result.get("found_in_functions") or [],
         "phase02_found_in_functions": result.get("phase02_found_in_functions") or [],
-        "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-        "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-        "lifecycle_days": result.get("lifecycle_days"),
         "total_duration_hours": result.get("total_duration_hours", 0),
         "total_duration_days": result.get("total_duration_days", 0),
     }
@@ -304,14 +301,11 @@ def analyze_ticket_phases_cached(
                     {
                         "cache_version": _CACHE_VERSION,
                         "ticket_id": str(ticket_id),
-                        "source_mtime_ns": fingerprint["mtime_ns"],
-                        "source_size": fingerprint["size"],
+                        "source_fetched_at": fingerprint.get("fetched_at"),
+                        "source_size": fingerprint.get("size"),
                         "phase_durations": minimal_result["phase_durations"],
                         "found_in_functions": minimal_result["found_in_functions"],
                         "phase02_found_in_functions": minimal_result["phase02_found_in_functions"],
-                        "lifecycle_start_ts": minimal_result["lifecycle_start_ts"],
-                        "lifecycle_end_ts": minimal_result["lifecycle_end_ts"],
-                        "lifecycle_days": minimal_result["lifecycle_days"],
                         "total_duration_hours": minimal_result["total_duration_hours"],
                         "total_duration_days": minimal_result["total_duration_days"],
                     },
@@ -353,10 +347,20 @@ def get_all_ticket_ids(history_folder: str = 'history') -> List[str]:
     获取所有有history文件的ticket ID
     """
     ticket_ids = []
-    for filename in os.listdir(history_folder):
-        if filename.endswith('_history.json'):
-            ticket_id = filename.replace('_history.json', '')
-            ticket_ids.append(ticket_id)
+    if _DEFAULT_OCTANE_DB_PATH and os.path.exists(_DEFAULT_OCTANE_DB_PATH):
+        try:
+            conn = sqlite3.connect(_DEFAULT_OCTANE_DB_PATH)
+            try:
+                rows = conn.execute("SELECT defect_id FROM octane_defect_histories").fetchall()
+            finally:
+                conn.close()
+            for (did,) in rows:
+                if did is None:
+                    continue
+                ticket_ids.append(str(did))
+            return sorted(ticket_ids)
+        except Exception:
+            ticket_ids = []
     return sorted(ticket_ids)
 
 def bulk_analyze_phases(
@@ -407,12 +411,7 @@ def bulk_analyze_phases(
                 if all_results is not None:
                     all_results.append(result)
                 if ticket_meta is not None and ticket_id is not None:
-                    ticket_meta[str(ticket_id)] = {
-                        "found_in_functions": result.get("found_in_functions") or result.get("phase02_found_in_functions") or [],
-                        "lifecycle_days": result.get("lifecycle_days"),
-                        "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-                        "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-                    }
+                    ticket_meta[str(ticket_id)] = result.get("found_in_functions") or result.get("phase02_found_in_functions") or []
 
                 for duration in result.get("phase_durations", []):
                     phase_transition = f"{duration['from_phase']} → {duration['to_phase']}"
@@ -443,12 +442,7 @@ def bulk_analyze_phases(
             if all_results is not None:
                 all_results.append(result)
             if ticket_meta is not None:
-                ticket_meta[str(ticket_id)] = {
-                    "found_in_functions": result.get("found_in_functions") or result.get("phase02_found_in_functions") or [],
-                    "lifecycle_days": result.get("lifecycle_days"),
-                    "lifecycle_start_ts": result.get("lifecycle_start_ts"),
-                    "lifecycle_end_ts": result.get("lifecycle_end_ts"),
-                }
+                ticket_meta[str(ticket_id)] = result.get("found_in_functions") or result.get("phase02_found_in_functions") or []
 
             for duration in result.get("phase_durations", []):
                 phase_transition = f"{duration['from_phase']} → {duration['to_phase']}"

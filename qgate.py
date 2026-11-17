@@ -64,8 +64,8 @@ CHINA_SPECIFIC_FIF = {
 }
 
 global_issue_df = pd.DataFrame()
-global_lifecycle_slider_min = 0
-global_lifecycle_slider_max = 1
+global_timespan_slider_min = 0
+global_timespan_slider_max = 1
 OCTANE_BASE_URL = os.environ.get("OCTANE_BASE_URL", "https://octane-prod.bmwgroup.net")
 OCTANE_SHARED_SPACE = os.environ.get("OCTANE_SHARED_SPACE", "1002")
 OCTANE_WORKSPACE = os.environ.get("OCTANE_WORKSPACE", "2001")
@@ -206,7 +206,7 @@ def build_team_statistics(team: str, ticket_ids, history_dir: str, show_progress
     ticket_meta = bulk.get("ticket_meta") or {}
 
     def ticket_fif_category(tid: str) -> Optional[str]:
-        items = (ticket_meta.get(str(tid)) or {}).get("found_in_functions") or []
+        items = ticket_meta.get(str(tid)) or []
         items_set = {str(x).strip() for x in items if str(x).strip()}
         if not items_set:
             return None
@@ -236,7 +236,49 @@ def build_team_statistics(team: str, ticket_ids, history_dir: str, show_progress
     rows = []
     issue_rows = []
 
-    ticket_lifecycle_days = {str(tid): (meta or {}).get("lifecycle_days") for tid, meta in (ticket_meta or {}).items()}
+    def parse_ts(ts):
+        if not ts:
+            return None
+        try:
+            from datetime import datetime
+
+            return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    def phase_prefix(phase_text: str):
+        m = re.match(r"^(\d{2})-", (phase_text or "").strip())
+        return m.group(1) if m else None
+
+    ticket_span_state = {}
+    for transition, records in (duration_records or {}).items():
+        for r in records or []:
+            tid = r.get("ticket_id")
+            if tid is None:
+                continue
+            tid = str(tid)
+            fp = phase_prefix(str(r.get("from_phase") or ""))
+            tp = phase_prefix(str(r.get("to_phase") or ""))
+            st = parse_ts(r.get("start_time"))
+            et = parse_ts(r.get("end_time"))
+
+            state = ticket_span_state.setdefault(tid, {"start": None, "end": None})
+            if fp in {"00", "01"} and st is not None:
+                if state["start"] is None or st < state["start"]:
+                    state["start"] = st
+            if tp in {"06", "09"} and et is not None:
+                if state["end"] is None or et < state["end"]:
+                    state["end"] = et
+
+    ticket_span_days = {}
+    for tid, st in ticket_span_state.items():
+        start = st.get("start")
+        end = st.get("end")
+        if start is None or end is None:
+            ticket_span_days[tid] = None
+            continue
+        delta = end - start
+        ticket_span_days[tid] = round(delta.total_seconds() / 86400, 2)
 
     hours_by_key = {}
     for transition, records in (duration_records or {}).items():
@@ -257,7 +299,7 @@ def build_team_statistics(team: str, ticket_ids, history_dir: str, show_progress
             info = defect_info.get(str(tid)) if tid is not None else None
             tid_str = str(tid) if tid is not None else ""
             ticket_url = build_octane_work_item_url(tid_str) if tid_str else ""
-            lifecycle_days = ticket_lifecycle_days.get(tid_str) if tid_str else None
+            span_days = ticket_span_days.get(tid_str) if tid_str else None
             issue_rows.append(
                 {
                     "Team": team,
@@ -274,7 +316,7 @@ def build_team_statistics(team: str, ticket_ids, history_dir: str, show_progress
                     "End_Time": r.get("end_time"),
                     "Changed_By": user,
                     "FiF": fif or "(All)",
-                    "Ticket_Lifecycle_Days": lifecycle_days,
+                    "Ticket_Timespan_Days": span_days,
                 }
             )
 
@@ -731,7 +773,7 @@ def create_app(args):
                     ),
                     html.Div(
                         [
-                            html.Label("Lifecycle(Days)：", id="qgate-timespan-label", style={"fontWeight": "bold", "marginBottom": "5px"}),
+                            html.Label("Timespan(Days)：", id="qgate-timespan-label", style={"fontWeight": "bold", "marginBottom": "5px"}),
                             dcc.RangeSlider(
                                 id="qgate-timespan-slider",
                                 min=0,
@@ -841,7 +883,6 @@ def create_app(args):
                                     {"name": "FiF", "id": "FiF"},
                                     {"name": "Changed_By", "id": "Changed_By"},
                                     {"name": "Transitions", "id": "Transitions"},
-                                    {"name": "Lifecycle_Days", "id": "Ticket_Lifecycle_Days"},
                                     {"name": "Duration_Days", "id": "Duration_Days"},
                                     {"name": "Duration_Hours", "id": "Duration_Hours"},
                                     {"name": "Start_Time", "id": "Start_Time"},
@@ -908,7 +949,7 @@ def create_app(args):
         if not stats_df.empty and "Changed_By" in stats_df.columns:
             users = sorted({str(x) for x in stats_df["Changed_By"].dropna().tolist() if str(x).strip() and str(x) != all_label})
         options = [{"label": "All", "value": "all"}] + [{"label": u, "value": u} for u in users]
-        span_series = pd.to_numeric(global_issue_df.get("Ticket_Lifecycle_Days"), errors="coerce") if not global_issue_df.empty else pd.Series([], dtype="float64")
+        span_series = pd.to_numeric(global_issue_df.get("Ticket_Timespan_Days"), errors="coerce") if not global_issue_df.empty else pd.Series([], dtype="float64")
         span_series = span_series.dropna()
         if span_series.empty:
             slider_min, slider_max = 0, 1
@@ -928,10 +969,10 @@ def create_app(args):
                 slider_max: str(slider_max),
             }
             slider_marks = {k: v for k, v in slider_marks.items() if 0 <= k <= slider_max}
-        global global_lifecycle_slider_min
-        global global_lifecycle_slider_max
-        global_lifecycle_slider_min = slider_min
-        global_lifecycle_slider_max = slider_max
+        global global_timespan_slider_min
+        global global_timespan_slider_max
+        global_timespan_slider_min = slider_min
+        global_timespan_slider_max = slider_max
         return payload, status, options, "all", "all", slider_min, slider_max, slider_value, slider_marks, slider_disabled
 
     @app.callback(
@@ -989,19 +1030,18 @@ def create_app(args):
                     min_span = None
                     max_span = None
 
-            global global_lifecycle_slider_min
-            global global_lifecycle_slider_max
-            slider_min = float(global_lifecycle_slider_min)
-            slider_max = float(global_lifecycle_slider_max)
+            global global_timespan_slider_min
+            global global_timespan_slider_max
+            slider_min = float(global_timespan_slider_min)
+            slider_max = float(global_timespan_slider_max)
 
             if min_span is not None and max_span is not None and slider_min is not None and slider_max is not None:
                 if not (min_span == slider_min and max_span == slider_max):
-                    span_series = pd.to_numeric(filtered_issues.get("Ticket_Lifecycle_Days"), errors="coerce")
+                    span_series = pd.to_numeric(filtered_issues.get("Ticket_Timespan_Days"), errors="coerce")
                     filtered_issues = filtered_issues[span_series.notna() & (span_series >= min_span) & (span_series <= max_span)]
 
         if filtered_issues.empty:
-            fig = empty_figure(theme, "筛选后无数据（可调整 Teams/Group/FiF/Change By/Lifecycle）")
-            return fig, fig, fig, fig, []
+            filtered = pd.DataFrame()
         else:
             agg = filtered_issues.groupby(["Team", "Group", "Phase_Transition"], dropna=False).agg(
                 Count=("Duration_Hours", "size"),
@@ -1019,54 +1059,35 @@ def create_app(args):
             agg["Changed_By"] = all_label if selected_user == "all" else selected_user
             agg["FiF"] = all_label if selected_fif == "all" else selected_fif
             filtered = agg
-        lifecycle_ticket_df = (
-            filtered_issues[["Team", "Ticket_ID", "Ticket_Link", "Ticket_Name", "Tester", "FiF", "Ticket_Lifecycle_Days"]]
-            .drop_duplicates(subset=["Team", "Ticket_ID", "FiF"])
-            .copy()
-        )
-        lifecycle_ticket_df["Ticket_Lifecycle_Days"] = pd.to_numeric(lifecycle_ticket_df["Ticket_Lifecycle_Days"], errors="coerce")
-        lifecycle_ticket_df = lifecycle_ticket_df.dropna(subset=["Ticket_Lifecycle_Days"])
-
-        if lifecycle_ticket_df.empty:
-            lifecycle_fig = empty_figure(theme, "无已完结票（缺少 06/09 结案阶段）")
-        else:
-            team_kpi = (
-                lifecycle_ticket_df.groupby("Team", dropna=False)
-                .agg(
-                    Tickets=("Ticket_ID", "nunique"),
-                    Avg_Lifecycle_Days=("Ticket_Lifecycle_Days", "mean"),
-                    Median_Lifecycle_Days=("Ticket_Lifecycle_Days", "median"),
-                    P90_Lifecycle_Days=("Ticket_Lifecycle_Days", lambda s: s.quantile(0.9)),
-                )
-                .reset_index()
-            )
-            team_kpi["Avg_Lifecycle_Days"] = team_kpi["Avg_Lifecycle_Days"].round(2)
-            team_kpi["Median_Lifecycle_Days"] = team_kpi["Median_Lifecycle_Days"].round(2)
-            team_kpi["P90_Lifecycle_Days"] = team_kpi["P90_Lifecycle_Days"].round(2)
-            team_kpi = team_kpi.sort_values("Avg_Lifecycle_Days", ascending=False)
-            lifecycle_fig = px.bar(
-                team_kpi,
-                x="Avg_Lifecycle_Days",
-                y="Team",
-                orientation="h",
-                title="Ticket Lifecycle Avg Days (00/01 → 06/09)",
-                hover_data=["Tickets", "Median_Lifecycle_Days", "P90_Lifecycle_Days"],
-            )
-            lifecycle_fig.update_layout(
-                template="plotly_white" if theme == "light" else "plotly_dark",
-                height=max(420, 40 * len(team_kpi["Team"].unique()) + 160),
-            )
 
         min_transition_count = int(min_count) if min_count else 1
-        transition_filtered = filtered[filtered["Count"] >= int(min_transition_count)].copy() if not filtered.empty else pd.DataFrame()
+        filtered, summary_df = build_summary_frames(filtered, min_transition_count)
 
-        transition_df = aggregate_transition_summary(transition_filtered)
+        if summary_df.empty:
+            fig = empty_figure(theme, "筛选后无数据（可降低 Min Count 或调整 Group/Teams）")
+            fig2 = empty_figure(theme, "筛选后无数据")
+            detail_rows = filtered.sort_values(["Team", "Avg_Days"], ascending=[True, False]).to_dict("records") if not filtered.empty else []
+            return fig, fig2, fig2, fig2, detail_rows
+
+        fig = px.bar(
+            summary_df,
+            x="Weighted_Avg_Days",
+            y="Team",
+            color="Group",
+            orientation="h",
+            barmode="stack",
+            title="Phase Transition Efficiency by Team (Sum of Avg Days by Group)",
+            hover_data=["Transitions_Total", "Samples_Total"],
+        )
+        fig.update_layout(template="plotly_white" if theme == "light" else "plotly_dark", height=max(420, 40 * len(summary_df["Team"].unique()) + 160))
+
+        transition_df = aggregate_transition_summary(filtered)
         duration_ranking_fig = create_phase_duration_ranking_chart(transition_df, theme)
         grouped_stacked_fig = create_grouped_stacked_chart(transition_df, theme)
         grouped_sorted_fig = create_grouped_sorted_total_chart(transition_df, theme)
 
-        detail_rows = transition_filtered.sort_values(["Team", "Avg_Days"], ascending=[True, False]).to_dict("records") if not transition_filtered.empty else []
-        return lifecycle_fig, duration_ranking_fig, grouped_stacked_fig, grouped_sorted_fig, detail_rows
+        detail_rows = filtered.sort_values(["Team", "Avg_Days"], ascending=[True, False]).to_dict("records")
+        return fig, duration_ranking_fig, grouped_stacked_fig, grouped_sorted_fig, detail_rows
 
     @app.callback(
         Output("qgate-issue-modal", "style"),
@@ -1116,13 +1137,13 @@ def create_app(args):
             except Exception:
                 min_span = None
                 max_span = None
-        global global_lifecycle_slider_min
-        global global_lifecycle_slider_max
-        slider_min = float(global_lifecycle_slider_min)
-        slider_max = float(global_lifecycle_slider_max)
+        global global_timespan_slider_min
+        global global_timespan_slider_max
+        slider_min = float(global_timespan_slider_min)
+        slider_max = float(global_timespan_slider_max)
         if min_span is not None and max_span is not None:
             if not (min_span == slider_min and max_span == slider_max):
-                span_series = pd.to_numeric(df.get("Ticket_Lifecycle_Days"), errors="coerce")
+                span_series = pd.to_numeric(df.get("Ticket_Timespan_Days"), errors="coerce")
                 df = df[span_series.notna() & (span_series >= min_span) & (span_series <= max_span)]
 
         clickData = None
@@ -1160,18 +1181,18 @@ def create_app(args):
 
         if chart_kind == "summary":
             team = str(point.get("y") or "").strip()
-            if not team:
+            group = str((point.get("data") or {}).get("name") or "").strip()
+            if not team or not group:
                 return {"display": "none"}, "", "", []
-            sdf = df[df["Team"] == team].copy()
+            sdf = df[(df["Team"] == team) & (df["Group"] == group)].copy()
             if sdf.empty:
                 return {"display": "none"}, "", "", []
 
             sdf["Start_Time"] = sdf["Start_Time"].apply(normalize_time)
             sdf["End_Time"] = sdf["End_Time"].apply(normalize_time)
             agg = (
-                sdf.groupby(["Ticket_ID", "Ticket_Link", "Ticket_Name", "Tester", "Team", "FiF"], dropna=False)
+                sdf.groupby(["Ticket_ID", "Ticket_Link", "Ticket_Name", "Tester", "Team", "Group", "FiF"], dropna=False)
                 .agg(
-                    Ticket_Lifecycle_Days=("Ticket_Lifecycle_Days", "first"),
                     Duration_Hours=("Duration_Hours", "sum"),
                     Duration_Days=("Duration_Days", "sum"),
                     Transitions=("Phase_Transition", "nunique"),
@@ -1180,11 +1201,9 @@ def create_app(args):
             )
             agg["Duration_Hours"] = agg["Duration_Hours"].round(2)
             agg["Duration_Days"] = agg["Duration_Days"].round(2)
-            agg["Ticket_Lifecycle_Days"] = pd.to_numeric(agg["Ticket_Lifecycle_Days"], errors="coerce").round(2)
-            agg = agg.sort_values(["Ticket_Lifecycle_Days", "Duration_Days"], ascending=[False, False], na_position="last")
-            avg_lifecycle = float(pd.to_numeric(agg["Ticket_Lifecycle_Days"], errors="coerce").dropna().mean()) if len(agg) else 0.0
-            modal_title = f"Team={team} | Lifecycle (00/01 → 06/09)"
-            modal_info = html.Div(f"Tickets: {len(agg)} | Avg Lifecycle: {avg_lifecycle:.2f} days")
+            agg = agg.sort_values(["Duration_Days", "Transitions"], ascending=[False, False])
+            modal_title = f"Team={team} | Group={group}"
+            modal_info = html.Div(f"Tickets: {len(agg)}（按该 Group 内所有 transition 的 duration 求和）")
             table_rows = agg.to_dict("records")
         else:
             transition = str(point.get("y") or "").strip()

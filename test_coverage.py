@@ -22,7 +22,10 @@ def safe_get_unique_values(df, column_name, default_list=None):
         return default_list
     
     try:
-        return sorted(df[column_name].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).unique())
+        s = df[column_name].dropna().apply(lambda x: x.get('name') if isinstance(x, dict) else x)
+        s = s.where(pd.notna(s), '').astype(str).str.strip()
+        s = s[~s.isin(['', 'nan', 'None'])]
+        return sorted(s.unique())
     except Exception as e:
         print(f"处理列 '{column_name}' 时出错: {e}. 使用默认值.")
         return default_list

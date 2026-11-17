@@ -9,8 +9,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import dash_bootstrap_components as dbc
-import gc
 import numpy as np
+import time
+import os
 
 # 词云图相关导入
 try:
@@ -45,6 +46,52 @@ color_map = {
     "Requires Attention": "yellow",
     "Planned": "lightgrey",
 }
+
+_SERVER_DATA_CACHE = {}
+_SERVER_DATA_CACHE_TTL_SECONDS = 3600
+_BASE_DATA_CACHE_KEY = "__tc_base_dataframe__"
+_EXTERNAL_TEST_DATAFRAME = None
+
+
+def set_test_coverage_source_dataframe(df):
+    global _EXTERNAL_TEST_DATAFRAME
+    if isinstance(df, pd.DataFrame) and not df.empty:
+        _EXTERNAL_TEST_DATAFRAME = df
+
+
+def _cleanup_server_data_cache():
+    now = time.time()
+    expired_keys = [
+        key for key, payload in _SERVER_DATA_CACHE.items()
+        if payload.get("expires_at", 0) <= now
+    ]
+    for key in expired_keys:
+        _SERVER_DATA_CACHE.pop(key, None)
+
+
+def cache_test_coverage_dataframe(df):
+    _cleanup_server_data_cache()
+    base_payload = _SERVER_DATA_CACHE.get(_BASE_DATA_CACHE_KEY)
+    if base_payload and base_payload.get("expires_at", 0) > time.time():
+        return _BASE_DATA_CACHE_KEY
+    _SERVER_DATA_CACHE[_BASE_DATA_CACHE_KEY] = {
+        "dataframe": df,
+        "expires_at": time.time() + _SERVER_DATA_CACHE_TTL_SECONDS
+    }
+    return _BASE_DATA_CACHE_KEY
+
+
+def get_cached_test_coverage_dataframe(cache_key):
+    if not cache_key:
+        return pd.DataFrame()
+    _cleanup_server_data_cache()
+    payload = _SERVER_DATA_CACHE.get(cache_key)
+    if not payload:
+        return pd.DataFrame()
+    cached_df = payload.get("dataframe")
+    if cached_df is None:
+        return pd.DataFrame()
+    return cached_df
 
 # === Feature Region映射函数 ===
 def get_feature_region(top_aida):
@@ -118,11 +165,67 @@ def get_feature_region(top_aida):
     else:
         return 'Global'
 
+
+def _extract_scalar_value(value):
+    if isinstance(value, dict):
+        for key in ('name', 'full_name', 'value', 'id'):
+            if key in value and value.get(key) not in (None, ''):
+                return str(value.get(key)).strip()
+        return ''
+    if value is None:
+        return ''
+    if isinstance(value, float) and pd.isna(value):
+        return ''
+    return str(value).strip()
+
+
+def _collect_unique_values(series, include_empty=False):
+    values = []
+    for raw in series.tolist():
+        norm = _extract_scalar_value(raw)
+        if norm:
+            values.append(norm)
+        elif include_empty:
+            values.append('')
+    return sorted(set(values))
+
+
+def _extract_year_from_week(value):
+    text = _extract_scalar_value(value)
+    if not text:
+        return None
+    import re
+    match = re.search(r'(\d{2,4})\s*-\s*CW\s*(\d{1,2})', text, flags=re.IGNORECASE)
+    if not match:
+        return None
+    year = int(match.group(1))
+    if year < 100:
+        year += 2000
+    return year
+
 # === 数据加载 ===
 def get_test_coverage_data():
     """获取测试覆盖率数据"""
     try:
         print("正在加载测试覆盖率数据...")
+        if isinstance(_EXTERNAL_TEST_DATAFRAME, pd.DataFrame) and not _EXTERNAL_TEST_DATAFRAME.empty:
+            return _EXTERNAL_TEST_DATAFRAME
+        db_candidates = [
+            os.path.join(os.getcwd(), "database", "local_data.db"),
+            os.path.join(os.getcwd(), "local_data.db")
+        ]
+        db_signature = "no-db"
+        for db_path in db_candidates:
+            if os.path.exists(db_path):
+                stat = os.stat(db_path)
+                db_signature = f"{db_path}:{int(stat.st_mtime)}:{stat.st_size}"
+                break
+        cached_base = _SERVER_DATA_CACHE.get(_BASE_DATA_CACHE_KEY)
+        if cached_base and cached_base.get("db_signature") == db_signature and cached_base.get("expires_at", 0) > time.time():
+            cached_df = cached_base.get("dataframe")
+            if isinstance(cached_df, pd.DataFrame) and not cached_df.empty:
+                print(f"[tc-data][cache] hit rows={len(cached_df)}")
+                return cached_df
         
         # 尝试加载测试数据
         try:
@@ -146,9 +249,18 @@ def get_test_coverage_data():
         else:
             print("警告: 'top_aida' 列不存在，无法创建 Feature Region 列")
             tdf['feature_region'] = 'Global'  # 默认值
-        
-        # 强制垃圾回收
-        gc.collect()
+
+        for col in ['project', 'test_week', 'pu', 'top_aida', 'fvp', 'fv', 'feature_region', 'tester', 'native_status', 'run_status', 'status', 'execution_status']:
+            if col in tdf.columns:
+                tdf[col] = tdf[col].apply(_extract_scalar_value)
+        if 'tester' in tdf.columns:
+            tdf['tester'] = tdf['tester'].replace('', 'Unknown Tester')
+        tdf['tc_prepared_flag'] = True
+        _SERVER_DATA_CACHE[_BASE_DATA_CACHE_KEY] = {
+            "dataframe": tdf,
+            "expires_at": time.time() + _SERVER_DATA_CACHE_TTL_SECONDS,
+            "db_signature": db_signature
+        }
         
         print(f"成功加载 {len(tdf)} 行测试数据")
         return tdf
@@ -166,35 +278,44 @@ def create_test_coverage_filters(tdf, prefix="tc"):
     if tdf.empty:
         return html.Div("数据加载失败，无法创建筛选器", style={'color': 'red'})
     
-    projects = sorted([p for p in tdf['project'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if p])
-    test_weeks = sorted([w for w in tdf['test_week'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if w])
-    pus = sorted([p for p in tdf['pu'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if p])
-    aidas = sorted([a for a in tdf['top_aida'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if a])
-    fvps = sorted([f for f in tdf['fvp'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if f])
-    fvs = sorted([f for f in tdf['fv'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if f])
-    feature_regions = sorted([fr for fr in tdf['feature_region'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if fr])
+    projects = _collect_unique_values(tdf['project']) if 'project' in tdf.columns else []
+    test_weeks = _collect_unique_values(tdf['test_week']) if 'test_week' in tdf.columns else []
+    pus = _collect_unique_values(tdf['pu']) if 'pu' in tdf.columns else []
+    aidas = _collect_unique_values(tdf['top_aida']) if 'top_aida' in tdf.columns else []
+    fvps = _collect_unique_values(tdf['fvp']) if 'fvp' in tdf.columns else []
+    fvs = _collect_unique_values(tdf['fv']) if 'fv' in tdf.columns else []
+    feature_regions = _collect_unique_values(tdf['feature_region']) if 'feature_region' in tdf.columns else []
+    years = []
+    if 'year' in tdf.columns:
+        years = sorted({int(y) for y in pd.to_numeric(tdf['year'], errors='coerce').dropna().astype(int).tolist()})
+    if not years and 'test_week' in tdf.columns:
+        years = sorted({y for y in tdf['test_week'].apply(_extract_year_from_week).dropna().tolist()})
+    default_years = [2026] if 2026 in years else []
     # lead_models 列表获取已移除
     
-    # 获取状态选项 - 优先使用native_status的name字段，如果不存在则使用run_status
+        # 获取状态选项 - 优先使用native_status的name字段，如果不存在则使用run_status
     if 'native_status' in tdf.columns:
-        # 从native_status中提取name字段
-        def extract_status_name(x):
-            if isinstance(x, dict) and 'name' in x:
-                return x['name']
-            elif isinstance(x, str):
-                return x
-            else:
-                return None
-        statuses = sorted([s for s in tdf['native_status'].apply(extract_status_name).dropna().unique() if s and str(s) != 'nan'])
+        statuses = sorted([s for s in tdf['native_status'].apply(_extract_scalar_value).dropna().unique() if s and str(s) != 'nan'])
     else:
-        # 如果没有native_status，则使用其他状态字段
         status_column = next((col for col in ['run_status', 'status', 'execution_status'] if col in tdf.columns), 'run_status')
-        statuses = sorted([s for s in tdf[status_column].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique() if s and str(s) != 'nan'])
+        statuses = sorted([s for s in tdf[status_column].apply(_extract_scalar_value).dropna().unique() if s and str(s) != 'nan'])
     
     
     return html.Div([
-        # 第一行筛选器 - 4个筛选器，每个占约23%宽度
+        # 第一行筛选器
         html.Div([
+            html.Div([
+                html.Label('Year:', style=active_label_style),
+                dcc.Dropdown(
+                    id=f'{prefix}-year-dropdown',
+                    options=[{'label': str(y), 'value': int(y)} for y in years],
+                    value=default_years,
+                    multi=True,
+                    placeholder='选择年份...',
+                    style={'width': '100%'}
+                ),
+            ], style={'width': '18%', 'display': 'inline-block', 'marginRight': '2%'}),
+            
             html.Div([
                 html.Label('项目:', style=active_label_style),
                 dcc.Dropdown(
@@ -205,7 +326,7 @@ def create_test_coverage_filters(tdf, prefix="tc"):
                     placeholder='选择项目...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '23%', 'display': 'inline-block', 'marginRight': '2%'}),
+            ], style={'width': '20%', 'display': 'inline-block', 'marginRight': '2%'}),
             
             html.Div([
                 html.Label('测试周:', style=active_label_style),
@@ -217,7 +338,7 @@ def create_test_coverage_filters(tdf, prefix="tc"):
                     placeholder='选择测试周...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '23%', 'display': 'inline-block', 'marginRight': '2%'}),
+            ], style={'width': '20%', 'display': 'inline-block', 'marginRight': '2%'}),
             
             html.Div([
                 html.Label('PU:', style=active_label_style),
@@ -229,7 +350,7 @@ def create_test_coverage_filters(tdf, prefix="tc"):
                     placeholder='选择PU...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '23%', 'display': 'inline-block', 'marginRight': '2%'}),
+            ], style={'width': '18%', 'display': 'inline-block', 'marginRight': '2%'}),
             
             html.Div([
                 html.Label('AIDA:', style=active_label_style),
@@ -241,10 +362,10 @@ def create_test_coverage_filters(tdf, prefix="tc"):
                     placeholder='选择AIDA...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '23%', 'display': 'inline-block'}),
+            ], style={'width': '20%', 'display': 'inline-block'}),
         ], style={'marginBottom': '10px'}),
         
-        # 第二行筛选器 - 4个筛选器，每个占约23%宽度
+        # 第二行筛选器
         html.Div([
             html.Div([
                 html.Label('状态:', style=active_label_style),
@@ -373,8 +494,10 @@ def create_test_coverage_page(source="standalone"):
         current_theme = theme_manager.get_theme()
         active_label_style = LABEL_STYLE_LIGHT if current_theme == 'light' else LABEL_STYLE_DARK
         
+        load_start = time.perf_counter()
         # 加载数据
         tdf = get_test_coverage_data()
+        print(f"[tc-page][timing] load_data_ms={(time.perf_counter() - load_start) * 1000:.1f}")
         
         if tdf.empty:
             return html.Div([
@@ -409,6 +532,12 @@ def create_test_coverage_page(source="standalone"):
     
     # 根据来源设置不同的前缀，避免ID冲突
     prefix = "de-tc" if source == "defect-explore" else "tc"
+    cache_start = time.perf_counter()
+    data_cache_key = cache_test_coverage_dataframe(tdf)
+    print(
+        f"[tc-page][timing] cache_data_ms={(time.perf_counter() - cache_start) * 1000:.1f}, "
+        f"rows={len(tdf)}, key={data_cache_key}"
+    )
     
     return html.Div([
         # 页面标题
@@ -427,14 +556,17 @@ def create_test_coverage_page(source="standalone"):
         # 图表区域
         create_test_coverage_charts(prefix),
         
-        dcc.Store(id=f'{prefix}-data-store', data=tdf.to_dict('records')),
+        dcc.Store(id=f'{prefix}-data-store', data={
+            'cache_key': data_cache_key,
+            'rows': int(len(tdf))
+        }),
         dcc.Store(id=f'{prefix}-chart3-filtered-store'),
         dcc.Store(id=f'{prefix}-export-trigger'),
         dcc.Download(id=f'{prefix}-download-chart3-xlsx'),
     ])
 
 # === 筛选逻辑 ===
-def filter_test_data(tdf, projects=None, test_weeks=None, pus=None, aidas=None, feature_regions=None, fvps=None, statuses=None):
+def filter_test_data(tdf, years=None, projects=None, test_weeks=None, pus=None, aidas=None, feature_regions=None, fvps=None, statuses=None):
     """筛选测试数据"""
     if tdf.empty:
         return tdf
@@ -442,6 +574,11 @@ def filter_test_data(tdf, projects=None, test_weeks=None, pus=None, aidas=None, 
     filtered_df = tdf.copy()
     
     # 应用筛选条件
+    if years:
+        year_series = pd.to_numeric(filtered_df['year'], errors='coerce') if 'year' in filtered_df.columns else pd.Series(index=filtered_df.index, dtype='float64')
+        if ('year' not in filtered_df.columns or year_series.dropna().empty) and 'test_week' in filtered_df.columns:
+            year_series = filtered_df['test_week'].apply(_extract_year_from_week)
+        filtered_df = filtered_df[year_series.astype('Int64').isin([int(y) for y in years])]
     if projects:
         filtered_df = filtered_df[filtered_df['project'].isin(projects)]
     if test_weeks:
@@ -498,13 +635,12 @@ def create_project_status_chart(filtered_data):
             missing_cols = [col for col in required_cols if col not in filtered_data.columns]
             return create_empty_figure(f"错误: 缺少列 {', '.join(missing_cols)}", height=400)
         
-        # 找到计数列
         count_col = None
-        if 'test_case_id' in filtered_data.columns:
-            count_col = 'test_case_id'
-        elif 'id' in filtered_data.columns:
-            count_col = 'id'
-        else:
+        for candidate in ['test_case_id', 'test_id', 'id', 'test_execution_id', 'execution_id', 'run_id', 'mr_id']:
+            if candidate in filtered_data.columns:
+                count_col = candidate
+                break
+        if count_col is None:
             return create_empty_figure("错误：缺少用于计数的列", height=400)
         
         # 创建数据副本并处理可能的字典类型数据

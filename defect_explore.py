@@ -2,8 +2,11 @@ import os
 import sys
 from pathlib import Path
 
-# 早期进程检查，避免reloader进程执行不必要的导入
-IS_RELOADER = os.environ.get('DEBUG', 'True').lower() == 'true' and os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
+# 默认关闭 reloader/hot reload，避免运行时文件写入触发服务重载
+DISABLE_RELOADER = os.environ.get("DISABLE_RELOADER", "1").lower() in ("1", "true", "yes")
+
+# 早期进程检查：仅在启用 reloader 时，父进程才被视为 reloader 进程
+IS_RELOADER = (not DISABLE_RELOADER) and (os.environ.get("WERKZEUG_RUN_MAIN") != "true")
 
 # Windows兼容性设置
 if os.name == 'nt':  # Windows系统
@@ -32,10 +35,11 @@ import threading
 import queue
 import uuid
 import logging
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from functools import lru_cache, wraps
 import base64
-from io import BytesIO
+from io import BytesIO, StringIO
+from dimension_utils import normalize_dimension_value, build_preferred_dimension, build_chart_dimension, sort_dimension_with_unknown_last
 
 # 统一缓存管理器导入
 try:
@@ -109,6 +113,132 @@ class PerformanceStats:
 # 全局性能统计实例
 perf_stats = PerformanceStats()
 
+_FILTER_CACHE_LOCK = threading.Lock()
+_FILTER_CACHE = OrderedDict()
+_FILTER_CACHE_MAX_SIZE = 96
+_TAB_CONTENT_CACHE = {}
+
+
+def _normalize_filter_tuple(values):
+    if not values:
+        return ()
+    normalized = []
+    for value in values:
+        normalized_value = extract_filter_value(value)
+        if normalized_value != '':
+            normalized.append(str(normalized_value))
+    return tuple(sorted(set(normalized)))
+
+
+def _build_filter_cache_key(current_df, years=None, projects=None, start_date=None, end_date=None, aidas=None, statuses=None, pus=None, testers=None, fvs=None, ecus=None, lead_models=None, fvps=None, markets=None):
+    df_signature = (id(current_df), int(len(current_df)))
+    return (
+        df_signature,
+        _normalize_filter_tuple(years),
+        _normalize_filter_tuple(projects),
+        str(start_date or ''),
+        str(end_date or ''),
+        _normalize_filter_tuple(aidas),
+        _normalize_filter_tuple(statuses),
+        _normalize_filter_tuple(pus),
+        _normalize_filter_tuple(testers),
+        _normalize_filter_tuple(fvs),
+        _normalize_filter_tuple(ecus),
+        _normalize_filter_tuple(lead_models),
+        _normalize_filter_tuple(fvps),
+        _normalize_filter_tuple(markets),
+    )
+
+def extract_status_value(value):
+    if isinstance(value, dict):
+        if 'name' in value:
+            return value['name']
+        if 'full_name' in value:
+            return value['full_name']
+    return value
+
+def get_status_series(current_df):
+    if current_df is None or current_df.empty:
+        return pd.Series([], dtype=str)
+    for col in ['status', 'status_phase', 'phase', 'status.name', 'phase.name']:
+        if col in current_df.columns:
+            series = current_df[col].apply(extract_status_value)
+            series = series.apply(lambda x: str(x) if x is not None else '')
+            return series
+    return pd.Series([], dtype=str)
+
+
+def extract_filter_value(value):
+    if isinstance(value, dict):
+        for key in ('name', 'full_name', 'value', 'id'):
+            if key in value and value.get(key) not in (None, ''):
+                return str(value.get(key)).strip()
+        return ''
+    if value is None:
+        return ''
+    if isinstance(value, float) and pd.isna(value):
+        return ''
+    return str(value).strip()
+
+
+def clean_unique_values(series, keep_empty=False):
+    unique_values = []
+    for value in series.tolist():
+        normalized = extract_filter_value(value)
+        if normalized:
+            unique_values.append(normalized)
+        elif keep_empty:
+            unique_values.append('')
+    return sorted(set(unique_values))
+
+
+def extract_year_series(dataframe, year_col='year', week_col='test_week'):
+    year_series = pd.to_numeric(dataframe[year_col], errors='coerce') if year_col in dataframe.columns else pd.Series(index=dataframe.index, dtype='float64')
+    if week_col in dataframe.columns:
+        week_series = dataframe[week_col].apply(extract_filter_value)
+        extracted_years = pd.to_numeric(week_series.astype(str).str.extract(r'(\d{2,4})\s*-\s*CW')[0], errors='coerce')
+        extracted_years = extracted_years.apply(lambda y: y + 2000 if pd.notna(y) and y < 100 else y)
+        year_series = extracted_years.where(extracted_years.notna(), year_series)
+    return pd.to_numeric(year_series, errors='coerce')
+
+
+def sort_weeks_with_year(values):
+    def sort_key(week_value):
+        text = extract_filter_value(week_value)
+        match = pd.Series([text]).str.extract(r'(\d{2,4})\s*-\s*CW\s*(\d{1,2})', flags=0)
+        year_val = pd.to_numeric(match.iloc[0, 0], errors='coerce')
+        week_num = pd.to_numeric(match.iloc[0, 1], errors='coerce')
+        if pd.notna(year_val) and year_val < 100:
+            year_val = year_val + 2000
+        if pd.notna(year_val) and pd.notna(week_num):
+            return (0, int(year_val), int(week_num), text)
+        return (1, 9999, 99, text)
+    return sorted([extract_filter_value(v) for v in values if extract_filter_value(v)], key=sort_key)
+
+
+DEFECT_STATUS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+LONG_RUNNER_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+
+
+def _normalize_cache_value(value):
+    if isinstance(value, dict):
+        return {str(k): _normalize_cache_value(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))}
+    if isinstance(value, (list, tuple, set)):
+        normalized_items = [_normalize_cache_value(v) for v in value]
+        return sorted(normalized_items, key=lambda item: json.dumps(item, ensure_ascii=False, sort_keys=True, default=str))
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def _build_defect_status_cache_key(cache_payload):
+    normalized_payload = _normalize_cache_value(cache_payload)
+    payload_text = json.dumps(normalized_payload, ensure_ascii=False, sort_keys=True, default=str, separators=(',', ':'))
+    payload_hash = hashlib.md5(payload_text.encode('utf-8')).hexdigest()
+    return f"defect_status_chart_v3_{payload_hash}"
+
 # 统一过滤器组件函数
 def create_unified_filters(prefix='', active_label_style=None):
     """
@@ -119,22 +249,74 @@ def create_unified_filters(prefix='', active_label_style=None):
     if active_label_style is None:
         current_theme = theme_manager.get_theme()
         active_label_style = LABEL_STYLE_LIGHT if current_theme == 'light' else LABEL_STYLE_DARK
-    
+
+    # 预计算 matrix 和 classification 选项（带默认值）
+    matrix_options = []
+    if 'matrix' in df.columns and not df.empty:
+        # 获取所有唯一值，包括空值
+        matrix_values = df['matrix'].apply(lambda x: str(x) if isinstance(x, dict) else x).unique()
+        # 处理正常值
+        valid_options = [{'label': m.replace('Matrix-', '').replace('matrix-', '').upper(), 'value': m}
+                         for m in sorted([m for m in matrix_values if pd.notna(m) and m and str(m).strip() != '']) 
+                         if m and m.lower().startswith('matrix-')]
+        # 检查是否存在空值或Unknown
+        has_empty = any(pd.isna(m) or not m or str(m).strip() == '' or str(m) == 'UnknownMatrix' for m in matrix_values)
+        if has_empty:
+            valid_options.append({'label': 'Unknown/Empty', 'value': 'UnknownMatrix'})
+        matrix_options = valid_options
+
+    if not matrix_options:
+        default_matrices = ['Matrix-1A', 'Matrix-1B', 'Matrix-1C', 'Matrix-1D', 'Matrix-1E',
+                           'Matrix-2A', 'Matrix-2B', 'Matrix-2C', 'Matrix-2D', 'Matrix-2E',
+                           'Matrix-3A', 'Matrix-3B', 'Matrix-3C', 'Matrix-3D', 'Matrix-3E',
+                           'Matrix-4A', 'Matrix-4B', 'Matrix-4C', 'Matrix-4D', 'Matrix-4E']
+        matrix_options = [{'label': m.replace('Matrix-', ''), 'value': m} for m in default_matrices]
+
+    classification_options = []
+    if 'classification' in df.columns and not df.empty:
+        try:
+            classification_values = sorted([cls for cls_list in df['classification']
+                                           if isinstance(cls_list, list) for cls in cls_list if cls])
+            classification_options = [{'label': cls, 'value': cls} for cls in classification_values]
+        except:
+            pass
+    if not classification_options:
+        default_classifications = ['Showstopper_Candidate', 'Showstopper_Confirmed',
+                                 'Preventing Maturity Grade ConDrive', 'Obstructing Maturity Grade ConDrive']
+        classification_options = [{'label': cls, 'value': cls} for cls in default_classifications]
+
+    status_values = [s for s in sorted(get_status_series(df).replace('nan', '').dropna().unique()) if s]
+    status_default_values = [s for s in status_values if str(s)[:2] not in ('06', '08', '09')]
+    if not status_default_values:
+        status_default_values = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification']
+
     return html.Div([
         # 第一行过滤器
         html.Div([
             html.Div([
+                html.Label('Year:', style=active_label_style),
+                dcc.Dropdown(
+                    id=f'{prefix}year-dropdown',
+                    options=[{'label': str(y), 'value': int(y)} for y in sorted({int(y) for y in extract_year_series(df).dropna().astype(int).tolist()})] if not df.empty else [],
+                    value=[2026] if (not df.empty and 2026 in set(extract_year_series(df).dropna().astype(int).tolist())) else [],
+                    multi=True,
+                    clearable=True,
+                    placeholder='Select Year...',
+                    style={'width': '100%'}
+                ),
+            ], style={'width': '10%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            html.Div([
                 html.Label('Project:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}project-dropdown',
-                    options=[{'label': p, 'value': p} for p in sorted(df['project'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if p],
+                    options=[{'label': p, 'value': p} for p in clean_unique_values(df['project'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'project' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
                     placeholder='Select Project...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
             
             html.Div([
                 html.Label('Date Range:', style=active_label_style),
@@ -145,60 +327,59 @@ def create_unified_filters(prefix='', active_label_style=None):
                     display_format='YYYY-MM-DD',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
             
             html.Div([
                 html.Label('AIDA:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}aida-dropdown',
-                    options=[{'label': a, 'value': a} for a in sorted(df['aida_english'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if a],
+                    options=[{'label': a, 'value': a} for a in clean_unique_values(df['aida_english'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'aida_english' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
                     placeholder='Select AIDA...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
             
             html.Div([
                 html.Label('Status:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}status-dropdown',
-                    options=[{'label': s, 'value': s} for s in sorted(df['status_phase'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if s] + 
-                            [{'label': '09-concluded without action (child)', 'value': '09-concluded without action (child)'}],
-                    value=['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification'],
+                    options=[{'label': s, 'value': s} for s in status_values] + [{'label': '09-concluded without action (child)', 'value': '09-concluded without action (child)'}],
+                    value=status_default_values,
                     multi=True,
                     clearable=True,
                     placeholder='Select Status...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
 
             html.Div([
                 html.Label('PU:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}pu-dropdown',
-                    options=[{'label': pu_val, 'value': pu_val} for pu_val in sorted(df['pu'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if pu_val],
+                    options=[{'label': pu_val, 'value': pu_val} for pu_val in clean_unique_values(df['pu'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'pu' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
                     placeholder='Select PU...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
 
             html.Div([
                 html.Label('Tester:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}tester-dropdown-main',
-                    options=[{'label': tester, 'value': tester} for tester in sorted(df['tester'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if tester],
+                    options=[{'label': tester, 'value': tester} for tester in clean_unique_values(df['tester'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'tester' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
                     placeholder='Select Tester...',
                     style={'width': '100%'}
                 ),
-            ], style={'width': '15.5%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+            ], style={'width': '14.5%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ], style={'marginBottom': '20px', 'marginTop': '20px'}),
         
         # 第二行过滤器 - FV、ECU、Market、Lead Model和FVP
@@ -207,7 +388,7 @@ def create_unified_filters(prefix='', active_label_style=None):
                 html.Label('FV (Function Variant):', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}fv-dropdown',
-                    options=[{'label': fv, 'value': fv} for fv in sorted(df['fv'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if fv],
+                    options=[{'label': fv, 'value': fv} for fv in clean_unique_values(df['fv'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'fv' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
@@ -220,7 +401,7 @@ def create_unified_filters(prefix='', active_label_style=None):
                 html.Label('ECU:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}ecu-dropdown',
-                    options=[{'label': ecu, 'value': ecu} for ecu in sorted(df['ecu'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if ecu],
+                    options=[{'label': ecu, 'value': ecu} for ecu in clean_unique_values(df['ecu'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'ecu' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
@@ -234,7 +415,7 @@ def create_unified_filters(prefix='', active_label_style=None):
                 html.Label('Market:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}market-dropdown',
-                    options=[{'label': market, 'value': market} for market in sorted(df['market'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if market and market != ''] if 'market' in df.columns else [],
+                    options=[{'label': market, 'value': market} for market in clean_unique_values(df['market'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'market' in df.columns else [],
                     value=[],
                     multi=True,
                     clearable=True,
@@ -247,7 +428,7 @@ def create_unified_filters(prefix='', active_label_style=None):
                 html.Label('Lead Model:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}lead-model-dropdown',
-                    options=[{'label': lm, 'value': lm} for lm in sorted(df['lead_model'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if lm],
+                    options=[{'label': lm, 'value': lm} for lm in clean_unique_values(df['lead_model'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'lead_model' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
@@ -260,7 +441,7 @@ def create_unified_filters(prefix='', active_label_style=None):
                 html.Label('FVP:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}fvp-dropdown',
-                    options=[{'label': fvp, 'value': fvp} for fvp in sorted(df['fvp'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if fvp],
+                    options=[{'label': fvp, 'value': fvp} for fvp in clean_unique_values(df['fvp'])] + [{'label': 'Unknown/Empty', 'value': ''}] if 'fvp' in df.columns else [{'label': 'Unknown/Empty', 'value': ''}],
                     value=[],
                     multi=True,
                     clearable=True,
@@ -269,16 +450,15 @@ def create_unified_filters(prefix='', active_label_style=None):
                 ),
             ], style={'width': '18%', 'display': 'inline-block'}),
         ], style={'marginBottom': '20px', 'marginTop': '20px'}),
-        
+
         # 严重性Matrix选择器
         html.Div([
             html.Div([
                 html.Label('Critical Issue Matrix Definition:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}severe-matrix-dropdown',
-                    options=[{'label': matrix.replace('Matrix-', '').replace('matrix-', '').upper(), 'value': matrix} 
-                            for matrix in sorted(df['matrix'].apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique()) if matrix and matrix.lower().startswith('matrix-')],
-                    value=['Matrix-1A', 'Matrix-1B', 'Matrix-1C', 'Matrix-1D', 'Matrix-1E', 
+                    options=matrix_options,
+                    value=['Matrix-1A', 'Matrix-1B', 'Matrix-1C', 'Matrix-1D', 'Matrix-1E',
                            'Matrix-2A', 'Matrix-2B', 'Matrix-2C', 'Matrix-3A'],
                     multi=True,
                     clearable=True,
@@ -287,15 +467,13 @@ def create_unified_filters(prefix='', active_label_style=None):
                 ),
                 html.Small('Select which Matrix should be classified as critical issues', style={'color': 'gray'})
             ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
-            
+
             html.Div([
                 html.Label('Critical Issue Severity Definition:', style=active_label_style),
                 dcc.Dropdown(
                     id=f'{prefix}severe-classification-dropdown',
-                    options=[{'label': cls, 'value': cls} 
-                            for cls in sorted([cls for cls_list in df['classification'] 
-                                              for cls in cls_list if isinstance(cls_list, list)]) if cls],
-                    value=['Showstopper_Candidate', 'Showstopper_Confirmed', 'Preventing Maturity Grade ConDrive', 
+                    options=classification_options,
+                    value=['Showstopper_Candidate', 'Showstopper_Confirmed', 'Preventing Maturity Grade ConDrive',
                            'Obstructing Maturity Grade ConDrive'],
                     multi=True,
                     clearable=True,
@@ -455,9 +633,84 @@ else:
     calculate_inflow_outflow_trends = get_inflow_outflow_summary_stats = None
     create_matrix_figure_flipped = None
 
+_ECU_TRANSITION_PATH_CACHE = {}
+_DOMAIN_TRANSITION_PATH_CACHE = {}
+_MASTER_LOOKUP = None
+_MASTER_STATUS_LOOKUP = None
+_MASTER_LOOKUP_SIGNATURE = None
+
+def _cached_ecu_transition_path(defect_id: str) -> str:
+    k = str(defect_id)
+    v = _ECU_TRANSITION_PATH_CACHE.get(k)
+    if v is not None:
+        return v
+    try:
+        path = get_ecu_transition_path(k) if get_ecu_transition_path else ""
+    except Exception:
+        path = ""
+    if not path or path == "No change":
+        path = ""
+    _ECU_TRANSITION_PATH_CACHE[k] = path
+    return path
+
+def _cached_domain_transition_path(defect_id: str) -> str:
+    k = str(defect_id)
+    v = _DOMAIN_TRANSITION_PATH_CACHE.get(k)
+    if v is not None:
+        return v
+    try:
+        path = get_solution_cluster_transition_path(k) if get_solution_cluster_transition_path else ""
+    except Exception:
+        path = ""
+    if not path or path == "No change":
+        path = ""
+    _DOMAIN_TRANSITION_PATH_CACHE[k] = path
+    return path
+
+def _ensure_master_lookups():
+    global _MASTER_LOOKUP, _MASTER_STATUS_LOOKUP, _MASTER_LOOKUP_SIGNATURE, master_df
+    sig = None
+    try:
+        if master_df is not None:
+            sig = (id(master_df), len(master_df))
+    except Exception:
+        sig = None
+    if sig == _MASTER_LOOKUP_SIGNATURE and _MASTER_LOOKUP is not None and _MASTER_STATUS_LOOKUP is not None:
+        return
+    _MASTER_LOOKUP_SIGNATURE = sig
+    _MASTER_LOOKUP = {}
+    _MASTER_STATUS_LOOKUP = {}
+    if master_df is None or getattr(master_df, "empty", True):
+        return
+    try:
+        m = master_df
+        if "id" not in m.columns:
+            return
+        ids = m["id"].astype(str)
+        name = m["name"] if "name" in m.columns else None
+        ecu = m["ecu"] if "ecu" in m.columns else None
+        status_phase = m["status_phase"] if "status_phase" in m.columns else None
+        phase_name = m["phase.name"] if "phase.name" in m.columns else None
+        matrix = m["matrix"] if "matrix" in m.columns else None
+        for i in range(len(m)):
+            mid = ids.iat[i]
+            if not mid:
+                continue
+            n = name.iat[i] if name is not None else ""
+            e = ecu.iat[i] if ecu is not None else ""
+            sp = status_phase.iat[i] if status_phase is not None else ""
+            pn = phase_name.iat[i] if phase_name is not None else ""
+            mx = matrix.iat[i] if matrix is not None else ""
+            mx_disp = str(mx).replace('Matrix-', '').replace('matrix-', '').upper() if isinstance(mx, str) and mx else ""
+            _MASTER_LOOKUP[mid] = {"id": mid, "name": n, "ecu": e, "status_phase": sp, "phase.name": pn, "matrix_display": mx_disp}
+            _MASTER_STATUS_LOOKUP[mid] = pn if pn else sp
+    except Exception:
+        _MASTER_LOOKUP = {}
+        _MASTER_STATUS_LOOKUP = {}
+
 # 导入测试覆盖率组件 - 条件导入
 if not IS_RELOADER:
-    from test_coverage_components import create_test_coverage_page
+    from test_coverage_components import create_test_coverage_page, set_test_coverage_source_dataframe
     from test_coverage_callbacks import register_test_coverage_callbacks
     # 导入Phase Duration分析模块
     from longrunner_analysis import (
@@ -465,22 +718,47 @@ if not IS_RELOADER:
         calculate_phase_duration, extract_phase_changes
     )
 else:
-    create_test_coverage_page = register_test_coverage_callbacks = None
+    create_test_coverage_page = register_test_coverage_callbacks = set_test_coverage_source_dataframe = None
     analyze_ticket_phases = get_all_ticket_ids = None
     calculate_phase_duration = extract_phase_changes = None
 
 # 导入AI聊天管理器 - 条件导入
 if not IS_RELOADER:
     try:
-        from ai_chat_manager import ai_chat_manager, get_chat_css_styles
+        # 优先导入增强版AI聊天管理器（支持智能Agent）
+        from enhanced_ai_chat_manager import create_enhanced_chat_manager
         AI_CHAT_AVAILABLE = True
-        print("AI聊天管理器已加载")
+        AI_CHAT_ENHANCED = True
+        ai_chat_manager = create_enhanced_chat_manager(
+            dashboard_type='defect_explore',
+            use_agent=True,
+            assistant_name='SiSi'
+        )
+        print("✅ 增强版AI聊天管理器已加载（智能Agent已启用）")
+
+        # 尝试从基础版导入CSS样式函数
+        try:
+            from ai_chat_manager import get_chat_css_styles
+        except ImportError:
+            # 如果基础版不可用，定义空函数
+            def get_chat_css_styles():
+                return ""
     except ImportError:
-        print("警告：无法导入AI聊天管理器")
-        AI_CHAT_AVAILABLE = False
-        ai_chat_manager = None
+        try:
+            # 降级到基础版AI聊天管理器
+            from ai_chat_manager import ai_chat_manager, get_chat_css_styles
+            AI_CHAT_AVAILABLE = True
+            AI_CHAT_ENHANCED = False
+            print("⚠️  使用基础版AI聊天管理器（智能Agent不可用）")
+        except ImportError:
+            print("❌ 警告：无法导入AI聊天管理器")
+            AI_CHAT_AVAILABLE = False
+            AI_CHAT_ENHANCED = False
+            ai_chat_manager = None
+            get_chat_css_styles = None
 else:
     AI_CHAT_AVAILABLE = False
+    AI_CHAT_ENHANCED = False
     ai_chat_manager = None
     get_chat_css_styles = None
 
@@ -498,313 +776,30 @@ except ImportError:
 
 # Global variables for tracking update status - REMOVED
 
-# AI Chat Integration - Global variables and functions
-streaming_data = {}
-streaming_lock = threading.Lock()
-
-# 配置 DeepSeek-R1 客户端
-def create_deepseek_client():
-    http_client = httpx.Client(verify=False)
-    
-    # 从环境变量获取API密钥，如果没有则使用默认值
-    access_code = os.getenv('DEEPSEEK_ACCESS_CODE', 'REDACTED_ACCESS_CODE')
-    base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://aistudio.bmwbrill.cn/function-service/open-ai/deepseek-r1/v3')
-    
-    if not access_code:
-        raise ValueError("DEEPSEEK_ACCESS_CODE environment variable is required")
-    
-    client = OpenAI(
-        api_key=f'ACCESSCODE {access_code}',
-        base_url=base_url,
-        timeout=60,
-        http_client=http_client
-    )
-    return client
-
-# 备用API配置
-DEEPSEEK_API_BASE_BACKUP = "https://api.deepseek.com/v1"
-DEEPSEEK_API_KEY_BACKUP = "sk-0cc5fa45f8b0474c920420e5c69e41e3"
-
-def create_backup_deepseek_client():
-    """创建备用API客户端"""
-    http_client = httpx.Client(verify=False)
-    
-    client = OpenAI(
-        api_key=DEEPSEEK_API_KEY_BACKUP,
-        base_url=DEEPSEEK_API_BASE_BACKUP,
-        timeout=60,
-        http_client=http_client
-    )
-    return client
-
-# 流式处理DeepSeek-R1响应
-def stream_deepseek_response(user_input, conversation_history, task_id):
-    """流式处理API响应，实时更新思考过程，支持主API和备用API"""
-    
-    # 构建消息历史
-    messages = [
-        {
-            "role": "system",
-            "content": "你是一个专业的缺陷管理分析助手，请用中文回答问题。你可以帮助用户分析缺陷数据、解释图表、提供建议。请详细展示你的思考过程。"
-        }
-    ]
-    
-    # 保留最近的对话历史
-    if conversation_history:
-        recent_history = conversation_history[-10:]
-        messages.extend(recent_history)
-    
-    messages.append({
-        "role": "user",
-        "content": user_input
-    })
-    
-    # 先尝试主API
-    try:
-        client = create_deepseek_client()
-        return _process_streaming_response(client, "DeepSeek-R1", messages, task_id, use_backup=False)
-    except Exception as e:
-        print(f"主DeepSeek API调用失败，尝试备用API... 错误: {e}")
-        try:
-            backup_client = create_backup_deepseek_client()
-            return _process_streaming_response(backup_client, "deepseek-reasoner", messages, task_id, use_backup=True)
-        except Exception as e2:
-            error_msg = f"主API和备用API均失败: {e2}"
-            print(error_msg)
-            with streaming_lock:
-                streaming_data[task_id] = {
-                    'status': 'error',
-                    'reasoning': '',
-                    'response': error_msg,
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'progress': '错误'
-                }
-            return {'status': 'error', 'response': error_msg}
-
-def _process_streaming_response(client, model, messages, task_id, use_backup=False):
-    """处理流式响应的核心逻辑"""
-    try:
-        # 初始化流式数据
-        api_type = "(备用)" if use_backup else ""
-        with streaming_lock:
-            streaming_data[task_id] = {
-                'status': 'processing',
-                'reasoning': '',
-                'response': '',
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'progress': f'AI正在思考{api_type}...'
-            }
-        
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            stream=True,
-            max_tokens=4000,
-            temperature=0.7
-        )
-        
-        reasoning_content = ""
-        content = ""
-        
-        for chunk in response:
-            try:
-                # 处理思考过程
-                if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
-                    reasoning_chunk = chunk.choices[0].delta.reasoning_content
-                    reasoning_content += reasoning_chunk
-                    
-                    # 实时更新思考过程
-                    with streaming_lock:
-                        streaming_data[task_id]['reasoning'] = reasoning_content
-                        streaming_data[task_id]['progress'] = f'AI正在思考{api_type}...'
-                
-                # 处理实际回复
-                elif chunk.choices[0].delta.content:
-                    content_chunk = chunk.choices[0].delta.content
-                    content += content_chunk
-                    
-                    # 实时更新回复内容
-                    with streaming_lock:
-                        streaming_data[task_id]['response'] = content
-                        streaming_data[task_id]['progress'] = f'AI正在回复{api_type}...'
-                
-            except Exception as e:
-                print(f"处理chunk时出错: {e}")
-                continue
-        
-        # 完成处理
-        with streaming_lock:
-            streaming_data[task_id]['status'] = 'completed'
-            streaming_data[task_id]['progress'] = '完成'
-            
-        return {
-            'success': True,
-            'reasoning': reasoning_content,
-            'response': content,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-    
-    except Exception as e:
-        print(f"API调用出错: {e}")
-        with streaming_lock:
-            streaming_data[task_id]['status'] = 'error'
-            streaming_data[task_id]['error'] = str(e)
-            
-        return {
-            'success': False,
-            'error': str(e),
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-
-# AI数据上下文处理函数
-def process_comprehensive_data(filtered_data=None):
-    """
-    处理缺陷和测试数据，为AI提供综合上下文
-    
-    Args:
-        filtered_data: 过滤后的数据（通常来自回调状态）
-    
-    Returns:
-        tuple: (defect_df, test_df) 处理后的缺陷和测试数据
-    """
-    global df, test_df
-    
-    # 处理缺陷数据
-    current_defect_data = df.copy() if not df.empty else pd.DataFrame()
-    
-    # 如果有过滤数据，应用过滤（假设过滤数据主要针对缺陷数据）
-    if filtered_data and not current_defect_data.empty:
-        try:
-            # 这里可以根据具体的过滤逻辑来处理
-            # 由于 defect_explore 有复杂的过滤系统，我们保持数据不变
-            pass
-        except Exception as e:
-            print(f"应用过滤时出错: {e}")
-    
-    # 处理测试数据（获取最新的测试数据）
-    current_test_data = test_df.copy() if not test_df.empty else pd.DataFrame()
-    
-    return current_defect_data, current_test_data
-
-def generate_enhanced_data_context(defect_data, test_data, context_type='comprehensive'):
-    """
-    生成增强的数据上下文，包含缺陷和测试数据的综合信息
-    
-    Args:
-        defect_data: 缺陷数据DataFrame
-        test_data: 测试数据DataFrame 
-        context_type: 上下文类型
-    
-    Returns:
-        str: 格式化的数据上下文字符串
-    """
-    context_parts = [f"当前数据分析报告 ({context_type}):"]
-    
-    # 缺陷数据分析
-    if not defect_data.empty:
-        context_parts.append(f"\n=== 缺陷管理数据 ===")
-        context_parts.append(f"• 总缺陷数: {len(defect_data)}")
-        
-        # 项目分布
-        if 'project' in defect_data.columns:
-            project_counts = defect_data['project'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 主要项目分布: {project_counts}")
-        
-        # 严重性分布
-        if 'severity_group' in defect_data.columns:
-            severity_counts = defect_data['severity_group'].value_counts().to_dict()
-            context_parts.append(f"• 严重性分布: {severity_counts}")
-        
-        # 状态分布
-        if 'status_phase' in defect_data.columns:
-            status_counts = defect_data['status_phase'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 主要状态分布: {status_counts}")
-        
-        # AIDA分布
-        if 'aida_english' in defect_data.columns:
-            aida_counts = defect_data['aida_english'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 主要AIDA分布: {aida_counts}")
-        
-        # TopIssue分析
-        if 'topissue_display' in defect_data.columns:
-            topissue_counts = defect_data['topissue_display'].value_counts().head(3).to_dict()
-            context_parts.append(f"• TopIssue分布: {topissue_counts}")
-    else:
-        context_parts.append("\n=== 缺陷管理数据 ===")
-        context_parts.append("• 当前无缺陷数据")
-    
-    # 测试数据分析
-    if not test_data.empty:
-        context_parts.append(f"\n=== 测试管理数据 ===")
-        context_parts.append(f"• 总测试用例数: {len(test_data)}")
-        
-        # 项目分布
-        if 'project' in test_data.columns:
-            test_project_counts = test_data['project'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 测试项目分布: {test_project_counts}")
-        
-        # 运行状态分布
-        if 'run_status' in test_data.columns:
-            run_status_counts = test_data['run_status'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 运行状态分布: {run_status_counts}")
-        
-        # AIDA覆盖
-        if 'aida_english' in test_data.columns:
-            test_aida_counts = test_data['aida_english'].value_counts().head(5).to_dict()
-            context_parts.append(f"• 测试AIDA覆盖: {test_aida_counts}")
-        
-        # FV分布
-        if 'fv' in test_data.columns:
-            fv_counts = test_data['fv'].value_counts().head(5).to_dict()
-            context_parts.append(f"• FV分布: {fv_counts}")
-    else:
-        context_parts.append(f"\n=== 测试管理数据 ===")
-        context_parts.append("• 当前无测试数据")
-    
-    # 综合分析
-    context_parts.append(f"\n=== 综合分析 ===")
-    if not defect_data.empty and not test_data.empty:
-        # 项目对比
-        defect_projects = set(defect_data.get('project', []).dropna())
-        test_projects = set(test_data.get('project', []).dropna())
-        common_projects = defect_projects.intersection(test_projects)
-        context_parts.append(f"• 共同项目: {list(common_projects)}")
-        
-        # AIDA对比
-        defect_aidas = set(defect_data.get('aida_english', []).dropna())
-        test_aidas = set(test_data.get('aida_english', []).dropna())
-        common_aidas = defect_aidas.intersection(test_aidas)
-        context_parts.append(f"• 共同AIDA领域: {list(common_aidas)}")
-    
-    return "\n".join(context_parts)
 
 
+
+
+# Simple pickle cache for fast startup
+import pickle
+import hashlib
+import os
+
+def _get_cache_key():
+    return "db_only"
+
+def _load_from_pickle_cache():
+    return None
+
+def _save_to_pickle_cache(df):
+    return
 
 # Optimized data loading logic with enhanced caching
 @lru_cache(maxsize=2)
 def _cached_load_defect_data(use_optimized=True):
-    """缓存的缺陷数据加载函数（增强版）"""
-    if use_optimized and OPTIMIZED_LOADER_AVAILABLE:
-        print("🚀 使用优化的数据加载器（跳过DataManager）...")
-        
-        try:
-            # 直接调用优化加载器，不通过DataManager
-            from scripts.performance.loaders.data_loader_optimized import OptimizedDataLoader
-            loader = OptimizedDataLoader()
-            df = loader.get_data(force_reload=False)
-            
-            if df is not None and not df.empty:
-                print(f"✅ 优化数据加载成功，数据行数: {len(df)}")
-                return df
-            else:
-                print("⚠️  优化加载返回空数据，降级到标准加载器")
-                
-        except Exception as e:
-            print(f"⚠️  优化加载失败 ({e})，降级到标准加载器")
-            
-    print("📊 使用标准数据加载器...")
-    df = load_defect_data()
-    return enrich_ddf_with_master_info(df)
+    df = load_defect_data(file_pattern="defect/*_defect.json", use_db=True)
+    df = enrich_ddf_with_master_info(df)
+    return df
 
 # 导入统一缓存管理器
 try:
@@ -817,7 +812,7 @@ except ImportError:
 
 def _cached_load_test_data():
     """使用统一缓存管理器的测试数据加载函数"""
-    cache_key = "test_status_data_v1"
+    cache_key = "test_status_data_v2"
     
     # 尝试从统一缓存获取
     if CACHE_MANAGER_AVAILABLE and default_cache_manager:
@@ -863,12 +858,22 @@ def load_application_data(force_reload=False):
             _cached_load_defect_data.cache_clear()
             _cached_load_test_data.cache_clear()
     
+    with _FILTER_CACHE_LOCK:
+        _FILTER_CACHE.clear()
+    _TAB_CONTENT_CACHE.clear()
+
     # 加载缺陷数据
     df = _cached_load_defect_data(use_optimized=OPTIMIZED_LOADER_AVAILABLE)
-    
+
+    # 数据清理：确保 classification 列没有 None 值
+    if 'classification' in df.columns:
+        df['classification'] = df['classification'].apply(lambda x: x if isinstance(x, list) else [])
+
     # 加载测试数据
     test_df = _cached_load_test_data()
-    
+    if callable(set_test_coverage_source_dataframe):
+        set_test_coverage_source_dataframe(test_df)
+
     return df, test_df
 
 # 初始化数据加载
@@ -907,7 +912,7 @@ def ensure_dropdown_data(df):
 
 try:
     # 检查是否是reloader进程以避免重复初始化
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+    if IS_RELOADER:
         print("🔄 这是reloader进程，跳过所有数据加载...")
         df = pd.DataFrame()
         test_df = pd.DataFrame()
@@ -920,6 +925,8 @@ try:
     else:
         print("🚀 主进程开始数据加载...")
         df, test_df = load_application_data()
+        if callable(set_test_coverage_source_dataframe):
+            set_test_coverage_source_dataframe(test_df)
         
         # 验证缺陷数据是否有效
         if df is None or df.empty:
@@ -935,35 +942,46 @@ try:
         else:
             print(f"成功加载 {len(test_df)} 条测试数据")
             
-            # 确保必要的列存在，防止访问不存在的列导致错误
-            required_columns = ['ecu', 'aida_english', 'status_phase', 'pu', 'tester', 
-                              'creation_time', 'matrix', 'classification', 'severity_group']
-            
-            for col in required_columns:
-                if col not in df.columns:
-                    if col == 'severity_group':
-                        df[col] = 'General Issues'  # 默认值
-                    elif col == 'classification':
-                        df[col] = [[]]  # 空列表的列表
-                    else:
-                        df[col] = ''  # 空字符串默认值
-                    print(f"添加缺失列: {col}")
-            
-            # 处理NaN值
-            df = df.fillna({
-                'ecu': '未知项目',
-                'aida_english': '未知AIDA',
-                'status_phase': '未知状态',
-                'pu': '未知PU',
-                'tester': '未知测试员',
-                'matrix': '',
-                'severity_group': 'General Issues'
-            })
+        # 确保必要的列存在，防止访问不存在的列导致错误
+        required_columns = ['project', 'ecu', 'aida_english', 'status_phase', 'pu', 'tester', 
+                          'creation_time', 'matrix', 'classification', 'severity_group',
+                          'fv', 'fvp', 'lead_model', 'market']
+        
+        # 如果df为空，创建一个带有必要列的空DataFrame
+        if df.empty:
+             df = pd.DataFrame(columns=required_columns)
+        
+        for col in required_columns:
+            if col not in df.columns:
+                if col == 'severity_group':
+                    df[col] = 'General Issues'  # 默认值
+                elif col == 'classification':
+                    df[col] = [[]]  # 空列表的列表
+                else:
+                    df[col] = ''  # 空字符串默认值
+                print(f"添加缺失列: {col}")
+        
+        # 处理NaN值
+        df = df.fillna({
+            'project': '未知项目',
+            'ecu': '未知项目',
+            'aida_english': '未知AIDA',
+            'status_phase': '未知状态',
+            'pu': '未知PU',
+            'tester': '未知测试员',
+            'matrix': '',
+            'severity_group': 'General Issues',
+            'fv': 'Unknown',
+            'fvp': 'Unknown',
+            'lead_model': '',
+            'market': ''
+        })
             
 except Exception as e:
     print(f"数据加载失败: {e}")
     # 创建一个最小的默认DataFrame以防止应用崩溃
     df = pd.DataFrame({
+        'project': ['示例项目'],
         'ecu': ['示例项目'],
         'aida_english': ['示例AIDA'],
         'status_phase': ['示例状态'],
@@ -985,7 +1003,7 @@ except Exception as e:
     print("使用默认示例数据")
 
 # 启动优化预加载（如果使用优化加载器）
-if OPTIMIZED_LOADER_AVAILABLE and (os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not os.environ.get('DEBUG', 'True').lower() == 'true'):
+if OPTIMIZED_LOADER_AVAILABLE and (not IS_RELOADER):
     try:
         print("📚 初始化历史数据缓存...")
         from data_processor import history_cache
@@ -996,11 +1014,11 @@ if OPTIMIZED_LOADER_AVAILABLE and (os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
             time.sleep(5)  # 等5秒让应用完全启动
             
             try:
-                if 'df' in globals() and df is not None and not df.empty:
-                    defect_ids = df['id'].astype(str).tolist()[:50]  # 减少到50个
+                if 'df' in globals() and df is not None and not df.empty and 'id' in df.columns:
+                    defect_ids = df['id'].astype(str).tolist()[:50]
                     if defect_ids:
                         print(f"🚀 后台预加载 {len(defect_ids)} 个历史文件...")
-                        history_cache.preload_histories(defect_ids, max_workers=4)  # 减少线程数
+                        history_cache.preload_histories(defect_ids, max_workers=4)
                         print("✅ 历史数据预加载完成")
             except Exception as e:
                 print(f"历史预加载失败: {e}")
@@ -1081,7 +1099,7 @@ def create_child_complexity_line_chart_hr(ddf_input, relevant_weeks_for_axis_dis
     if ddf_filtered.empty:
         return create_empty_figure("Child Complexity (筛选周后数据为空)", height=400, theme=theme_manager.get_theme())
 
-    line_data = ddf_filtered.groupby(['test_week_sortable', 'defect_level'], observed=True).size().reset_index(name='count')
+    line_data = ddf_filtered.groupby(['test_week_sortable', 'defect_level'], observed=True, dropna=False).size().reset_index(name='count')
     if line_data.empty:
         return create_empty_figure("Child Complexity (分组后数据为空)", height=400, theme=theme_manager.get_theme())
 
@@ -1195,107 +1213,55 @@ def load_master_data(master_file_path="defect/2025_defect_master.json"):
     """
     加载完整的master数据，用于获取父票的详细信息
     """
-    import os
-    import json
-    
-    if not os.path.exists(master_file_path):
-        print(f"警告: 主票据文件 {master_file_path} 未找到。")
-        return pd.DataFrame()
-
+    global df
     try:
-        with open(master_file_path, encoding="utf8") as f:
-            loaded_json = json.load(f)
-            data_list = None
-            
-            if isinstance(loaded_json, dict) and "data" in loaded_json and isinstance(loaded_json["data"], list):
-                data_list = loaded_json["data"]
-            elif isinstance(loaded_json, list):
-                data_list = loaded_json
-            else:
-                print(f"警告: 主票据文件 {master_file_path} 的 JSON 结构不符合预期。")
-                return pd.DataFrame()
-            
-            if not data_list:
-                print(f"警告: 从 {master_file_path} 加载的主票据数据为空。")
-                return pd.DataFrame()
-                
-            master_df = pd.json_normalize(data_list, max_level=1)
-            
-            # 处理master数据的字段，类似于load_defect_data中的处理
-            if not master_df.empty:
-                # 提取基本字段
-                if 'phase' in master_df.columns:
-                    master_df["status_phase"] = master_df["phase"].apply(lambda x: x.get("name", "") if isinstance(x, dict) else "")
-                else:
-                    master_df["status_phase"] = ""
-                
-                if 'detected_by' in master_df.columns:
-                    master_df["tester"] = master_df["detected_by"].apply(lambda x: x.get("full_name", "") if isinstance(x, dict) else "")
-                else:
-                    master_df["tester"] = ""
-                
-                if 'user_tags' in master_df.columns:
-                    master_df["tags"] = master_df["user_tags"].apply(lambda x: [i.get("name", "") for i in x.get("data", [])] if isinstance(x, dict) and "data" in x else [])
-                else:
-                    master_df["tags"] = [[] for _ in range(len(master_df))]
-                
-                # 提取Matrix标签
-                def extract_matrix(tags):
-                    if isinstance(tags, list) and len(tags) > 0:
-                        matrix_tags = [tag for tag in tags if isinstance(tag, str) and tag.lower().startswith('matrix-')]
-                        return matrix_tags[0] if len(matrix_tags) > 0 else ""
-                    return ""
-                
-                master_df["matrix"] = master_df["tags"].apply(extract_matrix)
-                master_df["matrix_display"] = master_df["matrix"].fillna("未分类")
-                
-                # 提取Classification
-                if 'reporting_class_udf' in master_df.columns:
-                    master_df["classification"] = master_df["reporting_class_udf"].apply(
-                        lambda x: [i.get("name", "") for i in x.get("data", [])] 
-                                  if isinstance(x, dict) and "data" in x and isinstance(x["data"], list) 
-                                  else []
-                    )
-                else:
-                    master_df["classification"] = [[] for _ in range(len(master_df))]
-                
-                master_df['classification_display'] = master_df['classification'].apply(
-                    lambda x: ', '.join(x) if isinstance(x, list) else str(x) if x is not None else '未分类'
-                )
-                
-                # 提取AIDA信息
-                if 'product_areas' in master_df.columns:
-                    master_df["aidas"] = master_df["product_areas"].apply(lambda x: [i.get("name", "") for i in x.get("data", [])] if isinstance(x, dict) and "data" in x else [])
-                    master_df['aida_english'] = master_df['aidas'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else "")
-                else:
-                    master_df["aidas"] = [[] for _ in range(len(master_df))]
-                    master_df['aida_english'] = ""
-                
-                # 提取项目信息
-                if 'assigned_ecu_udf' in master_df.columns:
-                    master_df["ecu"] = master_df["assigned_ecu_udf"].apply(lambda x: x.get("name", "") if isinstance(x, dict) else "")
-                else:
-                    master_df["ecu"] = ""
-                
-                print(f"成功加载 {len(master_df)} 条master数据")
-            
-            return master_df
-            
+        if df is None or df.empty:
+            return pd.DataFrame()
+        if 'relation_to_udf' not in df.columns:
+            return pd.DataFrame()
+        master_mask = df['relation_to_udf'].notna() & df['relation_to_udf'].astype(str).str.strip().ne('')
+        if 'parent_child' in df.columns:
+            master_mask = master_mask | (df['parent_child'].astype(str) == 'Parent')
+        master_df = df.loc[master_mask].copy()
+        return master_df
     except Exception as e:
-        print(f"警告: 处理主票据文件 {master_file_path} 时发生错误: {e}")
+        print(f"警告: 生成 master_df 时发生错误: {e}")
         return pd.DataFrame()
 
 # 加载master数据
 master_df = load_master_data()
 
 @performance_monitor
-def filter_dataframe(df, projects=None, start_date=None, end_date=None, aidas=None, statuses=None, pus=None, testers=None, fvs=None, ecus=None, lead_models=None, fvps=None, markets=None):
+def filter_dataframe(df, years=None, projects=None, start_date=None, end_date=None, aidas=None, statuses=None, pus=None, testers=None, fvs=None, ecus=None, lead_models=None, fvps=None, markets=None):
     """通用数据筛选函数"""
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    cache_key = _build_filter_cache_key(
+        df, years=years, projects=projects, start_date=start_date, end_date=end_date, aidas=aidas,
+        statuses=statuses, pus=pus, testers=testers, fvs=fvs, ecus=ecus, lead_models=lead_models, fvps=fvps, markets=markets
+    )
+    with _FILTER_CACHE_LOCK:
+        cached_index = _FILTER_CACHE.get(cache_key)
+        if cached_index is not None:
+            _FILTER_CACHE.move_to_end(cache_key)
+            return df.loc[cached_index]
+
     filtered_df = df.copy()
 
-    # 项目筛选（简化版，统一处理所有项目）
-    if projects:
-        filtered_df = filtered_df[filtered_df['project'].isin(projects)]
+    if years:
+        try:
+            years_norm = [int(y) for y in years if str(y).strip().isdigit()]
+            if years_norm:
+                year_series = extract_year_series(filtered_df)
+                filtered_df = filtered_df[year_series.astype('Int64').isin(years_norm)]
+        except Exception:
+            pass
+
+    if projects and 'project' in filtered_df.columns:
+        project_values = filtered_df['project'].apply(extract_filter_value)
+        project_targets = {extract_filter_value(p) for p in projects}
+        filtered_df = filtered_df[project_values.isin(project_targets)]
 
     # 日期范围筛选
     if start_date or end_date:
@@ -1323,64 +1289,82 @@ def filter_dataframe(df, projects=None, start_date=None, end_date=None, aidas=No
                 print(f"{time_field}样本: {filtered_df[time_field].head()}")
 
     # AIDA筛选
-    if aidas:
-        filtered_df = filtered_df[filtered_df['aida_english'].isin(aidas)]
+    if aidas and 'aida_english' in filtered_df.columns:
+        aida_values = filtered_df['aida_english'].apply(extract_filter_value)
+        aida_targets = {extract_filter_value(a) for a in aidas}
+        filtered_df = filtered_df[aida_values.isin(aida_targets)]
 
     # PU筛选
-    if pus:
-        filtered_df = filtered_df[filtered_df['pu'].isin(pus)]
+    if pus and 'pu' in filtered_df.columns:
+        pu_values = filtered_df['pu'].apply(extract_filter_value)
+        pu_targets = {extract_filter_value(pu) for pu in pus}
+        filtered_df = filtered_df[pu_values.isin(pu_targets)]
 
     # Tester筛选
-    if testers:
-        filtered_df = filtered_df[filtered_df['tester'].isin(testers)]
+    if testers and 'tester' in filtered_df.columns:
+        tester_values = filtered_df['tester'].apply(extract_filter_value)
+        tester_targets = {extract_filter_value(t) for t in testers}
+        filtered_df = filtered_df[tester_values.isin(tester_targets)]
 
     # FV筛选
-    if fvs:
-        filtered_df = filtered_df[filtered_df['fv'].isin(fvs)]
+    if fvs and 'fv' in filtered_df.columns:
+        fv_values = filtered_df['fv'].apply(extract_filter_value)
+        fv_targets = {extract_filter_value(fv) for fv in fvs}
+        filtered_df = filtered_df[fv_values.isin(fv_targets)]
 
     # ECU筛选
-    if ecus:
-        filtered_df = filtered_df[filtered_df['ecu'].isin(ecus)]
+    if ecus and 'ecu' in filtered_df.columns:
+        ecu_values = filtered_df['ecu'].apply(extract_filter_value)
+        ecu_targets = {extract_filter_value(ecu) for ecu in ecus}
+        filtered_df = filtered_df[ecu_values.isin(ecu_targets)]
 
     # Lead Model筛选
-    if lead_models:
-        filtered_df = filtered_df[filtered_df['lead_model'].isin(lead_models)]
+    if lead_models and 'lead_model' in filtered_df.columns:
+        lead_values = filtered_df['lead_model'].apply(extract_filter_value)
+        lead_targets = {extract_filter_value(m) for m in lead_models}
+        filtered_df = filtered_df[lead_values.isin(lead_targets)]
 
     # FVP筛选
-    if fvps:
-        filtered_df = filtered_df[filtered_df['fvp'].isin(fvps)]
+    if fvps and 'fvp' in filtered_df.columns:
+        fvp_values = filtered_df['fvp'].apply(extract_filter_value)
+        fvp_targets = {extract_filter_value(v) for v in fvps}
+        filtered_df = filtered_df[fvp_values.isin(fvp_targets)]
 
-    # 状态筛选 - 修复逻辑
     if statuses:
-        # 检查是否包含特殊的子重复状态选项
         special_child_status = "09-concluded without action (child)"
-        if special_child_status in statuses:
-            # 移除特殊状态并添加实际的09状态
+        if special_child_status in statuses and 'status_phase' in filtered_df.columns and 'blocking_reason' in filtered_df.columns:
             normal_statuses = [s for s in statuses if s != special_child_status]
             normal_statuses.append("09-Concluded without action")
-            # 如果只选择了特殊状态，需要进一步筛选出子重复
             if len(statuses) == 1 and statuses[0] == special_child_status:
-                # 只显示子重复缺陷
                 filtered_df = filtered_df[
                     (filtered_df['status_phase'] == '09-Concluded without action') &
                     (filtered_df['blocking_reason'] == 'Child (Duplicate)')
                 ]
             else:
-                # 同时选择了其他状态，显示所有选中的状态
                 filtered_df = filtered_df[filtered_df['status_phase'].isin(normal_statuses)]
         else:
-            # 正常状态筛选
-            filtered_df = filtered_df[filtered_df['status_phase'].isin(statuses)]
+            status_series = get_status_series(filtered_df)
+            if not status_series.empty:
+                filtered_df = filtered_df[status_series.isin(statuses)]
 
     # Market筛选
     if markets and 'market' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['market'].isin(markets)]
+        market_values = filtered_df['market'].apply(extract_filter_value)
+        market_targets = {extract_filter_value(m) for m in markets}
+        filtered_df = filtered_df[market_values.isin(market_targets)]
+
+    with _FILTER_CACHE_LOCK:
+        _FILTER_CACHE[cache_key] = filtered_df.index
+        if len(_FILTER_CACHE) > _FILTER_CACHE_MAX_SIZE:
+            _FILTER_CACHE.popitem(last=False)
 
     return filtered_df
 
 # Long Runner Analysis - Phase Duration Analysis Content
 def create_long_runner_analysis_content(active_label_style):
     """创建Long Runner Analysis页面内容"""
+    available_years = sorted({int(y) for y in extract_year_series(df).dropna().astype(int).tolist()}) if not df.empty else []
+    year_options = sorted(set(available_years + [2026]))
     
     # 数据加载函数
     def load_defect_info():
@@ -1517,7 +1501,7 @@ def create_long_runner_analysis_content(active_label_style):
                         marks={i: str(i) for i in [1, 10, 25, 50, 100]},
                         tooltip={"placement": "bottom", "always_visible": True}
                     )
-                ], style={'width': '45%', 'display': 'inline-block', 'marginRight': '5%'}),
+                ], style={'width': '30%', 'display': 'inline-block', 'marginRight': '3%'}),
                 
                 html.Div([
                     html.Label('Phase类型:', style=active_label_style),
@@ -1532,7 +1516,20 @@ def create_long_runner_analysis_content(active_label_style):
                         value='all',
                         style={'backgroundColor': 'white'}
                     )
-                ], style={'width': '45%', 'display': 'inline-block'})
+                ], style={'width': '30%', 'display': 'inline-block', 'marginRight': '3%'}),
+
+                html.Div([
+                    html.Label('Year:', style=active_label_style),
+                    dcc.Dropdown(
+                        id='long-runner-year-dropdown',
+                        options=[{'label': str(y), 'value': int(y)} for y in year_options],
+                        value=[2026],
+                        multi=True,
+                        clearable=True,
+                        placeholder='Select Year...',
+                        style={'backgroundColor': 'white'}
+                    )
+                ], style={'width': '30%', 'display': 'inline-block'})
             ], style={'marginBottom': '20px'})
         ], style={'padding': '15px', 'backgroundColor': '#f8f9fa', 'borderRadius': '8px', 'marginBottom': '20px'}),
         
@@ -1685,12 +1682,13 @@ def create_long_runner_analysis_content(active_label_style):
 # 初始化Dash应用
 import dash_bootstrap_components as dbc
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], assets_folder='assets', suppress_callback_exceptions=True)
+server = app.server  # 暴露给 Gunicorn 使用
 
 # 创建侧边导航栏组件
 def create_sidebar_nav():
     """创建可展开/隐藏的侧边导航栏"""
     nav_items = [
-        {'id': 'tab-defect-status', 'label': 'Defect Status Analysis', 'icon': 'fas fa-chart-bar'},
+        {'id': 'tab-defect-status', 'label': 'Topissue analysis', 'icon': 'fas fa-chart-bar'},
         {'id': 'tab-project-analysis', 'label': 'Project Analysis', 'icon': 'fas fa-project-diagram'},
         {'id': 'tab-defect-high-runner', 'label': 'Defect High Runner', 'icon': 'fas fa-tachometer-alt'},
         {'id': 'tab-defect-long-runner', 'label': 'Long Runner Analysis', 'icon': 'fas fa-clock'},
@@ -1840,7 +1838,7 @@ def create_sidebar_nav():
         html.Div([
             html.Button(
                 [html.I(className="fas fa-chevron-right", style={'fontSize': '14px'})],
-                id='nav-edge-toggle-btn',
+                id='nav-edge-toggle-btn-2',
                 style={
                     'width': '100%',
                     'height': '50px',
@@ -1872,9 +1870,8 @@ def create_sidebar_nav():
         
         # 存储当前选中的导航项
         dcc.Store(id='current-nav-item', data='tab-defect-status'),
-        dcc.Store(id='nav-open-state', data=True),
         dcc.Store(id='filtered-data-store', data=None)
-    ] + (ai_chat_manager.create_enhanced_chat_stores("defect-explore-chat") if AI_CHAT_AVAILABLE else []))
+    ])
 
 # 应用布局
 app.layout = html.Div([
@@ -2267,7 +2264,6 @@ app.layout = html.Div([
                     'borderRadius': '12px',
                     'boxShadow': '0 20px 60px rgba(0,0,0,0.3), 0 8px 25px rgba(0,0,0,0.15)',
                     'border': '1px solid #e5e7eb',
-                    'borderTop': '4px solid #3b82f6',
                     'width': '96%',
                     'maxWidth': '1700px',
                     'maxHeight': '85vh',
@@ -2306,6 +2302,7 @@ app.layout = html.Div([
     
     # 搜索结果信息显示区域
     html.Div(id='search-results-info', style={'display': 'none'}),
+    html.Div(id='cache-monitor-panel', style={'display': 'none'}),
     
     # AI聊天模态框
     html.Div(id='ai-chat-modal', children=[
@@ -2322,7 +2319,7 @@ app.layout = html.Div([
         html.Div([
             # 模态框头部
             html.Div([
-                html.H3("🤖 AI缺陷分析助手", style={
+                html.H3("🤖 SiSi", style={
                     'margin': '0',
                     'color': '#2c3e50',
                     'fontSize': '24px',
@@ -2353,8 +2350,7 @@ app.layout = html.Div([
             
             # 使用ai_chat_manager的增强版界面
             ai_chat_manager.create_enhanced_chat_interface(
-                chat_id_prefix='defect-explore-chat',
-                dashboard_type='defect'
+                chat_id_prefix='defect-explore-chat'
             ) if AI_CHAT_AVAILABLE else html.Div(
                 "AI聊天功能暂不可用，请检查配置。",
                 style={'padding': '20px', 'textAlign': 'center', 'color': '#666'}
@@ -2362,12 +2358,16 @@ app.layout = html.Div([
         ], style={
             'position': 'relative',
             'backgroundColor': 'white',
-            'borderRadius': '10px',
-            'width': '700px',
-            'maxWidth': '90vw',
-            'maxHeight': '80vh',
+            'borderRadius': '0',
+            'width': '95vw',
+            'height': '92vh',
+            'minWidth': '0',
+            'minHeight': '0',
+            'maxWidth': '95vw',
+            'maxHeight': '92vh',
             'boxShadow': '0 4px 20px rgba(0,0,0,0.3)',
-            'overflow': 'hidden',
+            'overflow': 'auto',
+            'resize': 'none',
             'zIndex': '2'  # 确保内容在遮罩层之上
         })
     ], style={
@@ -2387,6 +2387,15 @@ app.layout = html.Div([
 
 # 添加导航栏控制回调
 @app.callback(
+    Output('cache-monitor-panel', 'children'),
+    Input('interval-component', 'n_intervals'),
+    prevent_initial_call=False
+)
+def keep_cache_monitor_callback_registered(n_intervals):
+    return ""
+
+
+@app.callback(
     [Output('sidebar-nav', 'style'),
      Output('nav-overlay', 'style'),
      Output('main-content-wrapper', 'style'),
@@ -2398,6 +2407,7 @@ app.layout = html.Div([
      Input('nav-close-btn', 'n_clicks'),
      Input('nav-overlay', 'n_clicks'),
      Input('nav-edge-toggle-btn', 'n_clicks'),
+     Input('nav-edge-toggle-btn-2', 'n_clicks'),
      Input('nav-tab-defect-status', 'n_clicks'),
      Input('nav-tab-project-analysis', 'n_clicks'),
      Input('nav-tab-defect-high-runner', 'n_clicks'),
@@ -2409,7 +2419,7 @@ app.layout = html.Div([
     [State('nav-open-state', 'data')],
     prevent_initial_call=False  # 只在用户点击时触发
 )
-def toggle_sidebar(toggle_clicks, close_clicks, overlay_clicks, edge_toggle_clicks,
+def toggle_sidebar(toggle_clicks, close_clicks, overlay_clicks, edge_toggle_clicks, edge_toggle_clicks_2,
                   nav1_clicks, nav2_clicks, nav3_clicks, nav4_clicks, nav5_clicks, nav6_clicks, nav7_clicks, nav8_clicks, is_open):
     from dash import callback_context
     
@@ -2483,7 +2493,7 @@ def toggle_sidebar(toggle_clicks, close_clicks, overlay_clicks, edge_toggle_clic
     }
     
     # 切换导航栏显示/隐藏
-    if trigger_id in ['nav-toggle-btn', 'nav-close-btn', 'nav-overlay', 'nav-edge-toggle-btn']:
+    if trigger_id in ['nav-toggle-btn', 'nav-close-btn', 'nav-overlay', 'nav-edge-toggle-btn', 'nav-edge-toggle-btn-2']:
         # 点击切换按钮、关闭按钮、遮罩层或边缘按钮时切换显示状态
         is_open = not is_open
         
@@ -2598,6 +2608,12 @@ def render_content(tab):
     # 如果tab为None或者无效值，默认显示缺陷状态分析页面
     if tab is None or tab not in ['tab-defect-status', 'tab-project-analysis', 'tab-defect-high-runner', 'tab-defect-long-runner', 'tab-testing-team', 'tab-testing-efficiency', 'tab-test-coverage', 'tab-test-status', 'tab-word-cloud']:
         tab = 'tab-defect-status'
+
+    cacheable_tabs = {'tab-project-analysis', 'tab-defect-high-runner', 'tab-defect-long-runner', 'tab-testing-team', 'tab-testing-efficiency', 'tab-test-coverage', 'tab-test-status'}
+    if tab in cacheable_tabs:
+        cached_content = _TAB_CONTENT_CACHE.get(tab)
+        if cached_content is not None:
+            return cached_content
     
     if tab == 'tab-defect-status':
         return html.Div([
@@ -2678,7 +2694,7 @@ def render_content(tab):
                                 'transition': 'all 0.3s ease',
                                 'boxShadow': '0 2px 4px rgba(0,0,0,0.2)'
                             },
-                            title="DeepSeek AI助手 - 点击打开智能缺陷分析"
+                            title="SiSi - 点击打开智能缺陷分析"
                         )
                     ], style={
                         'display': 'flex',
@@ -3027,7 +3043,7 @@ def render_content(tab):
         ])
     elif tab == 'tab-project-analysis':
         # 项目分析选项卡 - 移除筛选器，添加KPI卡片和横向对比分析
-        return html.Div([
+        content = html.Div([
             # 项目KPI指标卡片
             html.H3("项目关键指标概览", style=active_label_style),
             html.Div(id='project-kpi-cards', style={'marginBottom': '30px'}),
@@ -3148,38 +3164,11 @@ def render_content(tab):
                 dcc.Graph(id='hr-parent-complexity-chart', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     elif tab == 'tab-defect-high-runner':
         # High Complexity Defect Analysis Tab
-        # Prepare data
-        ddf = df.copy()
-        
-        # Ensure necessary columns exist and calculate defect levels
-        if 'child_count_of_master' in ddf.columns:
-            ddf['defect_level'] = ddf['child_count_of_master'].apply(categorize_defect_level_hr)
-        else:
-            # If child_count_of_master column doesn't exist, create a default one
-            ddf['child_count_of_master'] = 0
-            ddf['defect_level'] = 'Low'
-        
-        # Calculate master linked defect level
-        if 'relation_to_udf' in ddf.columns:
-            ddf['linked_defect_count'] = ddf['relation_to_udf'].apply(count_linked_defects_hr)
-            ddf['master_linked_defect_level'] = ddf['linked_defect_count'].apply(categorize_master_linked_level_hr)
-        else:
-            ddf['linked_defect_count'] = 0
-            ddf['master_linked_defect_level'] = 'Low'
-        
-        # Ensure test_week_sortable column exists
-        if 'test_week' in ddf.columns and 'test_week_sortable' not in ddf.columns:
-            ddf['test_week_sortable'] = ddf['test_week']
-        
-        # Get relevant test weeks
-        if 'test_week_sortable' in ddf.columns:
-            relevant_weeks = sorted(ddf['test_week_sortable'].dropna().apply(lambda x: str(x) if isinstance(x, dict) else x).dropna().unique())
-        else:
-            relevant_weeks = []
-        
-        return html.Div([
+        content = html.Div([
             html.H2("High Complexity Defect Analysis", style={
                 'textAlign': 'center', 
                 'marginBottom': '30px',
@@ -3260,14 +3249,18 @@ def render_content(tab):
                 dcc.Graph(id='solution-cluster-chart-project', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     elif tab == 'tab-defect-long-runner':
         # Long Runner Analysis - Phase Duration Analysis
-        return create_long_runner_analysis_content(active_label_style)
+        content = create_long_runner_analysis_content(active_label_style)
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     elif tab == 'tab-testing-team':
         # 测试团队分析选项卡
-        return html.Div([
+        content = html.Div([
             # 使用统一的过滤器组件
-            create_unified_filters(prefix='', active_label_style=active_label_style),
+            create_unified_filters(prefix='team-', active_label_style=active_label_style),
             
             # KPI指标区域
             html.Div([
@@ -3395,9 +3388,11 @@ def render_content(tab):
                 dcc.Graph(id='hr-parent-complexity-chart', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     elif tab == 'tab-testing-efficiency':
         # 测试效率与质量选项卡
-        return html.Div([
+        content = html.Div([
             # 使用统一的过滤器组件
             create_unified_filters(prefix='efficiency-', active_label_style=active_label_style),
             
@@ -3534,43 +3529,12 @@ def render_content(tab):
                 dcc.Graph(id='hr-parent-complexity-chart', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     elif tab == 'tab-test-coverage':
-        # 测试覆盖率分析页面 - 带性能模式选择
-        from config import TEST_COVERAGE_PERFORMANCE_CONFIG
-        
-        return html.Div([
-            # 页面标题
-            html.Div([
-                html.H3("测试覆盖率分析", style={'marginBottom': '20px'}),
-            ], style={'padding': '20px 0', 'marginBottom': '20px'}),
-            
-            # 动态内容区域
-            html.Div(id='test-coverage-dynamic-content'),
-            
-            # 性能模式选择区域 - 移到图表下方
-            html.Div([
-                html.Div([
-                    html.Label("性能模式:", style={'fontWeight': 'bold', 'marginRight': '10px'}),
-                    dcc.RadioItems(
-                        id='test-coverage-performance-mode',
-                        options=[
-                            {'label': f"🚀 快速模式 (3K条记录)", 'value': 'fast_mode'},
-                            {'label': f"📊 完整模式 (全部记录)", 'value': 'full_mode'}
-                        ],
-                        value='fast_mode',
-                        inline=True,
-                        style={'marginRight': '20px'}
-                    )
-                ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}),
-                
-                # 性能警告提示
-                html.Div(id='test-coverage-performance-warning', 
-                        style={'color': 'orange', 'fontSize': '14px', 'marginBottom': '20px'}),
-                
-                # 数据状态显示
-                html.Div(id='test-coverage-data-status', 
-                        style={'color': '#666', 'fontSize': '12px', 'marginBottom': '20px'})
-            ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '8px', 'marginTop': '30px'}),
+        # 测试覆盖率分析页面
+        content = html.Div([
+            create_test_coverage_page(source="defect-explore"),
             
             # 隐藏的图表和组件占位符，防止callback ID不存在错误
             html.Div([
@@ -3593,12 +3557,13 @@ def render_content(tab):
                 dcc.Dropdown(id='severe-classification-dropdown', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     
     elif tab == 'tab-test-status':
         # Test Status Analysis页面 - 参考test coverage设计
         try:
-            # 加载测试数据
-            test_data = load_test_data()
+            test_data = test_df.copy() if isinstance(test_df, pd.DataFrame) and not test_df.empty else _cached_load_test_data()
             if test_data.empty:
                 return html.Div([
                     html.H3("Test Status Analysis", style={'marginBottom': '20px'}),
@@ -3621,6 +3586,12 @@ def render_content(tab):
             for col in test_data.columns:
                 if test_data[col].dtype == 'object':
                     test_data[col] = test_data[col].apply(extract_value_from_dict)
+
+            ts_year_series = pd.to_numeric(test_data['year'], errors='coerce') if 'year' in test_data.columns else pd.Series(dtype='float64')
+            if ts_year_series.dropna().empty and 'test_week' in test_data.columns:
+                ts_year_series = pd.to_numeric(test_data['test_week'].astype(str).str[:4], errors='coerce')
+            ts_year_values = sorted({int(v) for v in ts_year_series.dropna().tolist()})
+            ts_year_default = [2026] if 2026 in ts_year_values else []
                     
         except Exception as e:
             return html.Div([
@@ -3628,7 +3599,7 @@ def render_content(tab):
                 html.Div(f"数据加载失败: {str(e)}", style={'color': 'red', 'textAlign': 'center', 'marginTop': '50px'})
             ])
         
-        return html.Div([
+        content = html.Div([
             # 页面标题
             html.Div([
                 html.H3("Test Status Analysis", style=active_label_style),
@@ -3642,6 +3613,18 @@ def render_content(tab):
                 html.Div([
                     # 第一行筛选器
                     html.Div([
+                        html.Div([
+                            html.Label('Year:', style=active_label_style),
+                            dcc.Dropdown(
+                                id='ts-year-dropdown',
+                                options=[{'label': str(y), 'value': int(y)} for y in ts_year_values],
+                                value=ts_year_default,
+                                multi=True,
+                                placeholder='选择年份...',
+                                style={'width': '100%'}
+                            ),
+                        ], style={'width': '12%', 'display': 'inline-block', 'marginRight': '1%'}),
+
                         html.Div([
                             html.Label('项目:', style=active_label_style),
                             dcc.Dropdown(
@@ -3746,7 +3729,6 @@ def render_content(tab):
                     ], className='col-md-6')
                 ], className='row', style={'marginBottom': '30px'}),
                 
-                # 第二行：FV vs 测试用例数量图表
                 html.Div([
                     html.Div([
                         html.H4("FV vs 测试用例数量 (按执行状态分组)", style=active_label_style),
@@ -3754,19 +3736,15 @@ def render_content(tab):
                             id='test-status-fv-chart-main',
                             config={'displayModeBar': False}
                         )
-                    ], className='col-md-12')
-                ], className='row', style={'marginBottom': '30px'}),
-                
-                # 第二行图表
-                html.Div([
+                    ], className='col-md-6'),
                     html.Div([
                         html.H4("Release趋势图", style=active_label_style),
                         dcc.Graph(
                             id='test-release-trend-chart-main',
                             config={'displayModeBar': False}
                         )
-                    ], className='col-md-12')
-                ], className='row'),
+                    ], className='col-md-6')
+                ], className='row', style={'marginBottom': '30px'}),
                 
 
             ]),
@@ -3795,6 +3773,8 @@ def render_content(tab):
                 dcc.Dropdown(id='severe-classification-dropdown', style={'display': 'none'})
             ], style={'display': 'none'})
         ])
+        _TAB_CONTENT_CACHE[tab] = content
+        return content
     
     elif tab == 'tab-word-cloud':
         # 词云分析页面
@@ -4034,7 +4014,9 @@ def render_content(tab):
 # 回调函数 - FV分布图表
 @app.callback(
     Output('fv-distribution-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
+    [Input('current-nav-item', 'data'),
+     Input('year-dropdown', 'value'),
+     Input('project-dropdown', 'value'),
      Input('date-range-picker-main', 'start_date'),
      Input('date-range-picker-main', 'end_date'),
      Input('aida-dropdown', 'value'),
@@ -4050,7 +4032,9 @@ def render_content(tab):
      Input('severe-classification-dropdown', 'value')],
     prevent_initial_call=False
 )
-def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_fv_distribution_chart(current_nav_item, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+    if current_nav_item != 'tab-defect-status':
+        raise PreventUpdate
     try:
         # 检查数据是否可用
         if df is None or df.empty:
@@ -4061,7 +4045,7 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
             statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
         
         # 使用通用筛选函数
-        filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
+        filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
         
         # 检查筛选后的数据
         if filtered_data is None or filtered_data.empty:
@@ -4196,12 +4180,13 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
     filtered_data = reassign_unassigned_clusters_modal(filtered_data)
     
     # 按FV和严重性分组
-    fv_status = filtered_data.groupby(['fv', 'severity_group']).size().reset_index(name='缺陷数量')
+    fv_chart_data = filtered_data.copy()
+    fv_chart_data['fv_dimension'] = build_chart_dimension(fv_chart_data, 'fv')
+    fv_status = fv_chart_data.groupby(['fv_dimension', 'severity_group']).size().reset_index(name='缺陷数量')
     
     # 按FV的总缺陷数量降序排列
-    fv_totals = fv_status.groupby('fv')['缺陷数量'].sum().reset_index()
-    fv_totals = fv_totals.sort_values('缺陷数量', ascending=False)
-    fv_order = fv_totals['fv'].tolist()
+    fv_totals = fv_status.groupby('fv_dimension')['缺陷数量'].sum().reset_index()
+    fv_order = sort_dimension_with_unknown_last(fv_totals, 'fv_dimension')
     
     # 计算总defect数量
     total_defects = filtered_data.shape[0]
@@ -4209,13 +4194,14 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
     # 创建堆叠条形图
     fig = px.bar(
         fv_status,
-        x='fv',
+        x='fv_dimension',
         y='缺陷数量',
         color='severity_group',
         barmode='stack',
         color_discrete_map=SEVERITY_COLORS,
         title="FV (Feature Team) 缺陷分布（按严重性）",
-        category_orders={'fv': fv_order}  # 添加排序
+        template='plotly',
+        category_orders={'fv_dimension': fv_order}  # 添加排序
     )
     
     # 设置悬停模板
@@ -4255,7 +4241,7 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
     
     # 在每个柱状图顶部添加总数标注
     for fv in fv_order:
-        fv_total = fv_totals[fv_totals['fv'] == fv]['缺陷数量'].iloc[0]
+        fv_total = fv_totals[fv_totals['fv_dimension'] == fv]['缺陷数量'].iloc[0]
         fig.add_annotation(
             text=str(fv_total),
             x=fv,
@@ -4271,7 +4257,9 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
 # 回调函数 - 缺陷状态图表
 @app.callback(
     Output('defect-status-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
+    [Input('current-nav-item', 'data'),
+     Input('year-dropdown', 'value'),
+     Input('project-dropdown', 'value'),
      Input('date-range-picker-main', 'start_date'),
      Input('date-range-picker-main', 'end_date'),
      Input('aida-dropdown', 'value'),
@@ -4287,21 +4275,42 @@ def update_fv_distribution_chart(projects, start_date, end_date, aidas, statuses
      Input('severe-classification-dropdown', 'value')],
     prevent_initial_call=False
 )
-def update_defect_status_chart(projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
-    # 如果statuses为None，使用默认的状态筛选值（与主下拉菜单保持一致）
+def update_defect_status_chart(current_nav_item, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+    if current_nav_item != 'tab-defect-status':
+        raise PreventUpdate
+
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
-    
-    # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
-    
-    # 动态计算严重性分组，基于用户选择的matrix和classification
+
     if severe_matrices is None:
         severe_matrices = []
     if severe_classifications is None:
         severe_classifications = []
-    
-    # 重新计算严重性分组
+
+    cache_key = _build_defect_status_cache_key({
+        'tab': current_nav_item,
+        'years': years,
+        'projects': projects,
+        'start_date': start_date,
+        'end_date': end_date,
+        'aidas': aidas,
+        'statuses': statuses,
+        'pus': pus,
+        'testers': testers,
+        'fvs': fvs,
+        'ecus': ecus,
+        'lead_models': lead_models,
+        'fvps': fvps,
+        'markets': markets,
+        'severe_matrices': severe_matrices,
+        'severe_classifications': severe_classifications
+    })
+    if CACHE_MANAGER_AVAILABLE and default_cache_manager:
+        cached_figure = default_cache_manager.get(cache_key)
+        if cached_figure is not None:
+            return cached_figure
+
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
     filtered_data = filtered_data.copy()
     
     def is_severe_defect(row):
@@ -4420,32 +4429,54 @@ def update_defect_status_chart(projects, start_date, end_date, aidas, statuses, 
     # 执行智能分配
     filtered_data = reassign_unassigned_clusters_modal(filtered_data)
     
-    # 按AIDA和严重性分组
-    aida_status = filtered_data.groupby(['aida_english', 'severity_group']).size().reset_index(name='缺陷数量')
+    status_values_normalized = {str(s).strip().lower() for s in (statuses or [])}
+    cwa_selected = any('09-concluded without action' in s for s in status_values_normalized)
+    chart_data = filtered_data.copy()
+    x_field = 'aida_dimension'
+    x_axis_title = "AIDA领域"
+    title_prefix = "AIDA领域缺陷分布（按严重性）"
+    hover_prefix = "AIDA领域"
+
+    if cwa_selected:
+        if 'blocking_reason' in chart_data.columns:
+            chart_data['blocking_reason_dimension'] = chart_data['blocking_reason'].apply(extract_filter_value)
+        elif 'blocking_reason_udf' in chart_data.columns:
+            chart_data['blocking_reason_dimension'] = chart_data['blocking_reason_udf'].apply(
+                lambda x: extract_filter_value(x.get('name', '')) if isinstance(x, dict) else extract_filter_value(x)
+            )
+        else:
+            chart_data['blocking_reason_dimension'] = ''
+        chart_data['blocking_reason_dimension'] = chart_data['blocking_reason_dimension'].replace('', 'Unknown/Empty')
+        x_field = 'blocking_reason_dimension'
+        x_axis_title = "Blocking Reason"
+        title_prefix = "CWA Blocking Reason分布（按严重性）"
+        hover_prefix = "Blocking Reason"
+    else:
+        chart_data['aida_dimension'] = build_chart_dimension(chart_data, 'top_aida', 'aida_english')
     
-    # 按AIDA领域的总缺陷数量降序排列
-    aida_totals = aida_status.groupby('aida_english')['缺陷数量'].sum().reset_index()
-    aida_totals = aida_totals.sort_values('缺陷数量', ascending=False)
-    aida_order = aida_totals['aida_english'].tolist()
+    grouped_status = chart_data.groupby([x_field, 'severity_group']).size().reset_index(name='缺陷数量')
+    
+    dimension_totals = grouped_status.groupby(x_field)['缺陷数量'].sum().reset_index()
+    dimension_order = sort_dimension_with_unknown_last(dimension_totals, x_field)
     
     # 计算总defect数量
     total_defects = filtered_data.shape[0]
     
     # 创建堆叠条形图
     fig = px.bar(
-        aida_status,
-        x='aida_english',
+        grouped_status,
+        x=x_field,
         y='缺陷数量',
         color='severity_group',
         barmode='stack',
         color_discrete_map=SEVERITY_COLORS,
-        title="AIDA领域缺陷分布（按严重性）",
-        category_orders={'aida_english': aida_order}  # 添加排序
+        title=title_prefix,
+        category_orders={x_field: dimension_order}
     )
     
     # 设置悬停模板
     fig.update_traces(
-        hovertemplate='<b>AIDA领域: %{x}</b><br>缺陷数量: %{y}<br>类型: %{fullData.name}'
+        hovertemplate=f'<b>{hover_prefix}: %{{x}}</b><br>缺陷数量: %{{y}}<br>类型: %{{fullData.name}}'
     )
     
     # 设置文本位置为柱内居中
@@ -4459,13 +4490,13 @@ def update_defect_status_chart(projects, start_date, end_date, aidas, statuses, 
     severe_matrices_text = "默认" if not severe_matrices or len(severe_matrices) == 0 else f"{len(severe_matrices)}个Matrix"
     severe_classifications_text = "默认" if not severe_classifications or len(severe_classifications) == 0 else f"{len(severe_classifications)}个Classification"
     
-    title = f"AIDA领域缺陷分布（按严重性）<br><sup>项目: {projects_text} | 日期范围: {date_range_text} | AIDA: {aidas_text} | Status: {statuses_text} | PU: {pus_text} | 严重Matrix: {severe_matrices_text} | 严重Classification: {severe_classifications_text}</sup>"
+    title = f"{title_prefix}<br><sup>项目: {projects_text} | 日期范围: {date_range_text} | AIDA: {aidas_text} | Status: {statuses_text} | PU: {pus_text} | 严重Matrix: {severe_matrices_text} | 严重Classification: {severe_classifications_text}</sup>"
     
     # 使用通用样式函数
     fig = apply_chart_style(
         fig, 
         title=title,
-        x_title="AIDA领域",
+        x_title=x_axis_title,
         y_title="缺陷数量"
     )
     
@@ -4480,23 +4511,27 @@ def update_defect_status_chart(projects, start_date, end_date, aidas, statuses, 
     )
     
     # 在每个柱状图顶部添加总数标注
-    for aida in aida_order:
-        aida_total = aida_totals[aida_totals['aida_english'] == aida]['缺陷数量'].iloc[0]
+    for dimension_value in dimension_order:
+        dimension_total = dimension_totals[dimension_totals[x_field] == dimension_value]['缺陷数量'].iloc[0]
         fig.add_annotation(
-            text=str(aida_total),
-            x=aida,
-            y=aida_total,
+            text=str(dimension_total),
+            x=dimension_value,
+            y=dimension_total,
             yshift=10,
             showarrow=False,
             font=dict(size=12, color="black"),
             xanchor='center'
         )
     
+    if CACHE_MANAGER_AVAILABLE and default_cache_manager:
+        default_cache_manager.set(cache_key, fig, timeout=DEFECT_STATUS_CACHE_TTL_SECONDS)
+
     return fig
 
 @app.callback(
     Output('solution-cluster-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
+    [Input('year-dropdown', 'value'),
+     Input('project-dropdown', 'value'),
      Input('date-range-picker-main', 'start_date'),
      Input('date-range-picker-main', 'end_date'),
      Input('aida-dropdown', 'value'),
@@ -4512,13 +4547,13 @@ def update_defect_status_chart(projects, start_date, end_date, aidas, statuses, 
      Input('severe-classification-dropdown', 'value')],
     prevent_initial_call=False
 )
-def update_solution_cluster_chart(projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_solution_cluster_chart(years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值（与主下拉菜单保持一致）
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
     
     # 动态计算严重性分组，基于用户选择的matrix和classification
     if severe_matrices is None:
@@ -4754,11 +4789,19 @@ def close_modal(close_clicks, overlay_clicks):
      Output('modal-info', 'children', allow_duplicate=True)],
     [Input('hr-child-complexity-chart', 'clickData'),
      Input('hr-parent-complexity-chart', 'clickData')],
-    [State('current-nav-item', 'data')],
+    [State('current-nav-item', 'data'),
+     State('hr-year-dropdown', 'value'),
+     State('hr-project-dropdown', 'value'),
+     State('hr-date-range-picker-main', 'start_date'),
+     State('hr-date-range-picker-main', 'end_date'),
+     State('hr-aida-dropdown', 'value'),
+     State('hr-status-dropdown', 'value'),
+     State('hr-pu-dropdown', 'value'),
+     State('hr-tester-dropdown-main', 'value')],
     prevent_initial_call=True,
     suppress_callback_exceptions=True
 )
-def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
+def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab, years, projects, start_date, end_date, aidas, statuses, pus, testers):
     from dash import callback_context, no_update
     from dash.exceptions import PreventUpdate
 
@@ -4786,7 +4829,22 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
     }
 
     info_text = ""
-    filtered_data = df.copy()
+    filtered_data = filter_dataframe(
+        df=df,
+        years=years or [],
+        projects=projects or [],
+        start_date=start_date,
+        end_date=end_date,
+        aidas=aidas or [],
+        statuses=statuses or [],
+        pus=pus or [],
+        testers=testers or [],
+        fvs=[],
+        ecus=[],
+        lead_models=[],
+        fvps=[],
+        markets=[]
+    )
 
     if triggered_input == 'hr-child-complexity-chart' and hr_child_click_data:
         # 点击了 High Runner Child Complexity 图表
@@ -4798,7 +4856,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
                 
                 # 筛选对应的数据 - Child tickets with specific level and week
                 filtered_data = filtered_data[
-                    (filtered_data['test_week'] == clicked_week) &
+                    (filtered_data['test_week'].apply(extract_filter_value) == extract_filter_value(clicked_week)) &
                     (filtered_data['parent_child'].isin(['Child', 'Child (candidate)']))
                 ]
                 
@@ -4816,7 +4874,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
                 clicked_level = hr_child_click_data['points'][0]['fullData']['name']
                 
                 filtered_data = filtered_data[
-                    (filtered_data['test_week'] == clicked_week) &
+                    (filtered_data['test_week'].apply(extract_filter_value) == extract_filter_value(clicked_week)) &
                     (filtered_data['parent_child'].isin(['Child', 'Child (candidate)']))
                 ]
                 
@@ -4850,7 +4908,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
                 
                 # 筛选对应的数据 - Parent tickets with specific level and week
                 filtered_data = filtered_data[
-                    (filtered_data['test_week'] == clicked_week) &
+                    (filtered_data['test_week'].apply(extract_filter_value) == extract_filter_value(clicked_week)) &
                     (filtered_data['parent_child'] == 'Parent')
                 ]
                 
@@ -4869,7 +4927,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
                 clicked_level = hr_parent_click_data['points'][0]['fullData']['name']
                 
                 filtered_data = filtered_data[
-                    (filtered_data['test_week'] == clicked_week) &
+                    (filtered_data['test_week'].apply(extract_filter_value) == extract_filter_value(clicked_week)) &
                     (filtered_data['parent_child'] == 'Parent')
                 ]
                 
@@ -4974,6 +5032,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
      Input('defect-modal-overlay', 'n_clicks')],
     [State('defect-modal', 'style'),
      State('current-nav-item', 'data'),
+     State('year-dropdown', 'value'),
      State('project-dropdown', 'value'),
      State('date-range-picker-main', 'start_date'),
      State('date-range-picker-main', 'end_date'),
@@ -4991,7 +5050,7 @@ def show_hr_modal(hr_child_click_data, hr_parent_click_data, current_tab):
     prevent_initial_call=True
 )
 def update_modal(fv_click_data, status_click_data, cluster_click_data, close_clicks, overlay_clicks,
-                current_modal_style, current_tab, projects, start_date, end_date, 
+                current_modal_style, current_tab, years, projects, start_date, end_date, 
                 aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets,
                 severe_matrices, severe_classifications):
     # 处理筛选器参数，确保它们是列表格式
@@ -5018,6 +5077,7 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
     if severe_classifications is None:
         severe_classifications = []
     from dash import callback_context
+    topissue_chart_inputs = ['fv-distribution-chart', 'defect-status-chart', 'solution-cluster-chart']
     
     # 如果当前在测试覆盖率页面，不处理modal回调
     if current_tab == 'tab-test-coverage':
@@ -5045,26 +5105,14 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
         }
         return modal_style, [], ""
     
-    # 对于 High Runner 页面，使用特殊处理逻辑
-    if current_tab == 'tab-defect-high-runner':
-        # 只处理图表点击事件
-        if triggered_input not in ['hr-child-complexity-chart', 'hr-parent-complexity-chart']:
-            return current_modal_style, [], ""
-        
-        # 使用全量数据，不进行过滤器筛选
-        filtered_data = df.copy()
-        
-        # 跳过严重性分组重计算，使用默认分组
-        filtered_data['severity_group'] = filtered_data.apply(
-            lambda row: "Critical Issues" if (
-                row.get('matrix', '') in ['1A', '1B', '1C', '1D', '1E', '2A', '2B', '2C', '3A'] or 
-                (isinstance(row.get('classification'), list) and any(cls in ['Showstopper_Candidate', 'Showstopper_Confirmed'] for cls in row['classification']))
-            ) else "General Issues",
-            axis=1
-        )
-    else:
-        # 使用通用筛选函数，传入当前的筛选器状态（包括market筛选）
-        filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
+    if triggered_input not in topissue_chart_inputs:
+        return current_modal_style, [], ""
+    
+    if current_tab != 'tab-defect-status':
+        return current_modal_style, [], ""
+    
+    # 使用通用筛选函数，传入当前的筛选器状态（包括market筛选）
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
     
     # 动态计算严重性分组，基于用户选择的matrix和classification（仅适用于非High Runner页面）
     if current_tab != 'tab-defect-high-runner':
@@ -5097,6 +5145,8 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
     if triggered_input == 'fv-distribution-chart' and fv_click_data:
         # 处理FV分布图表点击
         clicked_fv = fv_click_data['points'][0]['x']
+        filtered_data = filtered_data.copy()
+        filtered_data['fv_dimension'] = build_chart_dimension(filtered_data, 'fv')
         
         # 确定点击的是哪个严重性组
         try:
@@ -5104,14 +5154,14 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
             clicked_curve_name = clicked_trace_name  # 直接使用trace name，它应该是'Critical Issues'或'General Issues'
             
             filtered_data = filtered_data[
-                (filtered_data['fv'] == clicked_fv) & 
+                (filtered_data['fv_dimension'] == clicked_fv) & 
                 (filtered_data['severity_group'] == clicked_curve_name)
             ]
             
             info_text = f"FV: {clicked_fv} | 类型: {clicked_curve_name} | 共找到 {len(filtered_data)} 条缺陷"
             
         except (KeyError, IndexError):
-            filtered_data = filtered_data[filtered_data['fv'] == clicked_fv]
+            filtered_data = filtered_data[filtered_data['fv_dimension'] == clicked_fv]
             info_text = f"FV: {clicked_fv} | 共找到 {len(filtered_data)} 条缺陷"
         
         # 显示Modal
@@ -5131,6 +5181,8 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
     elif triggered_input == 'defect-status-chart' and status_click_data:
         # 处理AIDA图表点击
         clicked_aida = status_click_data['points'][0]['x']
+        filtered_data = filtered_data.copy()
+        filtered_data['aida_dimension'] = build_chart_dimension(filtered_data, 'top_aida', 'aida_english')
         
         # 确定点击的是哪个严重性组
         try:
@@ -5138,14 +5190,14 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
             clicked_curve_name = clicked_trace_name  # 直接使用trace name，它应该是'Critical Issues'或'General Issues'
             
             filtered_data = filtered_data[
-                (filtered_data['aida_english'] == clicked_aida) & 
+                (filtered_data['aida_dimension'] == clicked_aida) & 
                 (filtered_data['severity_group'] == clicked_curve_name)
             ]
             
             info_text = f"AIDA: {clicked_aida} | 类型: {clicked_curve_name} | 共找到 {len(filtered_data)} 条缺陷"
             
         except (KeyError, IndexError):
-            filtered_data = filtered_data[filtered_data['aida_english'] == clicked_aida]
+            filtered_data = filtered_data[filtered_data['aida_dimension'] == clicked_aida]
             info_text = f"AIDA: {clicked_aida} | 共找到 {len(filtered_data)} 条缺陷"
         
         # 显示Modal
@@ -5221,8 +5273,11 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
         }
         return modal_style, [], ""
     
-    # 按Matrix严重性排序
-    filtered_data = filtered_data.sort_values('matrix_order')
+    # 按Matrix严重性排序（兼容缺少matrix_order列的场景）
+    if 'matrix_order' in filtered_data.columns:
+        filtered_data = filtered_data.sort_values('matrix_order')
+    elif 'matrix_display' in filtered_data.columns:
+        filtered_data = filtered_data.sort_values('matrix_display')
     
     # 选择要显示的列并限制行数
     table_data = filtered_data[['id', 'name', 'ecu', 'creation_time', 'matrix_display', 'topissue_display', 'aida_english', 'status_phase', 'tester', 'severity_group', 'is_topissue', 'classification']].head(100)
@@ -5629,7 +5684,8 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
 @app.callback(
     [Output('excel-defect-table', 'data'),
      Output('excel-defect-table', 'tooltip_data')],
-    [Input('project-dropdown', 'value'),
+    [Input('year-dropdown', 'value'),
+     Input('project-dropdown', 'value'),
      Input('date-range-picker-main', 'start_date'),
      Input('date-range-picker-main', 'end_date'),
      Input('aida-dropdown', 'value'),
@@ -5645,23 +5701,23 @@ def update_modal(fv_click_data, status_click_data, cluster_click_data, close_cli
      Input('market-dropdown', 'value')],
     prevent_initial_call=False
 )
-def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
+def update_excel_defect_table(years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
     try:
         # 检查数据是否有效
         if df is None or df.empty:
             return [], []
         
-        # 优化策略：先确保所有数据的Risk Score都已计算，然后按分数排序，最后再应用过滤
-        # 这样可以确保高分票据不会因为过滤而被遗漏
+        filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
         
-        # 首先按Risk Score对完整数据进行排序
-        if 'topissue_risk_score' in df.columns:
-            # 处理空值：将NaN替换为0，确保排序正确
-            df_temp = df.copy()
-            df_temp['topissue_risk_score'] = df_temp['topissue_risk_score'].fillna(0)
-            df_sorted = df_temp.sort_values('topissue_risk_score', ascending=False)
-        elif 'topissue_display' in df.columns:
-            # 如果没有topissue_risk_score，从topissue_display中提取数值排序
+        # 如果筛选后没有数据，返回空列表
+        if filtered_data.empty:
+            return [], []
+
+        if 'topissue_risk_score' in filtered_data.columns:
+            filtered_data = filtered_data.copy()
+            filtered_data['topissue_risk_score'] = filtered_data['topissue_risk_score'].fillna(0)
+            filtered_data = filtered_data.sort_values('topissue_risk_score', ascending=False)
+        elif 'topissue_display' in filtered_data.columns:
             def extract_numeric_score(score_str):
                 if pd.isna(score_str) or score_str == '':
                     return 0
@@ -5669,21 +5725,15 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
                     import re
                     numbers = re.findall(r'\d+(?:\.\d+)?', str(score_str))
                     return float(numbers[0]) if numbers else 0
-                except:
+                except Exception:
                     return 0
-            
-            df_temp = df.copy()
-            df_temp['topissue_score_numeric'] = df_temp['topissue_display'].apply(extract_numeric_score)
-            df_sorted = df_temp.sort_values('topissue_score_numeric', ascending=False)
-        else:
-            df_sorted = df
-        
-        # 然后再应用筛选函数到排序后的数据        
-        filtered_data = filter_dataframe(df_sorted, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
-        
-        # 如果筛选后没有数据，返回空列表
-        if filtered_data.empty:
-            return [], []
+            filtered_data = filtered_data.copy()
+            filtered_data['topissue_score_numeric'] = filtered_data['topissue_display'].apply(extract_numeric_score)
+            filtered_data = filtered_data.sort_values('topissue_score_numeric', ascending=False)
+
+        max_rows = 500
+        if len(filtered_data) > max_rows:
+            filtered_data = filtered_data.head(max_rows).copy()
         
         # 动态计算严重性分组，基于用户选择的matrix和classification
         if severe_matrices is None:
@@ -5719,7 +5769,7 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
         
         # 创建matrix_display列
         table_data['matrix_display'] = table_data['matrix'].apply(lambda x: 
-            x.replace('Matrix-', '').replace('matrix-', '').upper() if x else '')
+            str(x).replace('Matrix-', '').replace('matrix-', '').replace('MATRIX-', '').upper() if x else '')
         
         # 创建classification_display列
         table_data['classification_display'] = table_data['classification'].apply(lambda x: 
@@ -5728,49 +5778,30 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
         # 处理ECU变更次数 - 改为显示流转路径
         def get_ecu_flow_path(row):
             defect_id = str(row.get('id', ''))
-            if defect_id:
-                try:
-                    path = get_ecu_transition_path(defect_id)
-                    if path and path != "No change":
-                        # path已经包含了次数和路径，直接返回
-                        return path
-                    return "No change"
-                except Exception as e:
-                    return "No change"
-            return "No change"
-        
+            return _cached_ecu_transition_path(defect_id) if defect_id else "No change"
         table_data['ecu_pingpong_display'] = filtered_data.apply(get_ecu_flow_path, axis=1)
         
         # 处理Domain变更次数 - 改为显示流转路径
         def get_solution_cluster_flow_path(row):
             defect_id = str(row.get('id', ''))
-            if defect_id:
-                try:
-                    path = get_solution_cluster_transition_path(defect_id)
-                    if path and path != "No change":
-                        # path已经包含了次数和路径，直接返回
-                        return path
-                    return "No change"
-                except Exception as e:
-                    return "No change"
-            return "No change"
-        
+            return _cached_domain_transition_path(defect_id) if defect_id else "No change"
         table_data['domain_pingpong_display'] = filtered_data.apply(get_solution_cluster_flow_path, axis=1)
         
         # 处理Parent/Child字段 - 基于parent_child字段
         if 'parent_child' in filtered_data.columns:
-            table_data['parent_child_display'] = filtered_data['parent_child'].fillna('Unknown')
+            pc = filtered_data['parent_child'].fillna('').astype(str)
+            table_data['parent_child_display'] = np.where(pc.str.lower().isin(['unknown', 'nan']) | (pc.str.strip() == ''), '', pc)
         else:
-            table_data['parent_child_display'] = 'Unknown'
+            table_data['parent_child_display'] = ''
         
         # 处理Child Count字段 - 当ticket是子票时，显示它所链接的主票包含多少个子票
-        if 'child_count_of_master' in filtered_data.columns:
-            table_data['child_count_display'] = filtered_data.apply(
-                lambda row: row['child_count_of_master'] if row.get('parent_child') in ['Child', 'Child (candidate)'] else 0,
-                axis=1
-            ).fillna(0).astype(int)
+        if 'child_count_of_master' in filtered_data.columns and 'parent_child' in filtered_data.columns:
+            pc2 = filtered_data['parent_child'].fillna('').astype(str)
+            cnt = pd.to_numeric(filtered_data['child_count_of_master'], errors='coerce').fillna(0).astype(int)
+            table_data['child_count_display'] = np.where(pc2.isin(['Child', 'Child (candidate)']), cnt, 0)
         else:
             table_data['child_count_display'] = 0
+        table_data['child_count_display'] = table_data['child_count_display'].replace(0, '')
         
         # 处理Parent Child Count字段 - 当ticket是父票时，显示它自己作为主票链接了多少个子票
         def count_linked_defects_for_parent(relation_str):
@@ -5783,12 +5814,25 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
             except:
                 return 0
         
-        table_data['parent_child_count_display'] = filtered_data.apply(
-            lambda row: count_linked_defects_for_parent(row.get('relation_to_udf', '')) if row.get('parent_child') == 'Parent' else 0,
-            axis=1
-        ).astype(int)
+        if 'parent_child' in filtered_data.columns:
+            pc3 = filtered_data['parent_child'].fillna('').astype(str)
+            if 'child_count' in filtered_data.columns:
+                p_cnt = pd.to_numeric(filtered_data['child_count'], errors='coerce').fillna(0).astype(int)
+                table_data['parent_child_count_display'] = np.where(pc3.eq('Parent'), p_cnt, 0)
+            else:
+                table_data['parent_child_count_display'] = filtered_data.apply(
+                    lambda row: count_linked_defects_for_parent(row.get('relation_to_udf', '')) if row.get('parent_child') == 'Parent' else 0,
+                    axis=1
+                ).astype(int)
+        else:
+            table_data['parent_child_count_display'] = 0
+        table_data['parent_child_count_display'] = table_data['parent_child_count_display'].replace(0, '')
         
         # 新增：处理父票信息展示 - 当票据是子票时，显示其父票的详细信息
+        _ensure_master_lookups()
+        master_lookup = _MASTER_LOOKUP or {}
+        master_status_lookup = _MASTER_STATUS_LOOKUP or {}
+
         def get_parent_ticket_info(row):
             """获取父票信息"""
             if row.get('parent_child') not in ['Child', 'Child (candidate)']:
@@ -5797,29 +5841,23 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
             master_id = row.get('master_id')
             if not master_id or pd.isna(master_id):
                 return ""
-            
-            # 首先从全局的master_df中查找父票信息
-            global master_df
-            if master_df is not None and not master_df.empty:
-                # 确保ID类型匹配
-                master_df_copy = master_df.copy()
-                master_df_copy['id'] = master_df_copy['id'].astype(str)
-                master_id_str = str(master_id)
-                
-                parent_info = master_df_copy[master_df_copy['id'] == master_id_str]
-                if not parent_info.empty:
-                    parent_row = parent_info.iloc[0]
-                    # 构建父票信息字符串，包含ID、名称、项目、状态等关键信息
-                    parent_info_str = f"ID: {parent_row.get('id', 'N/A')}"
-                    if parent_row.get('name'):
-                        parent_info_str += f" | Name: {parent_row.get('name', 'N/A')[:50]}..."  # 限制长度
-                    if parent_row.get('ecu'):
-                        parent_info_str += f" | Project: {parent_row.get('ecu', 'N/A')}"
-                    if parent_row.get('status_phase'):
-                        parent_info_str += f" | Status: {parent_row.get('status_phase', 'N/A')}"
-                    if parent_row.get('matrix_display'):
-                        parent_info_str += f" | Matrix: {parent_row.get('matrix_display', 'N/A')}"
-                    return parent_info_str
+            master_id_str = str(master_id)
+            parent_row = master_lookup.get(master_id_str)
+            if parent_row:
+                parent_info_str = f"ID: {parent_row.get('id', 'N/A')}"
+                nm = parent_row.get('name')
+                if nm:
+                    parent_info_str += f" | Name: {str(nm)[:50]}..."
+                ec = parent_row.get('ecu')
+                if ec:
+                    parent_info_str += f" | Project: {ec}"
+                st = parent_row.get('status_phase') or parent_row.get('phase.name')
+                if st:
+                    parent_info_str += f" | Status: {st}"
+                mx = parent_row.get('matrix_display')
+                if mx:
+                    parent_info_str += f" | Matrix: {mx}"
+                return parent_info_str
             
             # 如果在master_df中找不到，尝试在当前数据中查找
             parent_in_current = filtered_data[filtered_data['id'] == str(master_id)]
@@ -5848,24 +5886,10 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
             master_id = row.get('master_id')
             if not master_id or pd.isna(master_id):
                 return ""
-            
-            # 首先从全局的master_df中查找父票信息
-            global master_df
-            if master_df is not None and not master_df.empty:
-                # 确保ID类型匹配
-                master_df_copy = master_df.copy()
-                master_df_copy['id'] = master_df_copy['id'].astype(str)
-                master_id_str = str(master_id)
-                
-                parent_info = master_df_copy[master_df_copy['id'] == master_id_str]
-                if not parent_info.empty:
-                    parent_row = parent_info.iloc[0]
-                    # 从phase.name字段获取状态
-                    phase_name = parent_row.get('phase.name', '')
-                    if phase_name:
-                        return phase_name
-                    # 如果phase.name为空，尝试其他可能的字段
-                    return parent_row.get('status_phase', '')
+            master_id_str = str(master_id)
+            st = master_status_lookup.get(master_id_str)
+            if st:
+                return st
             
             # 如果在master_df中找不到，尝试在当前数据中查找
             parent_in_current = filtered_data[filtered_data['id'] == str(master_id)]
@@ -6176,22 +6200,23 @@ def update_excel_defect_table(projects, start_date, end_date, aidas, statuses, p
 # KPI卡片回调
 @app.callback(
     Output('testing-kpi-cards', 'children'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value'),
-     Input('market-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value'),
+     Input('team-market-dropdown', 'value')]
 )
-def update_testing_kpi_cards(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
+def update_testing_kpi_cards(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
     try:
         # 检查数据是否有效
         if df is None or df.empty:
@@ -6202,23 +6227,16 @@ def update_testing_kpi_cards(projects, start_date, end_date, aidas, statuses, pu
             statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
         
         # 使用通用筛选函数
-        filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
-        
-        # 计算KPI指标
-        total_defects = len(filtered_data)
-        total_testers = filtered_data['tester'].nunique()
-        severe_defects = len(filtered_data[filtered_data['severity_group'] == 'Critical Issues'])
-        severe_rate = (severe_defects / total_defects * 100) if total_defects > 0 else 0
-        
-        # 计算平均每日发现缺陷数
-        if start_date and end_date:
-            date_diff = (pd.to_datetime(end_date) - pd.to_datetime(start_date)).days + 1
-            daily_avg = total_defects / date_diff if date_diff > 0 else 0
-        else:
-            daily_avg = 0
-        
-        # 最活跃的测试人员
-        top_tester = filtered_data['tester'].value_counts().index[0] if not filtered_data.empty else "无数据"
+        filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
+
+        from analysis_utils import compute_defect_explore_kpis
+
+        kpis = compute_defect_explore_kpis(filtered_data, start_date=start_date, end_date=end_date)
+        total_defects = kpis["total_defects"]
+        total_testers = kpis["total_testers"]
+        severe_rate = kpis["severe_rate"]
+        daily_avg = kpis["daily_avg"]
+        top_tester = kpis["top_tester"]
     except Exception as e:
         print(f"testing-kpi-cards 回调错误: {e}")
         return html.Div(f"数据处理错误: {str(e)}", style={'textAlign': 'center', 'padding': '20px', 'color': 'red'})
@@ -6259,28 +6277,29 @@ def update_testing_kpi_cards(projects, start_date, end_date, aidas, statuses, pu
 # 测试人员效率图表回调
 @app.callback(
     Output('tester-efficiency-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_tester_efficiency_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_tester_efficiency_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)  # markets=None as Market column is not available
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)  # markets=None as Market column is not available
     
     # 按测试人员和严重性分组
     tester_stats = filtered_data.groupby(['tester', 'severity_group']).size().reset_index(name='缺陷数量')
@@ -6314,28 +6333,29 @@ def update_tester_efficiency_chart(projects, start_date, end_date, aidas, status
 # 缺陷发现趋势图表回调
 @app.callback(
     Output('defect-discovery-trend-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_defect_discovery_trend_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_defect_discovery_trend_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
     
     # 按日期分组
     filtered_data['date'] = pd.to_datetime(filtered_data['creation_time']).dt.date
@@ -6364,28 +6384,29 @@ def update_defect_discovery_trend_chart(projects, start_date, end_date, aidas, s
 # 测试人员严重缺陷发现分布回调
 @app.callback(
     Output('tester-severity-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_tester_severity_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_tester_severity_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets)
     
     # 计算每个测试人员的严重缺陷比例
     tester_stats = filtered_data.groupby('tester').agg({
@@ -6430,28 +6451,29 @@ def update_tester_severity_chart(projects, start_date, end_date, aidas, statuses
 # 缺陷状态分布回调
 @app.callback(
     Output('defect-status-distribution-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_defect_status_distribution_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_defect_status_distribution_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
     
     # 按状态分组
     status_counts = filtered_data['status_phase'].value_counts().reset_index()
@@ -6475,28 +6497,29 @@ def update_defect_status_distribution_chart(projects, start_date, end_date, aida
 # AIDA领域覆盖回调
 @app.callback(
     Output('aida-coverage-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_aida_coverage_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_aida_coverage_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
     
     # 按AIDA和严重性分组
     aida_data = filtered_data.groupby(['aida_english', 'severity_group']).size().reset_index(name='缺陷数量')
@@ -6525,28 +6548,29 @@ def update_aida_coverage_chart(projects, start_date, end_date, aidas, statuses, 
 # 项目缺陷贡献回调
 @app.callback(
     Output('project-contribution-chart', 'figure'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('market-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-market-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value')]
 )
-def update_project_contribution_chart(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
+def update_project_contribution_chart(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, markets, severe_matrices, severe_classifications):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)  # markets=None as Market column is not available
     
     # 按项目分组，取前10个
     project_counts = filtered_data['ecu'].value_counts().head(10).reset_index()
@@ -6575,28 +6599,29 @@ def update_project_contribution_chart(projects, start_date, end_date, aidas, sta
 # 测试人员统计表格回调
 @app.callback(
     Output('tester-stats-table', 'data'),
-    [Input('project-dropdown', 'value'),
-     Input('date-range-picker-main', 'start_date'),
-     Input('date-range-picker-main', 'end_date'),
-     Input('aida-dropdown', 'value'),
-     Input('status-dropdown', 'value'),
-     Input('pu-dropdown', 'value'),
-     Input('tester-dropdown-main', 'value'),
-     Input('fv-dropdown', 'value'),
-     Input('ecu-dropdown', 'value'),
-     Input('lead-model-dropdown', 'value'),
-     Input('fvp-dropdown', 'value'),
-     Input('severe-matrix-dropdown', 'value'),
-     Input('severe-classification-dropdown', 'value'),
-     Input('market-dropdown', 'value')]
+    [Input('team-year-dropdown', 'value'),
+     Input('team-project-dropdown', 'value'),
+     Input('team-date-range-picker-main', 'start_date'),
+     Input('team-date-range-picker-main', 'end_date'),
+     Input('team-aida-dropdown', 'value'),
+     Input('team-status-dropdown', 'value'),
+     Input('team-pu-dropdown', 'value'),
+     Input('team-tester-dropdown-main', 'value'),
+     Input('team-fv-dropdown', 'value'),
+     Input('team-ecu-dropdown', 'value'),
+     Input('team-lead-model-dropdown', 'value'),
+     Input('team-fvp-dropdown', 'value'),
+     Input('team-severe-matrix-dropdown', 'value'),
+     Input('team-severe-classification-dropdown', 'value'),
+     Input('team-market-dropdown', 'value')]
 )
-def update_tester_stats_table(projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
+def update_tester_stats_table(years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
     # 如果statuses为None，使用默认的状态筛选值
     if statuses is None:
         statuses = ['01-New', '02-In Pre-Analysis', '03-In Analysis', '04-In Progress', '05-In Testing', '07-In Pre-Verification', '08-In Verification']
     
     # 使用通用筛选函数
-    filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)
+    filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, selected_testers, fvs, ecus, lead_models, fvps, None)
     
     # 计算日期差
     if start_date and end_date:
@@ -6639,31 +6664,47 @@ def update_tester_stats_table(projects, start_date, end_date, aidas, statuses, p
     return stats_list
 
 # 测试效率与质量 - KPI指标卡回调
+def filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus=None, markets=None):
+    filtered_data = filter_dataframe(
+        df=df,
+        years=selected_years or [],
+        projects=selected_projects or [],
+        start_date=start_date,
+        end_date=end_date,
+        aidas=selected_aidas or [],
+        statuses=selected_statuses or [],
+        pus=selected_pus or [],
+        testers=[],
+        fvs=[],
+        ecus=[],
+        lead_models=[],
+        fvps=[],
+        markets=markets or []
+    ).copy()
+    for col in ['project', 'top_aida', 'pu', 'status_phase', 'phase', 'blocking_reason', 'blocking_reason_udf']:
+        if col in filtered_data.columns:
+            filtered_data[col] = filtered_data[col].apply(extract_filter_value)
+    return filtered_data
+
+
 @app.callback(
     Output('efficiency-kpi-cards', 'children'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
      Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
      Input('efficiency-market-dropdown', 'value')]
 )
-def update_efficiency_kpi_cards(start_date, end_date, selected_projects, selected_aidas, selected_statuses, markets):
+def update_efficiency_kpi_cards(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
     try:
         # 检查数据是否有效
         if df is None or df.empty:
             return html.Div("数据加载中...", style={'textAlign': 'center', 'padding': '20px'})
         
-        # 使用统一的筛选函数
-        filtered_data = filter_dataframe(
-            df, 
-            projects=selected_projects, 
-            start_date=start_date, 
-            end_date=end_date, 
-            aidas=selected_aidas, 
-            statuses=selected_statuses,
-            markets=markets
-        )
+        filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
         
         if start_date and end_date:
             date_diff = (pd.to_datetime(end_date) - pd.to_datetime(start_date)).days + 1
@@ -6731,24 +6772,17 @@ def update_efficiency_kpi_cards(start_date, end_date, selected_projects, selecte
 # 缺陷矩阵分布图表回调
 @app.callback(
     Output('defect-matrix-chart', 'figure'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
      Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
      Input('efficiency-market-dropdown', 'value')]
 )
-def update_defect_matrix_chart(start_date, end_date, selected_projects, selected_aidas, selected_statuses, markets):
-    # 使用统一的筛选函数
-    filtered_data = filter_dataframe(
-        df, 
-        projects=selected_projects, 
-        start_date=start_date, 
-        end_date=end_date, 
-        aidas=selected_aidas, 
-        statuses=selected_statuses,
-        markets=markets
-    )
+def update_defect_matrix_chart(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
+    filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
     
     # 构建过滤描述
     filter_desc = []
@@ -6758,6 +6792,8 @@ def update_defect_matrix_chart(start_date, end_date, selected_projects, selected
         filter_desc.append(f"AIDA: {', '.join(selected_aidas)}")
     if selected_statuses:
         filter_desc.append(f"状态: {', '.join(selected_statuses)}")
+    if selected_pus:
+        filter_desc.append(f"PU: {', '.join(selected_pus)}")
     if markets:
         filter_desc.append(f"市场: {', '.join(markets)}")
     if start_date and end_date:
@@ -6816,14 +6852,14 @@ def update_inflow_outflow_chart(start_date, end_date):
         # 按时间顺序重新排序数据
         trends_df = trends_df.sort_values('week', key=lambda x: x.map(parse_week_key))
         trends_df = trends_df.reset_index(drop=True)
-        
-        # 转换week格式：从'2025-W02'转换为'CW02'
+        years_present = trends_df['week'].astype(str).str.extract(r'(\d{4})-W')[0].dropna().unique().tolist()
+        show_year = len(years_present) > 1
         def format_week_label(week_str):
-            if '-W' in week_str:
-                return 'CW' + week_str.split('-W')[1]
-            return week_str
-        
-        # 创建格式化的week标签
+            text = str(week_str)
+            if '-W' in text:
+                year, week_num = text.split('-W')
+                return f"{year}-CW{week_num}" if show_year else f"CW{week_num}"
+            return text
         week_labels = [format_week_label(week) for week in trends_df['week']]
         
         # 创建线图
@@ -6918,33 +6954,17 @@ def update_inflow_outflow_chart(start_date, end_date):
 # 缺陷密度分析图表回调
 @app.callback(
     Output('defect-density-chart', 'figure'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
      Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
      Input('efficiency-market-dropdown', 'value')]
 )
-def update_defect_density_chart(start_date, end_date, selected_projects, selected_aidas, selected_statuses, markets):
-    # 筛选数据
-    filtered_data = df.copy()
-    
-    if start_date and end_date:
-        filtered_data = filtered_data[
-            (pd.to_datetime(filtered_data['creation_time']).dt.date >= pd.to_datetime(start_date).date()) &
-            (pd.to_datetime(filtered_data['creation_time']).dt.date <= pd.to_datetime(end_date).date())
-        ]
-    
-    if selected_projects:
-        filtered_data = filtered_data[filtered_data['project'].isin(selected_projects)]
-    
-    if selected_aidas:
-        filtered_data = filtered_data[filtered_data['aida_english'].isin(selected_aidas)]
-    
-    if selected_statuses:
-        filtered_data = filtered_data[filtered_data['status_phase'].isin(selected_statuses)]
-    if markets:
-        filtered_data = filtered_data[filtered_data['market'].isin(markets)]
+def update_defect_density_chart(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
+    filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
     
     # 计算各项目的缺陷密度
     project_density = filtered_data.groupby(['ecu', 'severity_group']).size().reset_index(name='count')
@@ -6980,14 +7000,16 @@ def update_defect_density_chart(start_date, end_date, selected_projects, selecte
 # 测试执行状态分布图表回调
 @app.callback(
     Output('test-execution-status-chart', 'figure'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
      Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
      Input('efficiency-market-dropdown', 'value')]
 )
-def update_test_execution_status_chart(start_date, end_date, selected_projects, selected_aidas, selected_statuses, markets):
+def update_test_execution_status_chart(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
     try:
         # 使用缺陷数据 (df) 分析CWA票
         if df is None or df.empty:
@@ -7007,7 +7029,7 @@ def update_test_execution_status_chart(start_date, end_date, selected_projects, 
             )
             return fig
         
-        filtered_data = df.copy()
+        filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
         
         # 筛选phase为'09-Concluded without action'的票
         if 'phase' in filtered_data.columns:
@@ -7041,19 +7063,6 @@ def update_test_execution_status_chart(start_date, end_date, selected_projects, 
                 )
                 return fig
         
-        # 应用其他筛选器
-        if start_date and end_date and 'creation_time' in filtered_data.columns:
-            filtered_data = filtered_data[
-                (pd.to_datetime(filtered_data['creation_time']).dt.date >= pd.to_datetime(start_date).date()) &
-                (pd.to_datetime(filtered_data['creation_time']).dt.date <= pd.to_datetime(end_date).date())
-            ]
-        
-        if selected_projects and 'project' in filtered_data.columns:
-            filtered_data = filtered_data[filtered_data['project'].isin(selected_projects)]
-        
-        if selected_aidas and 'top_aida' in filtered_data.columns:
-            filtered_data = filtered_data[filtered_data['top_aida'].isin(selected_aidas)]
-        
         # 检查是否有数据
         if filtered_data.empty:
             fig = go.Figure()
@@ -7084,6 +7093,8 @@ def update_test_execution_status_chart(start_date, end_date, selected_projects, 
                 lambda x: x.get('name', '') if isinstance(x, dict) and 'name' in x else str(x) if x else '未知原因'
             )
             blocking_reason_col = 'blocking_reason_extracted'
+        if blocking_reason_col and blocking_reason_col in filtered_data.columns:
+            filtered_data[blocking_reason_col] = filtered_data[blocking_reason_col].apply(extract_filter_value).replace('', '未知原因')
         
         # 查找ticket_quality字段
         if 'ticket_quality' in filtered_data.columns:
@@ -7294,41 +7305,27 @@ def update_test_execution_status_chart(start_date, end_date, selected_projects, 
 # 测试周期效率图表回调
 @app.callback(
     Output('test-cycle-efficiency-chart', 'figure'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
-     Input('efficiency-status-dropdown', 'value')]
+     Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
+     Input('efficiency-market-dropdown', 'value')]
 )
-def update_test_cycle_efficiency_chart(start_date, end_date, selected_projects, selected_aidas, selected_statuses):
-    # 筛选数据
-    filtered_data = df.copy()
-    
-    if start_date and end_date:
-        filtered_data = filtered_data[
-            (pd.to_datetime(filtered_data['creation_time']).dt.date >= pd.to_datetime(start_date).date()) &
-            (pd.to_datetime(filtered_data['creation_time']).dt.date <= pd.to_datetime(end_date).date())
-        ]
-    
-    if selected_projects:
-        filtered_data = filtered_data[filtered_data['project'].isin(selected_projects)]
-    
-    if selected_aidas:
-        filtered_data = filtered_data[filtered_data['aida_english'].isin(selected_aidas)]
-    
-    if selected_statuses:
-        filtered_data = filtered_data[filtered_data['status_phase'].isin(selected_statuses)]
-    
-    # 按测试周计算效率
+def update_test_cycle_efficiency_chart(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
+    filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
     cycle_efficiency = filtered_data.groupby(['test_week', 'severity_group']).size().reset_index(name='count')
+    week_order = sort_weeks_with_year(cycle_efficiency['test_week'].tolist())
     
-    # 创建条形图
     fig = px.bar(
         cycle_efficiency,
         x='test_week',
         y='count',
         color='severity_group',
         color_discrete_map=SEVERITY_COLORS,
+        category_orders={'test_week': week_order},
         title="测试周期效率分析"
     )
     
@@ -7393,32 +7390,17 @@ def update_defect_aida_wordcloud(start_date, end_date, selected_projects, select
 # 缺陷状态转换效率图表回调
 @app.callback(
     Output('status-transition-efficiency-chart', 'figure'),
-    [Input('efficiency-date-range-picker-main', 'start_date'),
+    [Input('efficiency-year-dropdown', 'value'),
+     Input('efficiency-date-range-picker-main', 'start_date'),
      Input('efficiency-date-range-picker-main', 'end_date'),
      Input('efficiency-project-dropdown', 'value'),
      Input('efficiency-aida-dropdown', 'value'),
-     Input('efficiency-status-dropdown', 'value')]
+     Input('efficiency-status-dropdown', 'value'),
+     Input('efficiency-pu-dropdown', 'value'),
+     Input('efficiency-market-dropdown', 'value')]
 )
-def update_status_transition_efficiency_chart(start_date, end_date, selected_projects, selected_aidas, selected_statuses):
-    # 筛选数据
-    filtered_data = df.copy()
-    
-    if start_date and end_date:
-        filtered_data = filtered_data[
-            (pd.to_datetime(filtered_data['creation_time']).dt.date >= pd.to_datetime(start_date).date()) &
-            (pd.to_datetime(filtered_data['creation_time']).dt.date <= pd.to_datetime(end_date).date())
-        ]
-    
-    if selected_projects:
-        filtered_data = filtered_data[filtered_data['project'].isin(selected_projects)]
-    
-    if selected_aidas:
-        filtered_data = filtered_data[filtered_data['aida_english'].isin(selected_aidas)]
-    
-    if selected_statuses:
-        filtered_data = filtered_data[filtered_data['status_phase'].isin(selected_statuses)]
-    
-    # 统计状态分布
+def update_status_transition_efficiency_chart(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets):
+    filtered_data = filter_efficiency_data(selected_years, start_date, end_date, selected_projects, selected_aidas, selected_statuses, selected_pus, markets)
     status_counts = filtered_data.groupby(['status_phase', 'severity_group']).size().reset_index(name='count')
     
     # 创建堆叠条形图
@@ -7735,11 +7717,19 @@ def global_search(search_clicks, search_submit, close_clicks, overlay_clicks, se
     
     search_term = search_value.strip().lower()
     
-    # 搜索逻辑：在ID和名称字段中搜索
-    search_results = df[
-        (df['id'].astype(str).str.lower().str.contains(search_term, na=False)) |
-        (df['name'].astype(str).str.lower().str.contains(search_term, na=False))
-    ].copy()
+    search_mask = (
+        df['id'].astype(str).str.lower().str.contains(search_term, na=False) |
+        df['name'].astype(str).str.lower().str.contains(search_term, na=False)
+    )
+    if 'topissue_display' in df.columns:
+        search_mask = search_mask | df['topissue_display'].astype(str).str.lower().str.contains(search_term, na=False)
+    if 'topissue_recommend_reason' in df.columns:
+        search_mask = search_mask | df['topissue_recommend_reason'].astype(str).str.lower().str.contains(search_term, na=False)
+    if 'aida_english' in df.columns:
+        search_mask = search_mask | df['aida_english'].astype(str).str.lower().str.contains(search_term, na=False)
+    if 'ecu' in df.columns:
+        search_mask = search_mask | df['ecu'].astype(str).str.lower().str.contains(search_term, na=False)
+    search_results = df[search_mask].copy()
     
     if search_results.empty:
         modal_style = {
@@ -7771,14 +7761,19 @@ def global_search(search_clicks, search_submit, close_clicks, overlay_clicks, se
     }
     
     # 处理搜索结果数据，使用与modal回调相同的逻辑
-    # 按Matrix严重性排序
-    search_results = search_results.sort_values('matrix_order')
+    if 'topissue_risk_score' in search_results.columns:
+        search_results = search_results.sort_values('topissue_risk_score', ascending=False)
+    elif 'topissue_display' in search_results.columns:
+        search_results = search_results.sort_values('topissue_display', ascending=False)
+    elif 'matrix_order' in search_results.columns:
+        search_results = search_results.sort_values('matrix_order')
     
     # 限制结果数量
     search_results = search_results.head(100)
     
     # 选择要显示的列
     table_data = search_results[['id', 'name', 'ecu', 'creation_time', 'matrix_display', 'topissue_display', 'aida_english', 'status_phase', 'tester', 'severity_group', 'is_topissue', 'classification']].copy()
+    table_data['tester'] = table_data['tester'].apply(extract_filter_value).replace('', 'Unknown Tester')
     
     # 处理classification列表
     table_data['classification_display'] = table_data['classification'].apply(lambda x: ', '.join(x) if isinstance(x, list) else str(x) if x is not None else '未分类')
@@ -8556,7 +8551,8 @@ def update_project_stats_table(tab):
     [Output('download-excel', 'data'),
      Output('export-status', 'children')],
     [Input('export-excel-btn', 'n_clicks')],
-    [State('project-dropdown', 'value'),
+    [State('year-dropdown', 'value'),
+     State('project-dropdown', 'value'),
      State('date-range-picker-main', 'start_date'),
      State('date-range-picker-main', 'end_date'),
      State('aida-dropdown', 'value'),
@@ -8572,7 +8568,7 @@ def update_project_stats_table(tab):
      State('market-dropdown', 'value')],
     prevent_initial_call=True
 )
-def export_to_excel(n_clicks, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
+def export_to_excel(n_clicks, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
     """
     根据当前筛选条件导出缺陷数据到Excel文件
     """
@@ -8581,7 +8577,7 @@ def export_to_excel(n_clicks, projects, start_date, end_date, aidas, statuses, p
     
     try:
         # 使用通用筛选函数
-        filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
+        filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
         
         if filtered_data.empty:
             return no_update, "没有数据可导出"
@@ -8965,7 +8961,8 @@ def export_to_excel(n_clicks, projects, start_date, end_date, aidas, statuses, p
     [Output('download-cluster-excel', 'data'),
      Output('export-cluster-status', 'children')],
     [Input('export-cluster-excel-btn', 'n_clicks')],
-    [State('project-dropdown', 'value'),
+    [State('year-dropdown', 'value'),
+     State('project-dropdown', 'value'),
      State('date-range-picker-main', 'start_date'),
      State('date-range-picker-main', 'end_date'),
      State('aida-dropdown', 'value'),
@@ -8981,7 +8978,7 @@ def export_to_excel(n_clicks, projects, start_date, end_date, aidas, statuses, p
      State('market-dropdown', 'value')],
     prevent_initial_call=True
 )
-def export_cluster_to_excel(n_clicks, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
+def export_cluster_to_excel(n_clicks, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, severe_matrices, severe_classifications, markets):
     """
     根据当前筛选条件导出Solution Cluster分布数据到Excel文件
     """
@@ -8990,7 +8987,7 @@ def export_cluster_to_excel(n_clicks, projects, start_date, end_date, aidas, sta
     
     try:
         # 使用通用筛选函数
-        filtered_data = filter_dataframe(df, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
+        filtered_data = filter_dataframe(df, years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, lead_models, fvps, markets)
         
         if filtered_data.empty:
             return no_update, "没有数据可导出"
@@ -9571,34 +9568,57 @@ def create_phase_duration_bar_chart_lr(df, show_all=True):
 def load_defect_info_lr():
     """从defect数据文件加载ticket名称和tester信息"""
     defect_info = {}
-    defect_file = 'defect/2025_defect.json'
+
+    def _normalize_tester(tester_value):
+        tester_text = extract_filter_value(tester_value)
+        if tester_text.lower() in {'', 'unknown', 'unknown tester', 'none', 'nan'}:
+            return 'Unknown'
+        return tester_text
+
+    try:
+        if isinstance(df, pd.DataFrame) and not df.empty and 'id' in df.columns:
+            required_cols = [col for col in ['id', 'name', 'tester', 'detected_by', 'author'] if col in df.columns]
+            source_df = df[required_cols].copy()
+            for _, row in source_df.iterrows():
+                ticket_id = extract_filter_value(row.get('id'))
+                if not ticket_id:
+                    continue
+                ticket_name = extract_filter_value(row.get('name')) or f'Ticket {ticket_id}'
+                tester = _normalize_tester(row.get('tester'))
+                if tester == 'Unknown':
+                    tester = _normalize_tester(row.get('detected_by'))
+                if tester == 'Unknown':
+                    tester = _normalize_tester(row.get('author'))
+                defect_info[ticket_id] = {'name': ticket_name[:100], 'tester': tester}
+            if defect_info:
+                return defect_info
+    except Exception as e:
+        print(f"从主数据构建Long Runner ticket信息失败: {e}")
     
+    defect_file = 'defect/2025_defect.json'
     if os.path.exists(defect_file):
         try:
             with open(defect_file, 'r', encoding='utf-8') as f:
                 defects = json.load(f)
-            
             for defect in defects:
-                ticket_id = str(defect.get('id', ''))
-                ticket_name = defect.get('name', f'Ticket {ticket_id}')
-                
-                # 正确提取tester信息从detected_by字段
-                detected_by = defect.get('detected_by', {})
-                if isinstance(detected_by, dict):
-                    tester = detected_by.get('full_name', 'Unknown')
-                else:
-                    tester = 'Unknown'
-                
-                defect_info[ticket_id] = {
-                    'name': ticket_name[:100],  # 限制长度
-                    'tester': tester
-                }
+                ticket_id = str(defect.get('id', '')).strip()
+                if not ticket_id:
+                    continue
+                ticket_name = extract_filter_value(defect.get('name')) or f'Ticket {ticket_id}'
+                tester = _normalize_tester(defect.get('tester'))
+                if tester == 'Unknown':
+                    tester = _normalize_tester(defect.get('detected_by'))
+                if tester == 'Unknown':
+                    detected_by = defect.get('detected_by', {})
+                    if isinstance(detected_by, dict):
+                        tester = _normalize_tester(detected_by.get('full_name') or detected_by.get('name'))
+                defect_info[ticket_id] = {'name': ticket_name[:100], 'tester': tester}
         except Exception as e:
             print(f"加载defect信息时出错: {e}")
-    
+
     return defect_info
 
-def bulk_analyze_phases_live_lr(history_folder: str = 'history') -> dict:
+def bulk_analyze_phases_live_lr(history_folder: str = 'history', ticket_ids=None) -> dict:
     """实时批量分析所有ticket的phase duration"""
     print("开始从真实数据源分析phase durations...")
     
@@ -9606,7 +9626,10 @@ def bulk_analyze_phases_live_lr(history_folder: str = 'history') -> dict:
     defect_info = load_defect_info_lr()
     
     # 获取所有ticket IDs
-    ticket_ids = get_all_ticket_ids(history_folder)
+    if ticket_ids is None:
+        ticket_ids = get_all_ticket_ids(history_folder)
+    else:
+        ticket_ids = [str(tid) for tid in ticket_ids if str(tid).strip()]
     
     all_durations = defaultdict(list)  # phase_name -> [duration1, duration2, ...]
     ticket_details = defaultdict(list)  # phase_name -> [ticket_detail1, ticket_detail2, ...]
@@ -9689,10 +9712,11 @@ def calculate_phase_statistics_live_lr(phase_durations: dict) -> pd.DataFrame:
      Output('phase-stats-table-lr', 'data')],
     [Input('phase-min-count-slider', 'value'),
      Input('phase-type-dropdown', 'value'),
+     Input('long-runner-year-dropdown', 'value'),
      Input('current-nav-item', 'data')],  # 添加导航状态监听
     prevent_initial_call=False  # 允许初始调用
 )
-def update_phase_data_and_charts(min_count, phase_type, current_nav):
+def update_phase_data_and_charts(min_count, phase_type, selected_years, current_nav):
     """处理数据加载和筛选更新"""
     global global_phase_df, global_phase_ticket_details
     
@@ -9712,8 +9736,24 @@ def update_phase_data_and_charts(min_count, phase_type, current_nav):
     if global_phase_df.empty or trigger_id == 'current-nav-item' or trigger_id == 'auto-load':
         # 需要重新加载数据
         try:
-            # 实时分析所有tickets
-            bulk_results = bulk_analyze_phases_live_lr()
+            all_years = set(extract_year_series(df).dropna().astype(int).tolist()) if not df.empty else set()
+            if selected_years is None:
+                effective_years = [2026] if 2026 in all_years else []
+            else:
+                effective_years = selected_years
+
+            scoped_df = filter_dataframe(df, years=effective_years)
+            scoped_ticket_ids = scoped_df['id'].apply(lambda x: str(x).strip()).replace('', pd.NA).dropna().unique().tolist() if 'id' in scoped_df.columns else []
+            cache_key = None
+            bulk_results = None
+            if CACHE_MANAGER_AVAILABLE and default_cache_manager:
+                cache_years = sorted([int(y) for y in effective_years]) if effective_years else []
+                cache_key = f"long_runner_phase_data_v2_{hashlib.md5(json.dumps({'years': cache_years}, sort_keys=True).encode('utf-8')).hexdigest()}"
+                bulk_results = default_cache_manager.get(cache_key)
+            if bulk_results is None:
+                bulk_results = bulk_analyze_phases_live_lr(ticket_ids=scoped_ticket_ids)
+                if CACHE_MANAGER_AVAILABLE and default_cache_manager and cache_key:
+                    default_cache_manager.set(cache_key, bulk_results, timeout=LONG_RUNNER_CACHE_TTL_SECONDS)
             
             # 计算统计信息
             global_phase_df = calculate_phase_statistics_live_lr(bulk_results['phase_durations'])
@@ -9923,7 +9963,8 @@ def close_modal(close_clicks, overlay_clicks):
 # 为AI聊天功能更新数据存储
 @app.callback(
     Output('filtered-data-store', 'data'),
-    [Input('project-dropdown', 'value'),
+    [Input('year-dropdown', 'value'),
+     Input('project-dropdown', 'value'),
      Input('date-range-picker-main', 'start_date'),
      Input('date-range-picker-main', 'end_date'),
      Input('aida-dropdown', 'value'),
@@ -9936,44 +9977,139 @@ def close_modal(close_clicks, overlay_clicks):
      Input('severe-classification-dropdown', 'value')],
     prevent_initial_call=True
 )
-def update_filtered_data_store(projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, severe_matrices, severe_classifications):
+def update_filtered_data_store(years, projects, start_date, end_date, aidas, statuses, pus, testers, fvs, ecus, severe_matrices, severe_classifications):
     """更新筛选后的数据存储，供AI聊天功能使用"""
     try:
-        # 获取筛选后的数据
-        filtered_data = filter_dataframe(
-            df=df,
-            projects=[],
-            start_date=None,
-            end_date=None,
-            aidas=[],
-            statuses=[],
-            pus=[],
-            testers=[],
-            fvs=[],
-            ecus=[],
-            lead_models=[],
-            fvps=[]
-        )
-        
-        # 存储为JSON格式
-        if not filtered_data.empty:
-            return filtered_data.to_json(orient='split')
-        else:
-            return None
+        return {
+            "version": 2,
+            "filters": {
+                "years": years or [],
+                "projects": projects or [],
+                "start_date": start_date,
+                "end_date": end_date,
+                "aidas": aidas or [],
+                "statuses": statuses or [],
+                "pus": pus or [],
+                "testers": testers or [],
+                "fvs": fvs or [],
+                "ecus": ecus or [],
+                "severe_matrices": severe_matrices or [],
+                "severe_classifications": severe_classifications or []
+            },
+            "updated_at": datetime.now().isoformat()
+        }
     except Exception as e:
         print(f"Error updating filtered data store: {e}")
         return None
 
 # 注册AI聊天回调函数
 if AI_CHAT_AVAILABLE:
-    ai_chat_manager.register_enhanced_chat_callbacks(
-        app=app,
-        chat_id_prefix='defect-explore-chat',
-        data_store_id='filtered-data-store',
-        dashboard_type='defect',
-        data_processor_func=lambda data: None,  # 不传递本地数据
-        chat_only_mode=True  # 启用纯聊天模式
-    )
+    # 定义数据处理函数，将filtered-data-store转换为DataFrame
+    def process_filtered_data(filtered_data, question: str = ""):
+        """将filtered-data-store的数据转换为DataFrame供Agent使用"""
+        try:
+            if not filtered_data:
+                return {"defects": pd.DataFrame(), "tests": pd.DataFrame()}
+
+            q = (question or "").lower()
+            wants_filtered_data = any(k in q for k in ["按筛选", "按过滤", "当前筛选", "当前过滤", "按当前", "仅筛选", "只看筛选", "filtered"])
+            wants_full_data = (not wants_filtered_data) or any(k in q for k in [
+                "全量", "完整", "不要抽样", "不要采样", "不采样", "不抽样",
+                "不要筛选", "不筛选", "不限制", "all", "full", "exact", "accurate", "全面", "准确"
+            ]) or any(k in q for k in ["团队", "team", "tester", "谁发现", "发现人", "报告人", "提交人", "fvp", "matrix", "矩阵", "分布", "占比"])
+
+            if wants_full_data and 'df' in globals() and isinstance(df, pd.DataFrame):
+                tests_full = pd.DataFrame()
+                if 'test_df' in globals() and isinstance(test_df, pd.DataFrame):
+                    tests_full = test_df
+                return {"defects": df, "tests": tests_full}
+
+            defects_df = pd.DataFrame()
+
+            if isinstance(filtered_data, str):
+                defects_df = pd.read_json(StringIO(filtered_data), orient='split')
+            elif isinstance(filtered_data, dict):
+                if 'filters' in filtered_data:
+                    filters = filtered_data.get('filters') or {}
+                    try:
+                        defects_df = filter_dataframe(
+                            df=df,
+                            years=filters.get('years') or [],
+                            projects=filters.get('projects') or [],
+                            start_date=filters.get('start_date'),
+                            end_date=filters.get('end_date'),
+                            aidas=filters.get('aidas') or [],
+                            statuses=filters.get('statuses') or [],
+                            pus=filters.get('pus') or [],
+                            testers=filters.get('testers') or [],
+                            fvs=filters.get('fvs') or [],
+                            ecus=filters.get('ecus') or [],
+                            lead_models=[],
+                            fvps=[]
+                        )
+                    except Exception:
+                        defects_df = df
+                elif 'data' in filtered_data:
+                    defects_df = pd.read_json(StringIO(filtered_data['data']), orient='split')
+                else:
+                    defects_df = pd.DataFrame(filtered_data)
+            elif isinstance(filtered_data, pd.DataFrame):
+                defects_df = filtered_data
+
+            tests_subset = pd.DataFrame()
+            if 'test_df' in globals() and isinstance(test_df, pd.DataFrame):
+                tests_subset = test_df
+
+                projects = []
+                if isinstance(defects_df, pd.DataFrame) and not defects_df.empty:
+                    if 'tproject' in defects_df.columns:
+                        projects = defects_df['tproject'].dropna().astype(str).unique().tolist()
+                    elif 'project' in defects_df.columns:
+                        projects = defects_df['project'].dropna().astype(str).unique().tolist()
+
+                if projects and 'project' in tests_subset.columns:
+                    tests_subset = tests_subset[tests_subset['project'].isin(projects)]
+
+                if isinstance(defects_df, pd.DataFrame) and not defects_df.empty:
+                    if 'tcreationtime' in defects_df.columns:
+                        tmin = pd.to_datetime(defects_df['tcreationtime'], errors='coerce').min()
+                        tmax = pd.to_datetime(defects_df['tcreationtime'], errors='coerce').max()
+                    elif 'creation_time' in defects_df.columns:
+                        tmin = pd.to_datetime(defects_df['creation_time'], errors='coerce').min()
+                        tmax = pd.to_datetime(defects_df['creation_time'], errors='coerce').max()
+                    else:
+                        tmin = tmax = None
+
+                    if tmin is not None and pd.notna(tmin) and tmax is not None and pd.notna(tmax):
+                        time_col = 'finished_udf_dt' if 'finished_udf_dt' in tests_subset.columns else 'finished_udf' if 'finished_udf' in tests_subset.columns else None
+                        if time_col:
+                            tseries = pd.to_datetime(tests_subset[time_col], errors='coerce')
+                            tests_subset = tests_subset[(tseries >= tmin) & (tseries <= tmax)]
+
+            return {"defects": defects_df if isinstance(defects_df, pd.DataFrame) else pd.DataFrame(), "tests": tests_subset}
+        except Exception as e:
+            print(f"处理filtered数据时出错: {e}")
+            return {"defects": pd.DataFrame(), "tests": pd.DataFrame()}
+
+    # 根据是否为增强版使用不同的注册方式
+    if AI_CHAT_ENHANCED:
+        # 使用增强版注册（支持Agent）
+        ai_chat_manager.register_enhanced_callbacks(
+            app=app,
+            chat_id_prefix='defect-explore-chat',
+            data_store_id='filtered-data-store',
+            data_processor_func=process_filtered_data
+        )
+    else:
+        # 使用基础版注册（兼容模式）
+        ai_chat_manager.register_enhanced_chat_callbacks(
+            app=app,
+            chat_id_prefix='defect-explore-chat',
+            data_store_id='filtered-data-store',
+            dashboard_type='defect',
+            data_processor_func=process_filtered_data,
+            chat_only_mode=False  # 传递本地数据
+        )
 
 # 添加自定义HTML和CSS样式
 app.index_string = '''
@@ -10013,7 +10149,8 @@ app.index_string = '''
                 background-color: #34495e !important;
             }
             
-            #nav-edge-toggle-btn:hover {
+            #nav-edge-toggle-btn:hover,
+            #nav-edge-toggle-btn-2:hover {
                 background-color: rgba(255,255,255,0.2) !important;
             }
             
@@ -10167,6 +10304,7 @@ def update_test_status_data_store(current_nav, stored_data):
      Output('test-project-count-chart-main', 'figure'),
      Output('ts-kpi-indicators', 'children')],             # KPI指标
     [Input('current-nav-item', 'data'),
+     Input('ts-year-dropdown', 'value'),
      Input('ts-project-dropdown', 'value'),
      Input('ts-testweek-dropdown', 'value'),
      Input('ts-fv-dropdown', 'value'),
@@ -10175,7 +10313,7 @@ def update_test_status_data_store(current_nav, stored_data):
      Input('test-status-store-main', 'data')],            # 使用存储的数据
     prevent_initial_call=False
 )
-def update_test_status_charts(current_nav, projects, test_weeks, fvs, statuses, aidas, stored_data):
+def update_test_status_charts(current_nav, years, projects, test_weeks, fvs, statuses, aidas, stored_data):
     """更新Test Status Analysis页面的图表"""
     from dash import callback_context
     
@@ -10184,7 +10322,7 @@ def update_test_status_charts(current_nav, projects, test_weeks, fvs, statuses, 
         raise PreventUpdate
     
     # 生成缓存键（基于筛选条件）
-    cache_key = f"test_status_charts_{hash(str([projects, test_weeks, fvs, statuses, aidas]))}"
+    cache_key = f"test_status_charts_{hash(str([years, projects, test_weeks, fvs, statuses, aidas]))}"
     
     # 尝试从统一缓存获取图表结果
     if CACHE_MANAGER_AVAILABLE and default_cache_manager:
@@ -10247,6 +10385,16 @@ def update_test_status_charts(current_nav, projects, test_weeks, fvs, statuses, 
                     print(f"Debug: 列 {col} 包含 {dict_count} 个字典类型值")
                     # 提取字典中的有用信息
                     filtered_data[col] = filtered_data[col].apply(extract_value_from_dict)
+
+        year_series = pd.to_numeric(filtered_data['year'], errors='coerce') if 'year' in filtered_data.columns else pd.Series(dtype='float64')
+        if year_series.dropna().empty and 'test_week' in filtered_data.columns:
+            year_series = pd.to_numeric(filtered_data['test_week'].astype(str).str[:4], errors='coerce')
+
+        # 年份筛选
+        if years and len(years) > 0 and not year_series.dropna().empty:
+            filtered_data = filtered_data[
+                year_series.astype('Int64').isin([int(y) for y in years])
+            ]
         
         # 注意：状态映射现在在筛选和图表创建时进行，避免重复处理
         
@@ -11121,9 +11269,11 @@ if __name__ == '__main__':
     host = os.environ.get('HOST', '0.0.0.0')  # 默认允许局域网访问
     port = int(os.environ.get('PORT', 8051))
     debug = os.environ.get('DEBUG', 'True').lower() == 'true'
+    if DISABLE_RELOADER:
+        debug = False
     
     # 检查是否是reloader进程
-    if debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+    if IS_RELOADER:
         print("\n🔄 注意：这是reloader进程，跳过启动信息显示...\n")
     else:
         # 显示网络访问信息
@@ -11153,9 +11303,13 @@ if __name__ == '__main__':
 
 
 if __name__ == '__main__':
-    # 注册AI聊天回调函数
-    if AI_CHAT_AVAILABLE:
-        ai_chat_manager.register_enhanced_chat_callbacks(app)
-        print("✅ AI聊天回调函数已注册")
-    
-    app.run(debug=debug, host=host, port=port, threaded=True)
+    # AI聊天回调函数已在前面注册，这里不需要重复注册
+    print("🚀 启动Defect Explorer应用...")
+    app.run(
+        debug=debug,
+        host=host,
+        port=port,
+        threaded=True,
+        use_reloader=not DISABLE_RELOADER,
+        dev_tools_hot_reload=not DISABLE_RELOADER,
+    )

@@ -296,8 +296,11 @@ def filter_defect_data(df, project=None, domain=None, start_date=None, end_date=
     filter_desc = []
     
     # 按项目过滤
-    if project and 'project' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['project'] == project]
+    if project:
+        if 'tproject' in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df['tproject'] == project]
+        elif 'project' in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df['project'] == project]
         filter_desc.append(f"项目: {project}")
     
     # 按领域/团队过滤

@@ -156,7 +156,7 @@ class AppLauncher:
         monitor_thread = threading.Thread(target=monitor_resources, daemon=True)
         monitor_thread.start()
     
-    def launch_app(self, app_type='explore'):
+    def launch_app(self, app_type='explore6'):
         """启动应用"""
         print("🌐 启动Web应用...")
         
@@ -174,6 +174,15 @@ class AppLauncher:
                 print("   • 使用标准探索应用")
                 import defect_explore as app_module
                 app = app_module.app
+
+            if app_type == 'explore6':
+                print("   • 使用标准探索应用（v6）")
+                try:
+                    import defect_explore6 as app_module
+                except ImportError:
+                    print("   ⚠️  explore6 不可用，回退到 defect_explore")
+                    import defect_explore as app_module
+                app = app_module.app
             
             # 启动配置
             host = '0.0.0.0'
@@ -186,15 +195,18 @@ class AppLauncher:
             print("-" * 50)
             
             # 启动应用
-            app.run_server(
-                debug=debug,
-                host=host,
-                port=port,
-                dev_tools_hot_reload=True,
-                dev_tools_silence_routes_logging=True,
-                use_reloader=True,
-                threaded=True
-            )
+            if hasattr(app, "run"):
+                app.run(debug=debug, host=host, port=port)
+            else:
+                app.run_server(
+                    debug=debug,
+                    host=host,
+                    port=port,
+                    dev_tools_hot_reload=True,
+                    dev_tools_silence_routes_logging=True,
+                    use_reloader=True,
+                    threaded=True
+                )
             
         except KeyboardInterrupt:
             print("\n🛑 用户中断")
@@ -246,8 +258,8 @@ def main():
     parser = argparse.ArgumentParser(description='缺陷分析系统启动器')
     parser.add_argument('--mode', choices=['standard', 'optimized', 'test', 'monitor'], 
                        default='standard', help='启动模式')
-    parser.add_argument('--app', choices=['explore', 'optimized'], 
-                       default='explore', help='应用类型')
+    parser.add_argument('--app', choices=['explore6', 'explore', 'optimized'],
+                       default='explore6', help='应用类型')
     parser.add_argument('--port', type=int, default=8051, help='端口号')
     parser.add_argument('--no-cache', action='store_true', help='禁用缓存优化')
     

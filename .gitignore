@@ -16,8 +16,14 @@ login_info.txt
 logs/
 *.log
 local_data.db
+database/*.db
+database/*.db-wal
+database/*.db-shm
+database/postgres_data/
 backups/
 temp/
+local/
+data/
 
 # Data and caches
 cache/
@@ -35,3 +41,7 @@ defect/
 node_modules/
 
 .next/
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json

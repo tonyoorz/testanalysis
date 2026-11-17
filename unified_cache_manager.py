@@ -11,10 +11,15 @@ import shutil
 import pickle
 import json
 import glob
+import sqlite3
+import hashlib
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 import time
-from functools import lru_cache
+from functools import lru_cache, wraps
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UnifiedCacheManager:
     """统一缓存管理器 - 管理项目中的所有缓存系统"""
@@ -370,6 +375,112 @@ class UnifiedCacheManager:
             'platform': os.name,
             'cache_dir_writable': os.access(self.cache_dir, os.W_OK)
         }
+
+    # ========== 新增：版本控制缓存方法 ==========
+
+    def _get_db_version(self, db_path: str = "database/local_data.db") -> str:
+        """获取数据库版本（基于最后更新时间）"""
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            # 尝试从 octane_defects 获取最新更新时间
+            cursor.execute("""
+                SELECT MAX(fetched_at) FROM octane_defects
+            """)
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[0]:
+                return str(result[0])
+        except Exception as e:
+            logger.warning(f"Failed to get DB version: {e}")
+
+        # 如果无法获取，使用文件修改时间
+        try:
+            db_file = Path(db_path)
+            if db_file.exists():
+                return str(db_file.stat().st_mtime)
+        except:
+            pass
+
+        return "unknown"
+
+    def _generate_cache_key(self, base_key: str, db_path: str = "database/local_data.db") -> str:
+        """生成带版本的缓存键"""
+        db_version = self._get_db_version(db_path)
+        versioned_key = f"{base_key}_v{hashlib.md5(db_version.encode()).hexdigest()[:8]}"
+        return versioned_key
+
+    def get_cached_dataframe_versioned(self, base_key: str, db_path: str = "database/local_data.db") -> Optional[Any]:
+        """
+        获取带版本控制的 DataFrame 缓存
+        如果数据库已更新，缓存自动失效
+        """
+        versioned_key = self._generate_cache_key(base_key, db_path)
+        return self.get_cached_dataframe(versioned_key)
+
+    def cache_dataframe_versioned(self, base_key: str, df: Any, db_path: str = "database/local_data.db", ttl: int = 3600):
+        """
+        缓存 DataFrame 带版本控制
+        """
+        versioned_key = self._generate_cache_key(base_key, db_path)
+        self.cache_dataframe(versioned_key, df, ttl)
+
+    def get_cached_dataframe(self, cache_key: str) -> Optional[Any]:
+        """获取 DataFrame 缓存"""
+        try:
+            cache_file = self.cache_dir / f"{cache_key}.pkl"
+            if cache_file.exists():
+                with open(cache_file, 'rb') as f:
+                    cached_data = pickle.load(f)
+
+                # 检查是否过期
+                if 'expires_at' in cached_data:
+                    if time.time() > cached_data['expires_at']:
+                        cache_file.unlink()
+                        return None
+
+                return cached_data.get('data')
+        except Exception as e:
+            logger.warning(f"Failed to load cache {cache_key}: {e}")
+
+        return None
+
+    def cache_dataframe(self, cache_key: str, df: Any, ttl: int = 3600):
+        """缓存 DataFrame"""
+        try:
+            cache_file = self.cache_dir / f"{cache_key}.pkl"
+            cached_data = {
+                'data': df,
+                'created_at': time.time(),
+                'expires_at': time.time() + ttl,
+                'ttl': ttl
+            }
+            with open(cache_file, 'wb') as f:
+                pickle.dump(cached_data, f)
+        except Exception as e:
+            logger.warning(f"Failed to cache {cache_key}: {e}")
+
+    def get(self, key: str) -> Optional[Any]:
+        """获取简单缓存值"""
+        return self.get_cached_dataframe(key)
+
+    def set(self, key: str, value: Any, ttl: int = 3600):
+        """设置简单缓存值"""
+        self.cache_dataframe(key, value, ttl)
+
+    def invalidate_by_pattern(self, pattern: str) -> int:
+        """根据模式删除缓存"""
+        count = 0
+        for cache_file in self.cache_dir.glob("*.pkl"):
+            if pattern in cache_file.name:
+                try:
+                    cache_file.unlink()
+                    count += 1
+                except:
+                    pass
+        return count
 
 
 def main():

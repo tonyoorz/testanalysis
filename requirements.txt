@@ -37,6 +37,14 @@ webdriver-manager>=4.0.0
 
 # AI Integration
 openai>=1.0.0  # For DeepSeek API compatibility
+mcp>=0.1.0     # Model Context Protocol for enhanced AI capabilities
+
+# MCP Servers (most useful for data analysis project)
+mcp-server-filesystem @ git+https://github.com/modelcontextprotocol/server-filesystem.git  # File system access for code analysis
+mcp-server-sqlite @ git+https://github.com/modelcontextprotocol/server-sqlite.git        # SQLite database queries
+mcp-server-git @ git+https://github.com/modelcontextprotocol/server-git.git              # Git operations for version control
+mcp-server-brave-search @ git+https://github.com/modelcontextprotocol/server-brave-search.git  # Web search capabilities
+mcp-server-puppeteer @ git+https://github.com/modelcontextprotocol/server-puppeteer.git  # Web browsing and scraping
 
 # Data Storage
 openpyxl>=3.1.0  # For Excel file reading
@@ -44,6 +52,7 @@ xlrd>=2.0.0      # For legacy Excel support
 
 # Database
 sqlalchemy>=2.0.0
+psycopg[binary]>=3.1.18  # PostgreSQL dual-write support
 
 # Utilities
 python-dotenv>=1.0.0
@@ -77,7 +86,7 @@ psutil>=5.9.0
 # ============================================================
 
 # Windows (if applicable)
-; pywin32>=305  # Uncomment for Windows
+# pywin32>=305  # Uncomment if needed for Windows-specific functionality
 
 # ============================================================
 # Version Pinning Notes

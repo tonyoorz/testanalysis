@@ -167,6 +167,17 @@ New dashboards should:
 3. Integrate AI chat functionality when relevant
 4. Follow the established styling patterns
 
+## Database Knowledge
+
+**AI Agent 必读**: 在处理任何数据库查询、数据分析、或业务问题之前，请先阅读 `database/DATABASE_KNOWLEDGE.md`。该文档包含：
+- 每张表、每列字段的完整业务含义和值分布
+- 表间关系和数据流向
+- 业务指标定义和计算公式
+- 数据质量注意事项
+- 常用查询模式
+
+数据库位置: `database/local_data.db` (SQLite, ~5.4GB)
+
 ## Important Notes
 
 - The system automatically handles reloader processes to avoid unnecessary imports
